@@ -15,12 +15,16 @@ export interface SetLine {
   weight: number | null;
   /** Minutes (cardio). */
   duration: number | null;
+  /** Secondes (exercice au temps d'un circuit ou d'un superset). */
+  seconds?: number | null;
 }
 
 /** One planned exercise and what the client logged for it. */
 export interface ExerciseReport {
   name: string;
   cardio: boolean;
+  /** Measured in seconds (exercise.measure = 'TIME'). */
+  timed: boolean;
   planned: SetLine[];
   /** The sets the client did (in the planned order); the missed ones are counted apart. */
   done: SetLine[];
@@ -47,7 +51,7 @@ function num(value: unknown): number | null {
 }
 
 function setLine(set: any): SetLine {
-  return { reps: num(set?.reps), weight: num(set?.weight), duration: num(set?.duration) };
+  return { reps: num(set?.reps), weight: num(set?.weight), duration: num(set?.duration), seconds: num(set?.durationSec) };
 }
 
 /**
@@ -59,6 +63,11 @@ function logOf(logs: any[], exercise: any, index: number): any {
   return logs.find((log) => !!exercise?.id && log?.exerciseId === exercise.id)
     || logs.find((log) => String(log?.displayNumber ?? '') === String(index + 1))
     || (byPosition && !byPosition.exerciseId && byPosition.displayNumber == null ? byPosition : null);
+}
+
+/** An exercise measured in seconds (exercise.measure = 'TIME'), as the editor and the player read it. */
+function isTimed(exercise: any): boolean {
+  return String(exercise?.measure || '').toUpperCase() === 'TIME';
 }
 
 function setStatus(actual: any): 'DONE' | 'MISSED' | 'PENDING' {
@@ -95,6 +104,7 @@ export function workoutReport(day: any): WorkoutReport {
     return {
       name: String(exercise?.name || ''),
       cardio: String(exercise?.type || '').toUpperCase() === 'CARDIO',
+      timed: isTimed(exercise),
       planned: plannedSets.map(setLine),
       done,
       missedSets,
@@ -161,9 +171,15 @@ export interface ExerciseLine {
   label: string;
   name: string;
   cardio: boolean;
+  /** Measured in seconds (exercise.measure = 'TIME'). */
+  timed: boolean;
   sets: SetLine[];
   /** Rest after a set (the first set's), in seconds; null when none. */
   restSeconds: number | null;
+  /** Place in a superset / circuit (linked exercises, drawn joined); null for an exercise on its own. */
+  link: 'start' | 'middle' | 'end' | null;
+  /** On the group's first line only: what the group is. */
+  groupKind: 'SUPERSET' | 'CIRCUIT' | null;
 }
 
 function blockLetter(index: number): string {
@@ -195,10 +211,16 @@ export function exerciseLines(day: any): ExerciseLine[] {
     const grouped = !!group && (group === previous || group === next);
     const sets: any[] = exercise?.sets || [];
     const withRest = sets.find((set) => Number(set?.restMin) > 0 || Number(set?.restSec) > 0);
+    const endsHere = !group || group !== next;
     lines.push({
+      link: !grouped ? null : !continues ? 'start' : endsHere ? 'end' : 'middle',
+      groupKind: grouped && !continues
+        ? (String(exercise?.groupType || '').toUpperCase() === 'CIRCUIT' ? 'CIRCUIT' : 'SUPERSET')
+        : null,
       label: grouped ? `${blockLetter(block)}${inBlock}` : blockLetter(block),
       name: String(exercise?.name || '').trim(),
       cardio: String(exercise?.type || '').toUpperCase() === 'CARDIO',
+      timed: isTimed(exercise),
       sets: sets.map(setLine),
       restSeconds: withRest ? (Number(withRest.restMin) || 0) * 60 + (Number(withRest.restSec) || 0) : null,
     });

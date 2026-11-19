@@ -122,3 +122,13 @@ test('PRG-13: the first thing to fix names the day, the exercise or meal, and th
   assert.equal(days.firstNutritionIssue([{ meals: [], dayTargets: { proteinG: 150, carbsG: null, fatG: 60, calories: 1900 } }], 'TOTAL_FOR_DAY').key,
     'PROGRAM_ISSUE_DAY_TARGETS');
 });
+
+test('a day refused by the server always says what to fix and where', () => {
+  const pd = load('src/app/shared/models/program-days.ts');
+  const tr = (key, p) => key === 'PROGRAM_ISSUE_SET_DURATION' ? `Jour ${p.day}, exercice ${p.exercise}, série ${p.set} : indiquez une durée.`
+    : key === 'PROGRAM_SERVER_INVALID_DAYS' ? `Le serveur refuse le jour ${p.days} : ouvre ce jour.` : key;
+  const withIssue = { code: 'PROGRAM_INVALID_DAYS', error: 'Day 2 has an error', days: [2], issue: { key: 'PROGRAM_ISSUE_SET_DURATION', day: 2, exercise: 3, set: 1 } };
+  assert.equal(pd.refusedDaysMessage(withIssue, tr), 'Jour 2, exercice 3, série 1 : indiquez une durée.');
+  const older = { code: 'PROGRAM_INVALID_DAYS', error: 'Day 1 has an error: correct it before saving.', days: [1] };
+  assert.equal(pd.refusedDaysMessage(older, tr), 'Le serveur refuse le jour 1 : ouvre ce jour.');
+});

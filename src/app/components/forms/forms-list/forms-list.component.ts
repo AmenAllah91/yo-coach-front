@@ -1,3 +1,5 @@
+import { EmptyStateComponent } from 'app/shared/components/empty-state/empty-state.component';
+import { CheckinsSwitchComponent } from '../checkins-switch/checkins-switch.component';
 import { WriteActionDirective } from 'app/shared/subscription/write-action.directive';
 import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnDestroy, OnInit, computed, signal } from '@angular/core';
@@ -13,12 +15,13 @@ import { ToastrService } from 'ngx-toastr';
 import { EMPTY, Subject } from 'rxjs';
 import { catchError, exhaustMap, finalize, switchMap, takeUntil, tap } from 'rxjs/operators';
 
-type FormsViewMode = 'active' | 'unsaved' | 'archived';
+/** No publish step: a check-in is active (saved, or still "to finish") or archived. */
+type FormsViewMode = 'active' | 'archived';
 
 @Component({
   selector: 'app-forms-list',
   standalone: true,
-  imports: [WriteActionDirective,
+  imports: [WriteActionDirective, EmptyStateComponent, CheckinsSwitchComponent,
     CommonModule,
     FeatherModule,
     ReactiveFormsModule,
@@ -48,10 +51,11 @@ export class FormsListComponent implements OnInit, OnDestroy {
 
   readonly activeCount = signal(0);
   readonly archivedCount = signal(0);
-  readonly unsavedCount = signal(0);
 
   readonly confirmOpen = signal(false);
   readonly deleting = signal(false);
+  /** The delete was refused: already sent to clients, so the dialog offers to archive it instead. */
+  readonly deleteBlocked = signal(false);
   readonly selectedToDelete = signal<Form | null>(null);
 
   readonly assignOpen = signal(false);
@@ -152,19 +156,12 @@ export class FormsListComponent implements OnInit, OnDestroy {
 
     const mode = this.viewMode();
 
-    let status: FormStatus | undefined;
-    let excludeArchived = true;
-
-    if (mode === 'unsaved') {
-      status = 'UNSAVED' as FormStatus;
-      excludeArchived = false;
-    } else if (mode === 'archived') {
-      status = 'ARCHIVED' as FormStatus;
-      excludeArchived = false;
-    }
+    // Active = every check-in not archived, the unfinished ones included (tagged "to finish").
+    const archived = mode === 'archived';
+    const status: FormStatus | undefined = archived ? ('ARCHIVED' as FormStatus) : undefined;
 
     this.api
-      .getMyFormsPage(this.pageIndex(), this.pageSize(), status, excludeArchived, undefined, true) // the page shows its own loading state
+      .getMyFormsPage(this.pageIndex(), this.pageSize(), status, !archived, undefined, true, !archived) // the page shows its own loading state
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (res) => {
@@ -183,14 +180,12 @@ export class FormsListComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (c: any) => {
-          this.activeCount.set(c.active ?? c.published ?? 0);
+          this.activeCount.set((c.active ?? c.published ?? 0) + (c.unsaved ?? 0));
           this.archivedCount.set(c.archived ?? 0);
-          this.unsavedCount.set(c.unsaved ?? 0);
         },
         error: () => {
           this.activeCount.set(0);
           this.archivedCount.set(0);
-          this.unsavedCount.set(0);
         },
       });
   }
@@ -240,34 +235,19 @@ export class FormsListComponent implements OnInit, OnDestroy {
     this.router.navigate(['/forms', form.id, 'edit']);
   }
 
-  private isPublished(form: Form): boolean {
-    return (form.status ?? '').toUpperCase() === 'PUBLISHED';
+  /** Started by the editor's autosave and never saved by the coach: shown as "to finish", not sent. */
+  isUnfinished(form: Form): boolean {
+    return (form.status ?? '').toUpperCase() === 'UNSAVED';
   }
 
-  /** A published check-in is editable too: answers already received keep the questions they were given (frozen by the back). */
+  /** A saved check-in is always editable: answers already received keep the questions they were given (frozen by the back). */
   onEditGuarded(form: Form): void {
     this.onEdit(form);
   }
 
-  onDeleteGuarded(form: Form): void {
-    if (this.isPublished(form)) {
-      this.toastr.warning(
-        this.translate.instant('PUBLISHED_FORM_DELETE_FORBIDDEN'),
-        this.translate.instant('ACTION_NOT_ALLOWED'),
-        {
-          timeOut: 2500,
-          closeButton: true,
-          progressBar: true,
-        }
-      );
-      return;
-    }
-
-    this.openDelete(form);
-  }
-
   openDelete(form: Form): void {
     this.selectedToDelete.set(form);
+    this.deleteBlocked.set(false);
     this.confirmOpen.set(true);
   }
 
@@ -275,7 +255,31 @@ export class FormsListComponent implements OnInit, OnDestroy {
     if (this.deleting()) return;
 
     this.confirmOpen.set(false);
+    this.deleteBlocked.set(false);
     this.selectedToDelete.set(null);
+  }
+
+  /** Offered when the server refuses the delete: the check-in goes to Archived, the clients' answers stay. */
+  archiveInsteadOfDelete(): void {
+    const target = this.selectedToDelete();
+    if (!target) return;
+    this.deleting.set(true);
+    this.api.archiveForm(target.id)
+      .pipe(takeUntil(this.destroy$), finalize(() => this.deleting.set(false)))
+      .subscribe({
+        next: () => {
+          this.confirmOpen.set(false);
+          this.deleteBlocked.set(false);
+          this.selectedToDelete.set(null);
+          this.loadCounts();
+          this.loadPage();
+        },
+        error: (err) => {
+          this.confirmOpen.set(false);
+          this.deleteBlocked.set(false);
+          this.error.set(this.extractError(err) ?? this.translate.instant('ARCHIVE_FORM_ERROR'));
+        },
+      });
   }
 
   confirmDelete(): void {
@@ -303,12 +307,14 @@ export class FormsListComponent implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.deleting.set(false);
+          // 409: already sent to clients, their answers are kept; the same dialog offers to archive it instead.
+          if (err?.status === 409) {
+            this.deleteBlocked.set(true);
+            return;
+          }
           this.confirmOpen.set(false);
           this.selectedToDelete.set(null);
-          // 409: already sent to clients, their answers are kept; the coach archives it instead.
-          this.error.set(err?.status === 409
-            ? this.translate.instant('FORM_ALREADY_SENT_ARCHIVE_INSTEAD')
-            : this.extractError(err) ?? this.translate.instant('DELETE_FORM_ERROR'));
+          this.error.set(this.extractError(err) ?? this.translate.instant('DELETE_FORM_ERROR'));
         },
       });
   }
@@ -328,7 +334,8 @@ export class FormsListComponent implements OnInit, OnDestroy {
         })),
       })),
       ...(details.schedule ? { schedule: details.schedule } : {}),
-      status: 'DRAFT',
+      // A copy of a saved check-in is ready to send right away (the server checks it is complete).
+      status: String(details.status ?? '').toUpperCase() === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT',
       showInSignup: !!details.showInSignup,
     };
   }
@@ -631,26 +638,6 @@ export class FormsListComponent implements OnInit, OnDestroy {
 
   trackById(_: number, item: Form | UserDto): string {
     return String(item.id);
-  }
-
-  badgeClass(status: string): string {
-    switch ((status ?? '').toUpperCase()) {
-      case 'PUBLISHED':
-        return 'badge badge--published';
-      case 'DRAFT':
-        return 'badge badge--draft';
-      case 'UNSAVED':
-        return 'badge badge--unsaved';
-      case 'ARCHIVED':
-        return 'badge badge--archived';
-      default:
-        return 'badge';
-    }
-  }
-
-  statusLabel(status: string): string {
-    const key = `${(status || 'DRAFT').toUpperCase()}_FORM_STATUS`;
-    return this.translate.instant(key);
   }
 
   private extractError(err: any): string | null {

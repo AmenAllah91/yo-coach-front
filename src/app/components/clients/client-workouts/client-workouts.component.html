@@ -8,6 +8,9 @@
           <h1 class="yc-display">{{ t('Workouts', 'Entraînements') }}</h1>
           <p class="yc-root-subtitle">{{ t('Your training plan, day by day', 'Votre programme, jour après jour') }}</p>
         </div>
+        <button type="button" class="yc-icon-btn" [attr.aria-label]="t('History', 'Historique')" [title]="t('History', 'Historique')" (click)="openHistory()">
+          <i-feather name="clock"></i-feather>
+        </button>
       </header>
 
       <button *ngIf="filePrograms.length" type="button" class="yc-card files-entry" (click)="openFiles()">
@@ -19,82 +22,155 @@
         <i-feather class="chevron" name="chevron-right"></i-feather>
       </button>
 
-      <div class="yc-segmented" role="tablist">
-        <button type="button" role="tab" [class.active]="upcoming" [attr.aria-selected]="upcoming" (click)="setTab(true)">{{ t('Upcoming', 'À venir') }}</button>
-        <button type="button" role="tab" [class.active]="!upcoming" [attr.aria-selected]="!upcoming" (click)="setTab(false)">{{ t('Past', 'Passé') }}</button>
-      </div>
-
-      <nav class="yc-month-nav month-nav">
-        <button type="button" [disabled]="!canGoPrevious" (click)="shiftMonth(-1)"><i-feather name="chevron-left"></i-feather>{{ t('Previous', 'Précédent') }}</button>
-        <span>{{ monthLabel }}</span>
-        <button type="button" [disabled]="!canGoNext" (click)="shiftMonth(1)">{{ t('Next', 'Suivant') }}<i-feather name="chevron-right"></i-feather></button>
-      </nav>
+      <app-week-strip [weekStart]="weekStart" [selected]="selectedDate" [marks]="weekMarks" [fr]="fr"
+                      (shift)="shiftWeek($event)" (pick)="selectDate($event)" (today)="goToday()"></app-week-strip>
 
       <div *ngIf="loading" class="yc-loading"><span class="yc-spinner"></span></div>
       <p *ngIf="!loading && error" class="yc-subtitle center-text">{{ error }}</p>
 
       <ng-container *ngIf="!loading && !error">
-        <div *ngIf="!visibleItems.length && !preparingNext" class="list-empty">
-          <span class="yc-icon-tile" style="--tile-size: 64px"><i-feather name="dumbbell"></i-feather></span>
-          <h3>{{ t('No workouts found', 'Aucun entraînement trouvé') }}</h3>
-          <p class="yc-subtitle">
-            {{ upcoming ? t('No upcoming workouts this month', 'Aucun entraînement à venir ce mois-ci') : t('No past workouts this month', 'Aucun entraînement passé ce mois-ci') }}
-          </p>
-        </div>
-
-        <article *ngFor="let item of visibleItems; trackBy: trackByDay" class="yc-card day-card" [class.yc-card--today]="highlighted(item)"
-                 (click)="openDay(item)" (contextmenu)="openStatusSheet($event, item)">
-          <div class="day-card__top">
-            <div class="date-tile" [class.date-tile--on]="highlighted(item)">
-              <small>{{ weekdayShort(item.date) }}</small>
-              <strong>{{ dayNumber(item.date) }}</strong>
-              <small>{{ monthShort(item.date) }}</small>
-            </div>
-            <div class="day-card__copy">
-              <div class="day-card__title-row">
-                <h3>{{ dayTitle(item) }}</h3>
-                <span class="yc-chip" [style.--chip-color]="statusChip(item).color">
-                  <i-feather *ngIf="statusChip(item).icon" [name]="statusChip(item).icon!"></i-feather>{{ statusChip(item).label }}
-                </span>
-              </div>
-              <p class="day-card__plan">{{ planLine(item) }}</p>
-              <p class="day-card__meta">
-                <span><i-feather name="dumbbell"></i-feather>{{ exercisesCount(item) }}</span>
-                <span *ngIf="minutes(item) > 0"><i-feather name="clock"></i-feather>~{{ minutes(item) }} min</span>
-              </p>
-            </div>
+        <ng-container *ngIf="weekRows as rows">
+          <div *ngIf="weekIsEmpty(rows) && !preparingNextWeek" class="list-empty">
+            <span class="yc-icon-tile" style="--tile-size: 64px"><i-feather name="dumbbell"></i-feather></span>
+            <h3>{{ t('No workouts found', 'Aucun entraînement trouvé') }}</h3>
+            <p class="yc-subtitle">{{ t('No workout this week', 'Aucun entraînement cette semaine') }}</p>
           </div>
 
-          <div *ngIf="isRest(item)" class="rest-tile"><i-feather name="moon"></i-feather>{{ t('Rest Day', 'Jour de repos') }}</div>
+          <ng-container *ngIf="!weekIsEmpty(rows)">
+            <!-- The day picked in the strip (today at first): shown in full, with its exercises. -->
+            <ng-container *ngIf="focusRow(rows) as focus">
+              <p class="wk-label" [attr.data-day]="focus.key">{{ focusLabel(focus) }}</p>
+              <p *ngIf="!focus.items.length" class="yc-card wk-none">{{ t('Nothing planned this day', 'Rien de prévu ce jour-là') }}</p>
 
-          <ng-container *ngIf="!isRest(item) && exercises(item).length">
-            <hr class="yc-divider day-card__divider" />
-            <div *ngFor="let exercise of previewExercises(item); let i = index" class="ex-tile">
-              <span class="ex-tile__label">{{ exerciseLabels(item)[i] }}</span>
-              <span class="ex-tile__thumb">
-                <img *ngIf="exerciseImage(exercise) as image; else noThumb" [src]="image" alt="" loading="lazy" />
-                <ng-template #noThumb><i-feather name="dumbbell"></i-feather></ng-template>
-              </span>
-              <span class="ex-tile__name">{{ capitalize(exercise.name) }}</span>
-              <span *ngIf="exerciseVolume(exercise)" class="ex-tile__volume">{{ exerciseVolume(exercise) }}</span>
-            </div>
-            <p *ngIf="exercises(item).length > 3" class="more-link">
-              {{ t('+' + (exercises(item).length - 3) + ' more', '+' + (exercises(item).length - 3) + ' de plus') }}
-            </p>
-            <button *ngIf="highlighted(item)" type="button" class="yc-btn yc-btn--brand start-btn" (click)="$event.stopPropagation(); openDay(item)">
-              <i-feather name="play"></i-feather>{{ inProgress(item) ? t('Continue workout', 'Reprendre la séance') : t('Start workout', 'Commencer la séance') }}
-            </button>
+              <ng-container *ngFor="let item of focus.items; trackBy: trackByDay">
+                <button *ngIf="isRest(item)" type="button" class="yc-card wk-rest" (click)="openDay(item)">
+                  <span class="yc-icon-tile" style="--tile-size: 38px; --tile-color: #7455d9"><i-feather name="moon"></i-feather></span>
+                  <span class="wk-rest__copy">
+                    <strong>{{ t('Rest day', 'Jour de repos') }}</strong>
+                    <span>{{ dayTitle(item) }}</span>
+                  </span>
+                  <i-feather class="chevron" name="chevron-right"></i-feather>
+                </button>
+
+                <article *ngIf="!isRest(item)" class="yc-card wk-focus" [class.wk-focus--today]="focus.today"
+                         (click)="openDay(item)" (contextmenu)="openStatusSheet($event, item)">
+                  <div class="wk-focus__head">
+                    <div class="wk-focus__titles">
+                      <h3>{{ dayTitle(item) }}</h3>
+                      <p>{{ planLine(item) }}</p>
+                    </div>
+                    <span *ngIf="showsFocusChip(item)" class="yc-chip" [style.--chip-color]="statusChip(item).color">
+                      <i-feather *ngIf="statusChip(item).icon" [name]="statusChip(item).icon!"></i-feather>{{ statusChip(item).label }}
+                    </span>
+                    <i-feather class="chevron" name="chevron-right"></i-feather>
+                  </div>
+
+                  <p class="wk-focus__meta">
+                    <span><i-feather name="dumbbell"></i-feather>{{ exercisesCount(item) }}</span>
+                    <span *ngIf="minutes(item) > 0"><i-feather name="clock"></i-feather>~{{ minutes(item) }} min</span>
+                    <span *ngIf="setsCount(item)">{{ setsCount(item) }} {{ setsCount(item) > 1 ? t('sets', 'séries') : t('set', 'série') }}</span>
+                  </p>
+
+                  <ng-container *ngIf="exercises(item).length">
+                    <div class="wk-focus__list">
+                      <div *ngFor="let exercise of previewExercises(item); let i = index" class="wk-ex">
+                        <span class="wk-ex__label">{{ exerciseLabels(item)[i] }}</span>
+                        <span class="wk-ex__thumb">
+                          <img *ngIf="exerciseImage(exercise) as image; else noThumb" [src]="image" alt="" loading="lazy" />
+                          <ng-template #noThumb><i-feather name="dumbbell"></i-feather></ng-template>
+                        </span>
+                        <span class="wk-ex__name">{{ capitalize(exercise.name) }}</span>
+                        <span *ngIf="exerciseVolume(exercise)" class="wk-ex__volume">{{ exerciseVolume(exercise) }}</span>
+                      </div>
+                    </div>
+                    <button *ngIf="exercises(item).length > 3" type="button" class="wk-more" (click)="$event.stopPropagation(); openDay(item)">
+                      {{ t('+' + (exercises(item).length - 3) + ' more exercises', '+' + (exercises(item).length - 3) + ' autres exercices') }}
+                    </button>
+                  </ng-container>
+
+                  <button *ngIf="highlighted(item)" type="button" class="yc-btn yc-btn--brand wk-start" (click)="$event.stopPropagation(); openDay(item)">
+                    <i-feather name="play"></i-feather>{{ inProgress(item) ? t('Continue workout', 'Reprendre la séance') : t('Start workout', 'Commencer la séance') }}
+                  </button>
+                </article>
+              </ng-container>
+            </ng-container>
+
+            <!-- The other days of the week: one short line each, no exercises. -->
+            <ng-container *ngIf="otherRows(rows) as others">
+              <ng-container *ngIf="others.length">
+                <p class="wk-label">{{ t('This week', 'Cette semaine') }}</p>
+                <div class="wk-list">
+                  <ng-container *ngFor="let row of others; trackBy: trackByRow">
+                    <button *ngFor="let item of row.items; trackBy: trackByDay" type="button" class="yc-card wk-row"
+                            [class.wk-row--rest]="isRest(item)" (click)="openDay(item)" (contextmenu)="openStatusSheet($event, item)">
+                      <span class="wk-row__date" [class.is-today]="row.today">
+                        <small>{{ weekdayLabel(row.date) }}</small>
+                        <strong>{{ row.date.getDate() }}</strong>
+                      </span>
+                      <span class="wk-row__copy">
+                        <strong>{{ isRest(item) ? t('Rest day', 'Jour de repos') : dayTitle(item) }}</strong>
+                        <span>{{ isRest(item) ? dayTitle(item) : shortMeta(item) }}</span>
+                      </span>
+                      <span *ngIf="!isRest(item) && statusChip(item) as chip" class="yc-chip" [style.--chip-color]="chip.color">
+                        <i-feather *ngIf="chip.icon" [name]="chip.icon!"></i-feather>{{ chip.label }}
+                      </span>
+                      <i-feather *ngIf="isRest(item)" class="wk-row__moon" name="moon"></i-feather>
+                    </button>
+                  </ng-container>
+                </div>
+              </ng-container>
+            </ng-container>
           </ng-container>
-        </article>
 
-        <!-- The next days are not filled yet (backlog-programmes.md R6) -->
-        <div *ngIf="preparingNext" class="yc-card preparing-next" role="status">
-          <span class="yc-icon-tile" style="--tile-size: 44px"><i-feather name="edit-3"></i-feather></span>
-          <div>
-            <strong>{{ t('Your coach is preparing what comes next', 'Votre coach prépare la suite') }}</strong>
-            <p class="yc-subtitle">{{ t('The next days will appear here as soon as they are ready.', 'Les prochains jours apparaîtront ici dès qu\'ils seront prêts.') }}</p>
+          <!-- The next days are not filled yet (backlog-programmes.md R6) -->
+          <div *ngIf="preparingNextWeek" class="yc-card preparing-next" role="status">
+            <span class="yc-icon-tile" style="--tile-size: 44px"><i-feather name="edit-3"></i-feather></span>
+            <div>
+              <strong>{{ t('Your coach is preparing what comes next', 'Votre coach prépare la suite') }}</strong>
+              <p class="yc-subtitle">{{ t('The next days will appear here as soon as they are ready.', 'Les prochains jours apparaîtront ici dès qu’ils seront prêts.') }}</p>
+            </div>
           </div>
+        </ng-container>
+      </ng-container>
+    </ng-container>
+
+    <!-- ===================== HISTORY (mobile HistoryTimeline) ===================== -->
+    <ng-container *ngIf="view === 'history'">
+      <header class="yc-page-header">
+        <button type="button" class="yc-back" [attr.aria-label]="t('Back', 'Retour')" (click)="view = 'list'"><i-feather name="arrow-left"></i-feather></button>
+        <div class="yc-page-header__copy">
+          <h1 class="yc-page-header__title">{{ t('History', 'Historique') }}</h1>
+          <p class="yc-page-header__subtitle">{{ t('Your workouts, day by day', 'Vos séances, jour par jour') }}</p>
         </div>
+      </header>
+
+      <ng-container *ngIf="historyByDay as byDay">
+        <app-history-timeline [firstDay]="historyFirstDay(byDay)" [startDay]="historyDay" [marks]="historyMarks(byDay)" [fr]="fr" [dayTemplate]="historyDayTpl"></app-history-timeline>
+
+        <ng-template #historyDayTpl let-key="key">
+          <ng-container *ngFor="let item of byDay[key] || []; trackBy: trackByDay">
+            <button *ngIf="isRest(item)" type="button" class="week-row__rest" (click)="openDayFromHistory(item)">
+              <i-feather name="moon"></i-feather>
+              <strong>{{ t('Rest', 'Repos') }}</strong>
+              <span>{{ dayTitle(item) }}</span>
+            </button>
+            <article *ngIf="!isRest(item)" class="yc-card day-card day-card--flat" (click)="openDayFromHistory(item)" (contextmenu)="openStatusSheet($event, item)">
+              <div class="day-card__copy">
+                <div class="day-card__title-row">
+                  <h3>{{ dayTitle(item) }}</h3>
+                  <span class="yc-chip" [style.--chip-color]="statusChip(item).color">
+                    <i-feather *ngIf="statusChip(item).icon" [name]="statusChip(item).icon!"></i-feather>{{ statusChip(item).label }}
+                  </span>
+                </div>
+                <p class="day-card__plan">{{ planLine(item) }}</p>
+                <p class="day-card__meta">
+                  <span><i-feather name="dumbbell"></i-feather>{{ exercisesCount(item) }}</span>
+                  <span *ngIf="minutes(item) > 0"><i-feather name="clock"></i-feather>~{{ minutes(item) }} min</span>
+                </p>
+              </div>
+            </article>
+          </ng-container>
+        </ng-template>
       </ng-container>
     </ng-container>
 
@@ -230,12 +306,27 @@
         </p>
       </div>
 
-      <ng-container *ngFor="let group of groups">
+      <button *ngIf="currentKey && canOpenPlayer" type="button" class="player-resume" [disabled]="saving" (click)="openPlayer()">
+        <i-feather name="play"></i-feather>
+        <span><strong>{{ t('Continue set by set', 'Continuer série par série') }}</strong><small>{{ t('Next', 'Reprise') }} : {{ currentExerciseName }}</small></span>
+        <i-feather name="chevron-right"></i-feather>
+      </button>
+
+      <ng-container *ngFor="let group of groups; let groupIndex = index">
+      <!-- Titres « Échauffement » puis « Séance », seulement si la séance commence par un échauffement. -->
+      <h3 *ngIf="warmupGroups && groupIndex === 0" class="ex-part ex-part--warmup"><i-feather name="zap"></i-feather>{{ t('Warm-up', 'Échauffement') }}</h3>
+      <h3 *ngIf="warmupGroups && groupIndex === warmupGroups" class="ex-part">{{ t('Workout', 'Séance') }}</h3>
+      <div class="ex-group" [class.ex-group--linked]="group.isSuperset">
         <div *ngIf="group.isSuperset" class="superset-hint">
-          <i-feather name="link"></i-feather>
-          {{ t('Superset · alternate ' + group.letters.join(' → ') + ', rest after the pair', 'Superset · alternez ' + group.letters.join(' → ') + ', repos après la paire') }}
+          <i-feather [name]="group.isCircuit ? 'repeat' : 'link'"></i-feather>
+          {{ groupHint(group) }}
         </div>
+        <button *ngIf="group.isCircuit && canOpenPlayer" type="button" class="yc-btn yc-btn--brand player-circuit" [disabled]="saving" (click)="openPlayer(groupIndex)">
+          <i-feather name="play"></i-feather>{{ t('Start the circuit', 'Démarrer le circuit') }}
+        </button>
         <section *ngFor="let run of group.exercises; trackBy: trackByRun" class="yc-card ex-card" [class.yc-card--today]="currentKey === run.key">
+          <!-- Superset ou circuit : un maillon par exercice, reliés par une ligne pointillée. -->
+          <span *ngIf="group.isSuperset" class="ex-chain" aria-hidden="true"><i><i-feather name="link"></i-feather></i></span>
           <div class="ex-card__head">
             <button type="button" class="ex-card__thumb" (click)="openExercise(run, hasVideo(run))">
               <img *ngIf="exerciseImage(run.exercise) as image; else noImage" [src]="image" alt="" loading="lazy" />
@@ -268,11 +359,11 @@
 
           <div *ngIf="run.sets.length" class="sets">
             <div class="sets__head">
-              <span class="sets__type">{{ t('SET', 'SÉRIE') }}
+              <span class="sets__type">{{ run.exercise?.groupType === 'CIRCUIT' && run.exercise?.supersetGroupId ? t('ROUND', 'TOUR') : t('SET', 'SÉRIE') }}
                 <button type="button" class="info-btn" [attr.aria-label]="t('Set types', 'Types de séries')" (click)="showSetTypes = true"><i-feather name="info"></i-feather></button>
               </span>
               <span *ngIf="showExerciseWeight && !isCardio(run)" class="sets__col">{{ weightUnit.toUpperCase() }}</span>
-              <span class="sets__col">{{ isCardio(run) ? t('MIN', 'MIN') : t('REPS', 'RÉP.') }}</span>
+              <span class="sets__col">{{ amountHeader(run) }}</span>
               <span class="sets__actions-space"></span>
             </div>
             <div *ngFor="let set of run.sets; let i = index" class="set-row" [class.done]="set.status === 'COMPLETED'" [class.missed]="set.status === 'MISSED'">
@@ -281,15 +372,15 @@
                 <ng-template #regular><span class="set-number">{{ regularNumber(run, i) }}</span></ng-template>
               </span>
               <span *ngIf="showExerciseWeight && !isCardio(run)" class="sets__col">
-                <input class="set-field" type="text" inputmode="decimal" placeholder="—" [class.changed]="changed(run, i, 'weight')"
+                <input class="set-field" type="text" inputmode="decimal" appNumberOnly="decimal" maxlength="7" placeholder="—" [class.changed]="changed(run, i, 'weight')"
                        [attr.aria-label]="t('Weight done', 'Poids réalisé') + ' (' + weightUnit + ')'" [disabled]="!canEditWorkout || saving"
                        [value]="displayWeight(set.weight)" (input)="onWeightInput(set, $any($event.target).value)" />
               </span>
               <span class="sets__col set-field-wrap">
-                <input class="set-field" type="text" inputmode="numeric" placeholder="—" [class.changed]="changed(run, i, 'amount')"
-                       [attr.aria-label]="isCardio(run) ? t('Minutes done', 'Minutes réalisées') : t('Reps done', 'Répétitions réalisées')" [disabled]="!canEditWorkout || saving"
-                       [value]="(isCardio(run) ? set.duration : set.reps) ?? ''" (input)="onAmountInput(run, set, $any($event.target).value)" />
-                <small *ngIf="isCardio(run)">min</small>
+                <input class="set-field" type="text" inputmode="numeric" appNumberOnly maxlength="4" placeholder="—" [class.changed]="changed(run, i, 'amount')"
+                       [attr.aria-label]="isTime(run) ? t('Seconds done', 'Secondes réalisées') : isCardio(run) ? t('Minutes done', 'Minutes réalisées') : t('Reps done', 'Répétitions réalisées')" [disabled]="!canEditWorkout || saving"
+                       [value]="amountValue(run, set) ?? ''" (input)="onAmountInput(run, set, $any($event.target).value)" />
+                <small *ngIf="amountUnit(run) as unit">{{ unit }}</small>
               </span>
               <button type="button" class="status-btn" [class.on]="set.status === 'MISSED'" style="--status-color: #D93A3A"
                       [disabled]="!canEditWorkout || saving" [attr.aria-label]="t('Missed', 'Manqué')" (click)="setSetStatus(run, set, 'MISSED')">
@@ -304,6 +395,16 @@
             </div>
           </div>
 
+          <!-- Difficulté ressentie : le coach s'en sert pour monter ou baisser la charge. -->
+          <div *ngIf="canEditWorkout && canRate(run)" class="feel">
+            <span>{{ t('How did it feel?', 'C’était comment ?') }}</span>
+            <button *ngFor="let option of difficulties" type="button" class="feel__chip" [class.on]="run.difficulty === option.value"
+                    [attr.aria-pressed]="run.difficulty === option.value" (click)="setDifficulty(run, option.value)">{{ t(option.en, option.fr) }}</button>
+          </div>
+          <p *ngIf="!canEditWorkout && run.difficulty" class="feel feel--read">
+            <span>{{ t('Felt', 'Ressenti') }} :</span><strong>{{ difficultyLabel(run) }}</strong>
+          </p>
+
           <!-- Notes are written while the workout can be saved (live, log completed, edit): elsewhere they would be lost. -->
           <ng-container *ngIf="!canEditWorkout; else editableNote">
             <p *ngIf="run.note.trim()" class="finished-note">{{ run.note.trim() }}</p>
@@ -317,6 +418,7 @@
                       [placeholder]="t('Note for your coach about ' + (run.exercise?.name || '').toLowerCase() + '...', 'Note pour votre coach sur ' + (run.exercise?.name || '').toLowerCase() + '...')"></textarea>
           </ng-template>
         </section>
+      </div>
       </ng-container>
 
       <section class="yc-card overall-note">
@@ -329,7 +431,7 @@
         <ng-container [ngSwitch]="runStatus">
           <div *ngSwitchCase="'NOT_STARTED'" class="session-bar__row">
             <button type="button" class="yc-btn yc-btn--secondary" [disabled]="saving" (click)="enterLogCompletedMode()"><i-feather name="clipboard"></i-feather>{{ t('Log completed', 'Enregistrer comme terminé') }}</button>
-            <button type="button" class="yc-btn yc-btn--brand" [disabled]="saving" (click)="startWorkout()"><i-feather name="play"></i-feather>{{ t('Start workout', 'Commencer l’entraînement') }}</button>
+            <button type="button" class="yc-btn yc-btn--brand" [disabled]="saving" (click)="openPlayer()"><i-feather name="play"></i-feather>{{ t('Start workout', 'Commencer l’entraînement') }}</button>
           </div>
           <div *ngSwitchCase="'OVERDUE'" class="session-bar__row">
             <button type="button" class="yc-btn yc-btn--secondary" [disabled]="saving" (click)="markAsMissed()"><i-feather name="x"></i-feather>{{ t('Mark as missed', 'Marquer comme manqué') }}</button>
@@ -394,11 +496,11 @@
       </a>
 
       <h2 class="ex-name">{{ exerciseName(run) }}</h2>
-      <div *ngIf="tags(run).length" class="ex-tags">
+      <div *ngIf="!exerciseSimple && tags(run).length" class="ex-tags">
         <span *ngFor="let tag of tags(run)" [style.background]="tag.background" [style.color]="tag.color">{{ tag.label }}</span>
       </div>
 
-      <div class="facts">
+      <div *ngIf="!exerciseSimple" class="facts">
         <div class="fact">
           <span class="yc-icon-tile" style="--tile-size: 36px"><i-feather name="layers"></i-feather></span>
           <span><small>{{ t('Planned', 'Prévu') }}</small><strong>{{ plannedFact(run) }}</strong></span>
@@ -409,7 +511,7 @@
         </div>
       </div>
 
-      <ng-container *ngIf="run.sets.length">
+      <ng-container *ngIf="!exerciseSimple && run.sets.length">
         <div class="planned-head">
           <h3>{{ t('Planned sets', 'Séries prévues') }}</h3>
           <span>{{ t(count(run, 'COMPLETED') + '/' + run.sets.length + ' done', count(run, 'COMPLETED') + '/' + run.sets.length + ' faites') }}</span>
@@ -432,14 +534,14 @@
                 <!-- What the client did: fields while the workout can be logged, else the saved result. -->
                 <span *ngIf="exerciseCanEdit; else doneLine" class="planned-row__inputs">
                   <label *ngIf="showExerciseWeight && !isCardio(run)">
-                    <input class="set-field" type="text" inputmode="decimal" placeholder="—" [class.changed]="changed(run, i, 'weight')"
+                    <input class="set-field" type="text" inputmode="decimal" appNumberOnly="decimal" maxlength="7" placeholder="—" [class.changed]="changed(run, i, 'weight')"
                            [value]="displayWeight(set.weight)" (input)="onWeightInput(set, $any($event.target).value)" />
                     <small>{{ weightUnit }}</small>
                   </label>
                   <label>
-                    <input class="set-field" type="text" inputmode="numeric" placeholder="—" [class.changed]="changed(run, i, 'amount')"
-                           [value]="(isCardio(run) ? set.duration : set.reps) ?? ''" (input)="onAmountInput(run, set, $any($event.target).value)" />
-                    <small>{{ isCardio(run) ? 'min' : t('reps', 'rép.') }}</small>
+                    <input class="set-field" type="text" inputmode="numeric" appNumberOnly maxlength="4" placeholder="—" [class.changed]="changed(run, i, 'amount')"
+                           [value]="amountValue(run, set) ?? ''" (input)="onAmountInput(run, set, $any($event.target).value)" />
+                    <small>{{ amountUnit(run) || t('reps', 'rép.') }}</small>
                   </label>
                 </span>
                 <ng-template #doneLine>
@@ -474,7 +576,7 @@
         <ol class="steps"><li *ngFor="let step of instructions(run); let i = index"><span>{{ i + 1 }}</span>{{ step }}</li></ol>
       </div>
 
-      <footer *ngIf="showStartFromExercise" class="session-bar start-footer">
+      <footer *ngIf="!exerciseSimple && showStartFromExercise" class="session-bar start-footer">
         <div class="start-footer__info">
           <i-feather name="info"></i-feather>
           <span><strong>{{ t('Workout not started', 'Entraînement non démarré') }}</strong>{{ t('Start your workout to track your sets and results.', 'Commencez votre entraînement pour suivre vos séries et vos résultats.') }}</span>
@@ -540,7 +642,7 @@
         <div class="stat-boxes">
           <div><small>{{ t('Duration', 'Durée') }}</small><strong>{{ formattedTime }}</strong></div>
           <div><small>{{ t('Sets done', 'Séries faites') }}</small><strong style="color:#1E8E4E">{{ doneSets }}</strong></div>
-          <div><small>{{ t('Missed', 'Manquées') }}</small><strong style="color:#D93A3A">{{ missedSets + pendingSets }}</strong></div>
+          <div><small>{{ t('Missed', 'Manquées') }}</small><strong style="color:#D93A3A">{{ missedSets + pendingCountedSets }}</strong></div>
         </div>
         <p class="pending-warning">{{ finishPendingText }}</p>
         <label class="yc-label">{{ t('How did the workout feel? (optional)', 'Comment s\'est passée la séance ? (facultatif)') }}</label>
@@ -600,7 +702,7 @@
               <table *ngIf="exercise.sets?.length">
                 <thead><tr><th>{{ t('Set', 'Série') }}</th><th>{{ exercise.type === 'CARDIO' ? t('Duration', 'Durée') : t('Reps', 'Répétitions') }}</th><th *ngIf="showExerciseWeight && exercise.type !== 'CARDIO'">{{ weightUnit }}</th><th>{{ t('Rest', 'Repos') }}</th></tr></thead>
                 <tbody><tr *ngFor="let set of exercise.sets; let s = index">
-                  <td>{{ s + 1 }}</td><td>{{ exercise.type === 'CARDIO' ? ((set.duration ?? exercise.duration) != null ? (set.duration ?? exercise.duration) + ' min' : '—') : (set.reps ?? '—') }}</td>
+                  <td>{{ s + 1 }}</td><td>{{ exercise.measure === 'TIME' ? (set.durationSec != null ? set.durationSec + ' s' : '—') : exercise.type === 'CARDIO' ? ((set.duration ?? exercise.duration) != null ? (set.duration ?? exercise.duration) + ' min' : '—') : (set.reps ?? '—') }}</td>
                   <td *ngIf="showExerciseWeight && exercise.type !== 'CARDIO'">{{ set.weight > 0 ? displayWeight(set.weight) : '—' }}</td><td>{{ formatRest(set.restMin, set.restSec) || '—' }}</td>
                 </tr></tbody>
               </table>
@@ -613,6 +715,13 @@
   </div>
 
   <div *ngIf="toast" class="plan-toast" [class.success]="toast.tone === 'success'" [class.error]="toast.tone === 'error'" role="status">{{ toast.message }}</div>
+
+  <div *ngIf="player" [hidden]="!!exercisePage">
+    <app-workout-player [groups]="player.groups" [startGroup]="player.startGroup" [getReady]="player.getReady" [showWeight]="showExerciseWeight" [time]="formattedTime" [fr]="fr"
+                        [note]="overallNote" (noteChange)="overallNote = $event; scheduleDraftSave()"
+                        (statusChange)="playerSetStatus($event)" (valueChange)="scheduleDraftSave()" (pausedChange)="playerPaused($event)"
+                        (exercise)="playerOpenExercise($event)" (closed)="closePlayer($event)"></app-workout-player>
+  </div>
 
   <app-completion-celebration *ngIf="celebration" [view]="celebration" (done)="closeCelebration()"></app-completion-celebration>
 </div>

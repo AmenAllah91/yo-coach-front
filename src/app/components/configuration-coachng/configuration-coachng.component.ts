@@ -50,6 +50,7 @@ export class ConfigurationCoachngComponent implements OnInit {
     { key: 'messageReceived', label: 'CLIENT_SENDS_MESSAGE', enabled: true },
     { key: 'checkInSubmitted', label: 'CLIENT_RESPONDS_CHECK_IN', enabled: true },
     { key: 'programEndingSoon', label: 'PROGRAMS_FINISHING_NEXT_WEEK', enabled: true },
+    { key: 'clientInactive', label: 'CLIENT_INACTIVE_ALERT', enabled: true },
   ];
   passwordFormModel = { oldPassword: '', newPassword: '', confirmPassword: '' };
   passwordError = '';

@@ -29,6 +29,13 @@
           (input)="onSearch()">
       </div>
 
+      <!-- Filter on the coach's labels (shown once he has some). -->
+      <select class="tag-filter" *ngIf="knownTags.length || tagFilter" [ngModel]="tagFilter" (ngModelChange)="setTagFilter($event)"
+              [attr.aria-label]="'CLIENT_TAGS_FILTER' | translate">
+        <option [ngValue]="null">{{ 'CLIENT_TAGS_ALL' | translate }}</option>
+        <option *ngFor="let tag of knownTags" [ngValue]="tag">{{ tag }}</option>
+      </select>
+
     </div>
 
     <div class="status-tabs">
@@ -220,6 +227,9 @@
               <div class="client-details">
                 <h4>{{ client.firstName }} {{ client.lastName }} <span class="example-badge" *ngIf="client.demo">{{ 'COACH_GUIDE.EXAMPLE_BADGE' | translate }}</span></h4>
                 <p>{{ getClientProgram(client) }}</p>
+                <div class="client-tags" *ngIf="tagsOf(client).length">
+                  <span class="client-tag" *ngFor="let tag of tagsOf(client)">{{ tag }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -296,7 +306,15 @@
       </div>
 
       <div class="no-clients" *ngIf="filteredClients.length === 0 && !isLoading">
-        <p>{{ 'NO_CLIENTS_FOUND' | translate }}</p>
+        <!-- No client yet (no search, active ones): say what to do instead of « Aucun client trouvé ». -->
+        <app-empty-state
+          *ngIf="!searchTerm.trim() && !tagFilter && statusFilter === 'ACTIVE'; else noClientFound"
+          icon="users"
+          title="EMPTY_CLIENTS_TITLE"
+          text="EMPTY_CLIENTS_TEXT"
+          actionLabel="ADD_CLIENT"
+          (action)="openAddModal()"></app-empty-state>
+        <ng-template #noClientFound><p>{{ 'NO_CLIENTS_FOUND' | translate }}</p></ng-template>
       </div>
     </div>
   </div>

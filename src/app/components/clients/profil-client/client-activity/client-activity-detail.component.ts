@@ -47,6 +47,17 @@ export class ClientActivityDetailComponent implements OnChanges {
     if (changes['nutrition'] && this.nutrition) this.loadNutritionPhotoUrls(this.nutrition);
   }
 
+  /** Ce que le client a ressenti sur l'exercice (Facile / Bien / Dur), s'il l'a dit. */
+  difficultyLabel(log: any): string | null {
+    const en = this.translate.currentLang === 'en';
+    switch (String(log?.difficulty ?? '')) {
+      case 'EASY': return en ? 'Easy' : 'Facile';
+      case 'GOOD': return en ? 'Just right' : 'Bien';
+      case 'HARD': return en ? 'Hard' : 'Dur';
+      default: return null;
+    }
+  }
+
   get dateLocale(): string {
     return this.translate.currentLang === 'en' ? 'en-US' : 'fr-FR';
   }
@@ -78,7 +89,7 @@ export class ClientActivityDetailComponent implements OnChanges {
             activity.photos.push({
               url: result.photoUrl,
               label: log?.mealName || meal?.name || `Meal ${resolvedMealIndex + 1}`,
-              time: log?.loggedAt || log?.createdAt || '',
+              time: log?.photoAt || log?.loggedAt || log?.createdAt || '',
               mealId,
             });
           }
@@ -111,6 +122,8 @@ export class ClientActivityDetailComponent implements OnChanges {
     if (value === 'SKIPPED' || log?.skipped) return 'Skipped';
     if (value === 'MODIFIED' || log?.modified) return 'Modified';
     if (value === 'OFF_PLAN' || log?.offPlan) return 'Off-plan';
+    // A photo or a note without report: the client did not say whether the plan was followed.
+    if (!value && !log?.asPlanned && !log?.logged) return 'Not logged';
     return 'As planned';
   }
 
@@ -120,6 +133,10 @@ export class ClientActivityDetailComponent implements OnChanges {
     if (value === 'SKIPPED' || log?.skipped) return this.translate.instant('NUTRITION_MEAL_SKIPPED');
     if (value === 'MODIFIED' || log?.modified) return this.translate.instant('MODIFIED');
     if (value === 'OFF_PLAN' || log?.offPlan) return this.translate.instant('NUTRITION_ACTIVITY_STATUS_OFF_PLAN');
+    if (!value && !log?.asPlanned && !log?.logged) {
+      const photo = (log?.photoPath && String(log.photoPath) !== 'null') || log?.photoUrl;
+      return this.translate.instant(photo ? 'MEAL_PHOTO_SENT' : 'NUTRITION_MEAL_NOT_LOGGED');
+    }
     return this.translate.instant('AS_PLANNED');
   }
 
@@ -149,6 +166,14 @@ export class ClientActivityDetailComponent implements OnChanges {
 
   /** A set as the coach planned it or the client did it: « 10 rép. · 20 kg », or its duration for a timed set. */
   formatActivitySet(set: any, exercise: any): string {
+    // Exercice au temps d'un circuit ou d'un superset : secondes (durationSec).
+    if (String(exercise?.measure || '').toUpperCase() === 'TIME') {
+      const sec = Number(set?.durationSec);
+      if (!Number.isFinite(sec) || sec <= 0) return '—';
+      const weight = Number(set?.weight) > 0
+        ? ` · ${this.formatActivityWeight(set?.weight)} ${this.coachSettingsService.getWeightUnit()}` : '';
+      return `${sec} s${weight}`;
+    }
     const duration = Number(set?.duration);
     const timed = String(exercise?.type || exercise?.exerciseRef?.type || '').toUpperCase() === 'CARDIO'
       || (Number.isFinite(duration) && duration > 0 && !set?.reps);

@@ -18,11 +18,11 @@
     </div>
 
     <div *ngIf="selectedPlan" class="selected-plan">
-      <span>Selected plan</span>
+      <span>{{ 'REGISTER_SELECTED_PLAN' | translate }}</span>
       <strong>{{ selectedPlan.name }}</strong>
       <small>
         {{ selectedPlan.price | number:'1.0-2' }} DT /
-        {{ selectedPlan.billingCycle === 'YEARLY' ? 'year' : 'month' }}
+        {{ (selectedPlan.billingCycle === 'YEARLY' ? 'REGISTER_PER_YEAR' : 'REGISTER_PER_MONTH') | translate }}
       </small>
       <ul class="plan-features" *ngIf="featureLines.length">
         <li *ngFor="let line of featureLines" [class.locked]="line.lockedInTrial">
@@ -36,8 +36,8 @@
     </div>
 
     <div *ngIf="planLoadError" class="alert alert-danger text-center mt-2">
-      {{ planLoadError }}
-      <a routerLink="/plans-landing">Choose another plan</a>
+      {{ planLoadError | translate }}
+      <a routerLink="/plans-landing">{{ 'REGISTER_CHOOSE_ANOTHER_PLAN' | translate }}</a>
     </div>
 
     <form [formGroup]="signupForm" (ngSubmit)="onSubmit()">

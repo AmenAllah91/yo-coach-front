@@ -72,7 +72,14 @@ export class ActivityListComponent implements OnDestroy {
     this.build();
   }
 
+  /**
+   * Inside the client's profile: a row follows its link and the profile opens the day itself (its own detail),
+   * instead of a second detail over the page.
+   */
+  @Input() embedded = false;
+
   readonly brokenAvatars = new Set<string>();
+  readonly brokenPhotos = new Set<string>();
   days: ActivityDay[] = [];
   detail: OpenDetail | null = null;
   private items: ClientActivity[] = [];
@@ -86,7 +93,7 @@ export class ActivityListComponent implements OnDestroy {
 
   /** Plain click on a workout or nutrition day: its detail over the feed (Ctrl/middle click still opens the profile). */
   openRow(event: MouseEvent, row: ActivityRow): void {
-    if (!row.opensDetail || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    if (this.embedded || !row.opensDetail || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
     const activity = row.activity;
     const part = activity.category === 'WORKOUT' ? 'workouts' : 'nutrition';

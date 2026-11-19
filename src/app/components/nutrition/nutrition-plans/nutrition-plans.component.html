@@ -45,7 +45,16 @@
 
     <div class="plans-state" *ngIf="loading">{{ 'LOADING_NUTRITION_PLANS' | translate }}</div>
     <div class="plans-state plans-state--error" *ngIf="!loading && error">{{ error }}</div>
-    <div class="plans-state" *ngIf="!loading && !error && filteredPlans.length === 0">{{ 'NO_NUTRITION_PLANS_FOUND' | translate }}</div>
+    <ng-container *ngIf="!loading && !error && filteredPlans.length === 0">
+      <app-empty-state
+        *ngIf="activeTab === 'my-library' && !searchTerm.trim() && programTypeFilter === 'ALL'; else noPlanFound"
+        icon="book-open"
+        title="EMPTY_NUTRITION_PLANS_TITLE"
+        text="EMPTY_NUTRITION_PLANS_TEXT"
+        actionLabel="CREATE_NUTRITION_PLAN"
+        (action)="openChooseModal()"></app-empty-state>
+      <ng-template #noPlanFound><div class="plans-state">{{ 'NO_NUTRITION_PLANS_FOUND' | translate }}</div></ng-template>
+    </ng-container>
 
     <!-- The Type column always shows: it tells apart the 3 kinds of plan (foods, daily macros, macros per meal). -->
     <div class="programs-table programs-table--cap" *ngIf="!loading && !error && filteredPlans.length > 0">

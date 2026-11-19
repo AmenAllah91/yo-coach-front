@@ -113,6 +113,12 @@ export const APP_ROUTE: Route[] = [
         loadComponent: () => import('./components/program-library/program-library.component').then((m) => m.ProgramLibraryComponent),
       },
       {
+        // Public templates (2026-11-18): ready-made programs of the admin, shown to every coach, who copies them.
+        path: 'workout/public-templates',
+        loadComponent: () => import('./components/program-library/program-library.component').then((m) => m.ProgramLibraryComponent),
+        data: { tab: 'templates' },
+      },
+      {
         path: 'workout/create-workout',
         loadComponent: () => import('./components/program-library/create-workout/create-workout.component').then((m) => m.CreateWorkoutComponent),
         canDeactivate: [unsavedChangesGuard],

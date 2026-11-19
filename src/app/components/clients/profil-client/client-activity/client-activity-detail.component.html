@@ -82,7 +82,7 @@
               <div class="nutrition-meal__content">
                 <div><small>{{ 'ITEMS' | translate }}</small><ul><li *ngFor="let food of mealLog.items || mealLog.foods || meal.foods || []">{{ food.name }}<span *ngIf="food.quantity"> ({{ food.quantity }} {{ food.unit }})</span></li></ul></div>
                 <div><small><i class="far fa-comment-alt"></i> {{ 'CLIENT_NOTE' | translate }}</small><p [class.is-empty]="!mealLog.note && !mealLog.clientNote">{{ mealLog.note || mealLog.clientNote || ('NO_NOTE' | translate) }}</p></div>
-                <figure *ngIf="mealLog.photoUrl || mealLog.imageUrl; else noMealPhoto"><img [src]="mealLog.photoUrl || mealLog.imageUrl" [alt]="meal.name || ('MEAL_PHOTO' | translate)"><figcaption><i class="far fa-image"></i> {{ 'MEAL_PHOTO' | translate }}</figcaption></figure>
+                <figure *ngIf="mealLog.photoUrl || mealLog.imageUrl; else noMealPhoto"><a [href]="mealLog.photoUrl || mealLog.imageUrl" target="_blank" rel="noopener"><img [src]="mealLog.photoUrl || mealLog.imageUrl" [alt]="meal.name || ('MEAL_PHOTO' | translate)"></a><figcaption><i class="far fa-image"></i> {{ 'MEAL_PHOTO' | translate }}</figcaption></figure>
                 <ng-template #noMealPhoto><div class="nutrition-meal__no-photo"><i class="fas fa-camera"></i><small>{{ 'NO_PHOTO' | translate }}</small></div></ng-template>
               </div>
             </ng-container>
@@ -141,6 +141,10 @@
         <div><i class="fas fa-wave-square"></i><span><strong>{{ activity.status === 'MISSED' ? ('NO_ACTIVITY' | translate) : workoutActivityMode(activity) }}</strong><small>{{ 'COMPLETION_MODE' | translate }}</small></span></div>
       </div>
 
+      <div class="activity-note" *ngIf="activity.warmupSkipped">
+        <i class="fas fa-bolt"></i>
+        <span><strong>{{ 'WARM_UP_SKIPPED' | translate }}</strong><p>{{ 'WARM_UP_SKIPPED_HELP' | translate }}</p></span>
+      </div>
       <div class="activity-note" *ngIf="activity.status !== 'MISSED' && activity.overallNote">
         <i class="far fa-file-alt"></i>
         <span><strong>{{ 'CLIENT_NOTE' | translate }}</strong><p>{{ activity.overallNote }}</p></span>
@@ -226,6 +230,7 @@
           <strong>{{ 'COACH_NOTE' | translate }} :</strong> {{ exercise.notes || exercise.description }}
         </p>
         <ng-container *ngIf="workoutActivityLog(activity, exercise, exerciseIndex) as log">
+          <p class="activity-client-note" *ngIf="difficultyLabel(log) as feel"><strong>{{ dateLocale === 'en-US' ? 'Felt' : 'Ressenti' }} :</strong> {{ feel }}</p>
           <p class="activity-client-note" *ngIf="log.note"><strong>{{ 'CLIENT_NOTE' | translate }} :</strong> {{ log.note }}</p>
         </ng-container>
       </article>

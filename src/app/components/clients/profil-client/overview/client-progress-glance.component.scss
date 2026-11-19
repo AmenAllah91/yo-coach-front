@@ -1,0 +1,207 @@
+@use '../../../coach-dashboard/shared/dashboard-tokens' as *;
+
+.pg {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pg-card { gap: 12px; }
+
+.ov-head .fa-chevron-right { font-size: 10px; margin-left: 2px; }
+.ov-chip i { font-size: 9.5px; }
+
+// « 200 kg  ↑ +81,6 kg  depuis le 21 sept. »
+.pg-value {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+
+  strong {
+    font-size: 24px;
+    font-weight: 750;
+    line-height: 1;
+    letter-spacing: -.02em;
+    color: $ink;
+    font-variant-numeric: tabular-nums;
+
+    span { margin-left: 3px; font-size: 13px; font-weight: 600; letter-spacing: 0; color: $muted; }
+  }
+
+  small { font-size: 12px; color: $muted; }
+}
+
+.pg-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  margin: -2px 0 -4px;
+
+  &__grid {
+    line { stroke: $line-soft; stroke-width: 1; }
+    text { font-size: 10px; fill: $muted; }
+  }
+  &__goal { stroke: #22b07d; stroke-width: 1.2; stroke-dasharray: 4 4; opacity: .8; }
+  &__line { fill: none; stroke: $violet; stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; }
+  &__dot { fill: $surface; stroke: $violet; stroke-width: 2.2; }
+  &__date { font-size: 10px; font-weight: 600; fill: $muted; }
+}
+
+.pg-hint {
+  margin: 0;
+  font-size: 12.5px;
+  color: $muted;
+}
+
+// Way to the goal.
+.pg-goal {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: light-dark(#f7f8fb, #24282d);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &__top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 12.5px;
+    color: $muted;
+
+    strong { color: $ink; font-weight: 700; }
+  }
+
+  &__left {
+    white-space: nowrap;
+    &.is-done { color: $success; font-weight: 650; }
+    i { font-size: 11px; }
+  }
+
+  &__bar {
+    height: 6px;
+    border-radius: 999px;
+    background: light-dark(#e3e8ef, #343a41);
+    overflow: hidden;
+
+    span {
+      display: block;
+      height: 100%;
+      min-width: 8px;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #8f78e0, $violet);
+      transition: width .4s ease;
+    }
+  }
+
+  &__ends {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11.5px;
+    color: $muted;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.pg-foot {
+  margin: 0;
+  font-size: 12.5px;
+  color: $muted;
+
+  strong { color: $ink-soft; font-weight: 650; }
+  &__hint { color: $faint; }
+}
+
+// Empty card: one soft line with an icon.
+.pg-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  border: 1px dashed $line-strong;
+  border-radius: 10px;
+  font-size: 13px;
+  color: $muted;
+
+  i { font-size: 16px; color: $faint; }
+}
+
+.pg-thumbs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pg-thumb {
+  position: relative;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: light-dark(#eef1f5, #292c31);
+  height: 92px;
+  cursor: pointer;
+  min-width: 0;
+
+  img,
+  &__missing {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    transition: transform .2s ease;
+  }
+
+  &__missing { display: grid; place-items: center; color: $faint; font-size: 20px; }
+
+  // Date written on the picture, on a dark fade, so the three pictures stay the same size.
+  &__date {
+    position: absolute;
+    inset: auto 0 0 0;
+    padding: 14px 4px 4px;
+    background: linear-gradient(to top, rgba(15, 23, 42, .72), rgba(15, 23, 42, 0));
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  &:hover img { transform: scale(1.04); }
+  &:focus-visible { outline: 2px solid $brand; outline-offset: 2px; }
+}
+
+.pg-compare {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 34px;
+  border: 1px solid light-dark(#bfe1f2, #2e4c5a);
+  border-radius: 9px;
+  background: light-dark(#eef8fd, #1e313a);
+  color: $brand-strong;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+
+  i { font-size: 12px; }
+  &:hover { background: light-dark(#e0f2fb, #143542); border-color: light-dark(#9fd2ec, #1c4e64); }
+  &:focus-visible { outline: 2px solid $brand; outline-offset: 2px; }
+}
+
+// Under 1200px the column goes under « Aujourd'hui »: weight and pictures side by side.
+@media (max-width: 1199px) and (min-width: 641px) {
+  .pg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+}
+// Phone: 3 thumbnails, smaller.
+@media (max-width: 480px) {
+  .pg-thumbs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pg-thumb { height: 84px; }
+  .pg-thumb:nth-child(4) { display: none; }
+  .pg-value strong { font-size: 22px; }
+}

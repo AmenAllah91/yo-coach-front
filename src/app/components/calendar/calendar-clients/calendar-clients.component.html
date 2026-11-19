@@ -1,5 +1,5 @@
 <!-- CONTENEUR PRINCIPAL -->
-<div class="calendar-wrapper">
+<div class="calendar-wrapper" [class.has-side-panel]="sidePanel">
   <div class="calendar-header">
     <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><span aria-hidden="true">←</span></button>
     <div class="header-left">
@@ -14,6 +14,10 @@
       </h1>
 
       <button type="button" class="nav-button" (click)="onNext()">›</button>
+      <!-- Back to the period holding today, in one click (greyed when today is already on the screen). -->
+      <button type="button" class="today-button" [disabled]="showsToday" (click)="goToday()">
+        {{ 'TODAY' | translate }}
+      </button>
     </div>
 
     <div class="header-right">
@@ -94,7 +98,18 @@
         <span class="material-icons" aria-hidden="true">{{ monthShows(subject.key) ? 'check' : subject.icon }}</span>{{ subject.label | translate }}
       </button>
     </div>
-    <span class="week-tools__hint">{{ currentView === 'week' && !narrow ? ('CALENDAR_DRAG_HINT' | translate) : '' }}</span>
+    <span class="week-tools__hint">{{ currentView === 'week' && !narrow && helpOpen ? ('CALENDAR_DRAG_HINT' | translate) : '' }}</span>
+    <!-- The help (drag hint, symbols): open the first visits, then here on demand. -->
+    <button
+      type="button"
+      class="dp-button help-button"
+      *ngIf="currentView !== 'day'"
+      [class.is-on]="helpOpen"
+      [attr.aria-pressed]="helpOpen"
+      [attr.aria-label]="'CALENDAR_HELP' | translate"
+      [attr.title]="'CALENDAR_HELP' | translate"
+      (click)="toggleHelp()"
+    ><span class="material-icons" aria-hidden="true">help_outline</span></button>
     <button type="button" class="dp-button" *ngIf="currentView !== 'month'" (click)="openCopyWeek()">
       <span class="material-icons" aria-hidden="true">content_copy</span>{{ 'CALENDAR_COPY_WEEK' | translate }}
     </button>
@@ -136,6 +151,8 @@
               <span class="cell-day-number" [class.cell-day-today]="day.isToday">
                 {{ day.dayNumber }}
               </span>
+              <span class="new-note-dot" *ngIf="day.plan?.unreadNote" [attr.title]="'CALENDAR_NEW_NOTE' | translate"
+                [attr.aria-label]="'CALENDAR_NEW_NOTE' | translate"></span>
             </div>
 
             <div class="cell-content" *ngIf="!narrow && day.plan as plan">
@@ -177,7 +194,7 @@
     </div>
   </div>
 
-  <ng-container *ngIf="hasSelectedClient() && programsLoaded && currentView === 'month'">
+  <ng-container *ngIf="hasSelectedClient() && programsLoaded && currentView === 'month' && helpOpen">
     <ng-container *ngTemplateOutlet="legend"></ng-container>
   </ng-container>
 
@@ -225,6 +242,8 @@
       >
         <span class="wr-weekday">{{ day.weekdayLabel }}</span>
         <span class="wr-daynum" [class.is-today]="day.isToday">{{ day.dayNumber }}</span>
+        <span class="new-note-dot" *ngIf="day.unreadNote" [attr.title]="'CALENDAR_NEW_NOTE' | translate"
+          [attr.aria-label]="'CALENDAR_NEW_NOTE' | translate"></span>
       </button>
     </div>
 
@@ -269,8 +288,8 @@
       <ng-container *ngTemplateOutlet="rowBands; context: { $implicit: weekPlan.workoutBands, kind: 'workout' }"></ng-container>
     </div>
 
-    <!-- Nutrition -->
-    <div class="wr-grid wr-section" [style.grid-template-rows]="weekPlan.nutritionRows">
+    <!-- Nutrition (a week without any: folded into the line under the grid, « + Nutrition » opens it) -->
+    <div class="wr-grid wr-section" *ngIf="!weekPlan.emptyNutrition || nutritionRowOpened" [style.grid-template-rows]="weekPlan.nutritionRows">
       <div class="wr-label" style="grid-row: 1 / -1"><span class="material-icons" aria-hidden="true">restaurant</span>{{ 'CALENDAR_ROW_NUTRITION' | translate }}</div>
       <div
         *ngFor="let day of weekPlan.days; let col = index; trackBy: trackDay"
@@ -302,7 +321,7 @@
     </div>
 
     <!-- Tâches et habitudes -->
-    <div class="wr-grid wr-section">
+    <div class="wr-grid wr-section" *ngIf="!weekPlan.emptyTasks">
       <div class="wr-label"><span class="material-icons" aria-hidden="true">checklist</span>{{ 'CALENDAR_ROW_TASKS' | translate }}</div>
       <div
         *ngFor="let day of weekPlan.days; trackBy: trackDay"
@@ -323,7 +342,7 @@
     </div>
 
     <!-- Check-ins -->
-    <div class="wr-grid wr-section">
+    <div class="wr-grid wr-section" *ngIf="!weekPlan.emptyCheckIns">
       <div class="wr-label"><span class="material-icons" aria-hidden="true">assignment</span>{{ 'CALENDAR_ROW_CHECKINS' | translate }}</div>
       <div
         *ngFor="let day of weekPlan.days; trackBy: trackDay"
@@ -342,6 +361,15 @@
         ><span class="material-icons st-icon" aria-hidden="true">{{ statusIcon(checkInTone(checkIn)) }}</span>{{ checkInStateText(checkIn) }}</button>
       </div>
     </div>
+
+    <!-- The rows empty all week, in one line instead of rows of empty cells. -->
+    <div class="wr-empty-rows" *ngIf="emptyRowsText(weekPlan) as emptyText">
+      <span class="material-icons" aria-hidden="true">unfold_less</span>
+      <span>{{ emptyText }}</span>
+      <button type="button" class="dp-link" *ngIf="weekPlan.emptyNutrition && !nutritionRowOpened" (click)="nutritionRowOpened = true">
+        <span class="material-icons" aria-hidden="true">add</span>{{ 'CALENDAR_ROW_NUTRITION' | translate }}
+      </button>
+    </div>
   </div>
 
   <!-- A narrow window: the week as a list of days, each with its cards (the same as the grid's). -->
@@ -355,6 +383,8 @@
       <button type="button" class="wl-day__head" (click)="selectDay(day.dateString)">
         <span class="wl-day__name">{{ day.weekdayLabel }} {{ day.dayNumber }}</span>
         <span class="wl-day__today" *ngIf="day.isToday">{{ 'CALENDAR_LEGEND_TODAY' | translate }}</span>
+        <span class="new-note-dot" *ngIf="day.unreadNote" [attr.title]="'CALENDAR_NEW_NOTE' | translate"
+          [attr.aria-label]="'CALENDAR_NEW_NOTE' | translate"></span>
         <span class="material-icons wl-day__more" aria-hidden="true">chevron_right</span>
       </button>
       <button type="button" class="wl-file" *ngFor="let file of day.files" (click)="openFileProgram(file, file.kind)">
@@ -402,14 +432,14 @@
     </section>
   </div>
 
-  <ng-container *ngIf="hasSelectedClient() && programsLoaded && currentView === 'week' && weekPlan">
+  <ng-container *ngIf="hasSelectedClient() && programsLoaded && currentView === 'week' && weekPlan && helpOpen">
     <ng-container *ngTemplateOutlet="legend"></ng-container>
   </ng-container>
 
-  <!-- « Ce jour-là » under the week (lot C, L2-L3). -->
-  <ng-container *ngIf="hasSelectedClient() && programsLoaded && currentView === 'week' && dayDetail">
+  <!-- « Ce jour-là » of the week (lot C, L2-L3): on the right side on a large screen, under the week otherwise. -->
+  <div class="day-side" [class.is-side]="sidePanel" *ngIf="hasSelectedClient() && programsLoaded && currentView === 'week' && dayDetail">
     <ng-container *ngTemplateOutlet="dayPanel; context: { $implicit: dayDetail, closable: true }"></ng-container>
-  </ng-container>
+  </div>
 
   <!-- ====== VUE JOUR : le panneau « Ce jour-là » du jour ====== -->
   <ng-container *ngIf="hasSelectedClient() && programsLoaded && currentView === 'day' && dayDetail">
@@ -480,24 +510,39 @@
           <span role="columnheader">{{ 'CALENDAR_PLANNED' | translate }}</span>
           <span role="columnheader">{{ 'CALENDAR_DONE' | translate }}</span>
         </div>
-        <div class="dp-grid__row" role="row" *ngFor="let exercise of entry.report.exercises; let i = index">
+        <ng-container *ngFor="let exercise of entry.report.exercises; let i = index">
+          <!-- A superset / circuit: its kind and size above its first exercise, as in the day's card. -->
+          <div class="dp-grid__group" role="row" *ngIf="entry.lines[i]?.groupKind as kind">
+            <span role="cell" class="dp-group">
+              <span class="material-icons" aria-hidden="true">{{ kind === 'CIRCUIT' ? 'loop' : 'link' }}</span>
+              {{ (kind === 'CIRCUIT' ? 'CALENDAR_GROUP_CIRCUIT' : 'CALENDAR_GROUP_SUPERSET') | translate }}
+              <span class="dp-group__hint">{{ groupHint(entry.lines, i) }}</span>
+            </span>
+          </div>
+        <div class="dp-grid__row" role="row"
+          [class.is-linked]="!!entry.lines[i]?.link"
+          [ngClass]="entry.lines[i]?.link ? 'is-link-' + entry.lines[i].link : ''">
           <span role="cell" class="dp-exercise">
-            <span class="dp-exercise__label" *ngIf="entry.lines[i]?.label">{{ entry.lines[i].label }}</span>
-            <span>
-              {{ exercise.name }}
-              <span class="dp-note" *ngIf="exercise.note">« {{ exercise.note }} »</span>
+            <span class="dp-exercise__label" *ngIf="entry.lines[i]?.label"
+              [class.is-linked]="entry.lines[i].link">{{ entry.lines[i].label }}</span>
+            <span class="dp-exercise__body">
+              <span class="dp-exercise__name">{{ exercise.name }}</span>
+              <ng-container *ngIf="exercise.note">
+                <ng-container *ngTemplateOutlet="noteBubble; context: { text: exercise.note, size: 'sm', date: detail.date, label: exercise.name }"></ng-container>
+              </ng-container>
             </span>
           </span>
-          <span role="cell">{{ entry.lines[i] ? exerciseText(entry.lines[i]) : setsText(exercise.planned, exercise.cardio) }}</span>
+          <span role="cell">{{ entry.lines[i] ? exerciseText(entry.lines[i]) : setsText(exercise.planned, exercise.cardio, exercise.timed) }}</span>
           <span role="cell" class="dp-done" [ngClass]="'st-' + exerciseTone(exercise.state)">
             <span class="material-icons st-icon" aria-hidden="true" *ngIf="exercise.state !== 'PENDING'">{{ statusIcon(exerciseTone(exercise.state)) }}</span>
-            <ng-container *ngIf="exercise.done.length; else noSet">{{ setsText(exercise.done, exercise.cardio) }}</ng-container>
+            <ng-container *ngIf="exercise.done.length; else noSet">{{ setsText(exercise.done, exercise.cardio, exercise.timed) }}</ng-container>
             <ng-template #noSet>{{ exerciseStateText(exercise.state) }}</ng-template>
             <span class="dp-missed" *ngIf="exercise.done.length && exercise.missedSets">
               · {{ 'CALENDAR_SETS_MISSED' | translate: { count: exercise.missedSets } }}
             </span>
           </span>
         </div>
+        </ng-container>
       </div>
 
       <p class="dp-line" *ngIf="entry.report.markedDone">{{ 'CALENDAR_MARKED_DONE' | translate }}</p>
@@ -505,7 +550,9 @@
         {{ 'CALENDAR_NOT_TICKED' | translate }}
       </p>
       <p class="dp-line" *ngIf="entry.report.minutes">{{ 'CALENDAR_DURATION' | translate: { minutes: entry.report.minutes } }}</p>
-      <p class="dp-line" *ngIf="entry.report.note">{{ 'CALENDAR_CLIENT_NOTE' | translate }} : « {{ entry.report.note }} »</p>
+      <div class="dp-message" *ngIf="entry.report.note">
+        <ng-container *ngTemplateOutlet="noteBubble; context: { text: entry.report.note, size: 'md', head: 'CALENDAR_CLIENT_NOTE', date: detail.date }"></ng-container>
+      </div>
 
       <div class="dp-actions">
         <button type="button" class="dp-button dp-button--main" (click)="openWorkoutEditor(entry.item)">
@@ -548,7 +595,9 @@
         <ng-container *ngIf="entry.report.energy"> · {{ 'CALENDAR_ENERGY' | translate }} : {{ feelingText('ENERGY', entry.report.energy) }}</ng-container>
         <ng-container *ngIf="entry.report.digestion"> · {{ 'CALENDAR_DIGESTION' | translate }} : {{ feelingText('DIGESTION', entry.report.digestion) }}</ng-container>
       </p>
-      <p class="dp-line" *ngIf="entry.report.note">{{ 'CALENDAR_CLIENT_NOTE' | translate }} : « {{ entry.report.note }} »</p>
+      <div class="dp-message" *ngIf="entry.report.note">
+        <ng-container *ngTemplateOutlet="noteBubble; context: { text: entry.report.note, size: 'md', head: 'CALENDAR_CLIENT_NOTE', date: detail.date }"></ng-container>
+      </div>
 
       <div class="dp-actions">
         <button type="button" class="dp-button dp-button--main" (click)="viewNutrition(entry.item)">{{ 'CALENDAR_OPEN_EDITOR' | translate }}</button>
@@ -676,8 +725,14 @@
   </span>
   <span class="wr-card__meta" *ngIf="cell.meta">{{ cell.meta }}</span>
   <ng-container *ngIf="detailed">
-    <span class="wr-line" *ngFor="let line of cell.exercises || []">
-      <span class="wr-line__label">{{ line.label }})</span>
+    <!-- Linked exercises (superset, circuit): round badges joined by a line, the group's kind above its first one. -->
+    <span class="wr-line" *ngFor="let line of cell.exercises || []"
+      [class.is-linked]="line.link" [ngClass]="line.link ? 'is-link-' + line.link : ''">
+      <span class="wr-line__group" *ngIf="line.groupKind">
+        <span class="material-icons" aria-hidden="true">{{ line.groupKind === 'CIRCUIT' ? 'loop' : 'link' }}</span>
+        {{ (line.groupKind === 'CIRCUIT' ? 'CALENDAR_GROUP_CIRCUIT' : 'CALENDAR_GROUP_SUPERSET') | translate }}
+      </span>
+      <span class="wr-line__label">{{ line.label }}</span>
       <span class="wr-line__body">
         <span class="wr-line__name">{{ line.name }}</span>
         <span class="wr-line__detail" *ngIf="exerciseText(line) as detail">{{ detail }}</span>
@@ -690,7 +745,42 @@
       </span>
     </span>
   </ng-container>
+  <!-- What the client wrote on the workout, as a message from them (their photo, a bubble): week and month. -->
+  <span class="wr-note" *ngIf="cell.notes?.length" [class.is-new]="cell.notesNew" [attr.title]="notesTitle(cell.notes)">
+    <ng-container *ngTemplateOutlet="clientAvatar; context: { size: 'sm' }"></ng-container>
+    <span class="wr-note__bubble">
+      <span class="wr-card__notes-list">
+        <span class="wr-card__note" *ngFor="let note of cell.notes">
+          <b *ngIf="note.label">{{ note.label }} : </b>{{ note.text }}
+        </span>
+      </span>
+    </span>
+  </span>
   <span class="wr-card__status"><span class="material-icons st-icon" aria-hidden="true">{{ statusIcon(cell.status.tone) }}</span>{{ cell.status.text }}</span>
+</ng-template>
+
+<!-- The client's small round photo (their initials without one), next to what they wrote. -->
+<ng-template #clientAvatar let-size="size">
+  <span class="note-avatar" [ngClass]="'note-avatar--' + size" aria-hidden="true">
+    <img *ngIf="clientPhoto as photo; else avatarInitials" [src]="photo" alt="" loading="lazy" (error)="onClientPhotoError(photo)" />
+    <ng-template #avatarInitials>{{ clientInitials }}</ng-template>
+  </span>
+</ng-template>
+
+<!-- A note of the client in the day panel: a message bubble with their photo (and « Note du client » above it). -->
+<ng-template #noteBubble let-text="text" let-size="size" let-head="head" let-date="date" let-label="label">
+  <span class="note-msg" [ngClass]="'note-msg--' + size">
+    <ng-container *ngTemplateOutlet="clientAvatar; context: { size: size }"></ng-container>
+    <span class="note-msg__bubble">
+      <span class="note-msg__head" *ngIf="head">{{ getSelectedClientName() }} · {{ head | translate }}</span>
+      <span class="note-msg__text">{{ text }}</span>
+    </span>
+    <!-- « Répondre »: the chat opens on the client with this note quoted. -->
+    <button type="button" class="note-msg__reply" *ngIf="date" [attr.title]="'CALENDAR_REPLY' | translate"
+      (click)="replyToNote(date, text, label || '')">
+      <span class="material-icons" aria-hidden="true">reply</span><span class="note-msg__reply-text">{{ 'CALENDAR_REPLY' | translate }}</span>
+    </button>
+  </span>
 </ng-template>
 
 <!-- What the symbols say, under the month and the week. -->

@@ -15,6 +15,18 @@
         <ng-template #libraryCount><span>{{ 'WEEKS_DAYS_COUNT' | translate:{ weeks: workoutWeeks.length, days: days.length } }}</span></ng-template>
       </p>
     </div>
+    <!-- Programme déjà créé : ses informations (nom, description, durée, dates) se modifient ici, plus dans une carte. -->
+    <button
+      type="button"
+      class="np-toolbar__edit"
+      *ngIf="isEditMode && !readOnly && !planLoading && !planLoadError"
+      (click)="openPlanEdit()"
+      [title]="'PLAN_EDIT_HINT' | translate"
+      [attr.aria-label]="'PLAN_EDIT_BUTTON' | translate"
+    >
+      <i-feather name="edit-2" class="np-ico"></i-feather>
+      <span class="np-toolbar__editlabel">{{ 'PLAN_EDIT_BUTTON' | translate }}</span>
+    </button>
     <button type="button" class="np-toolbar__weeks" (click)="toggleMobileStructure()" [attr.aria-expanded]="mobileStructureOpen" [attr.aria-label]="'PROGRAM_STRUCTURE' | translate">
       <i-feather name="list" class="np-ico"></i-feather>
       <span>{{ 'PROGRAM_STRUCTURE' | translate }}</span>
@@ -39,7 +51,7 @@
   <div class="np-shell">
     <aside class="np-aside">
       <div class="np-aside__head">
-        <button type="button" class="np-mobile-structure-close" (click)="closeMobileStructure()" aria-label="Close weeks"><i-feather name="x" class="np-ico"></i-feather></button>
+        <button type="button" class="np-mobile-structure-close" (click)="closeMobileStructure()" [attr.aria-label]="'CLOSE_WEEKS' | translate"><i-feather name="x" class="np-ico"></i-feather></button>
         <h2 class="np-h6">{{ 'PROGRAM_STRUCTURE' | translate }}</h2>
         <p class="np-aside__sub">{{ 'WEEKS_DAYS_COUNT' | translate:{ weeks: workoutWeeks.length, days: days.length } }}</p>
         <button type="button" class="np-link" (click)="toggleAllWeeks()">
@@ -71,6 +83,17 @@
               <span class="np-week-range" *ngIf="isClientMode">{{ getWeekDateRange(week) }}</span>
               <span class="np-week-card__count" [title]="'PROGRAM_DAYS_FILLED' | translate:{ count: getWeekReadyCount(week.days), total: 7 }">{{ 'PROGRAM_DAYS_FILLED_SHORT' | translate:{ count: getWeekReadyCount(week.days), total: 7 } }}</span>
             </div>
+          </button>
+          <button
+            type="button"
+            class="np-week-card__dup"
+            *ngIf="!readOnly && days.length > 7"
+            [disabled]="!getWeekReadyCount(week.days)"
+            [title]="'COPY_DAYS.BUTTON_DUPLICATE_WEEK' | translate"
+            [attr.aria-label]="'COPY_DAYS.BUTTON_DUPLICATE_WEEK' | translate"
+            (click)="duplicateWeek(week, $event)"
+          >
+            <i-feather name="copy" class="np-week-card__dupico"></i-feather>
           </button>
 
           <ng-container *ngIf="!isWeekCollapsed(week.label)">
@@ -118,7 +141,7 @@
         </div>
       </div>
     </aside>
-    <button type="button" class="np-mobile-structure-backdrop" *ngIf="mobileStructureOpen" (click)="closeMobileStructure()" aria-label="Close weeks"></button>
+    <button type="button" class="np-mobile-structure-backdrop" *ngIf="mobileStructureOpen" (click)="closeMobileStructure()" [attr.aria-label]="'CLOSE_WEEKS' | translate"></button>
 
     <main class="np-main">
       <!-- Edit mode: the plan loads in place (no full-screen loader). -->
@@ -160,7 +183,7 @@
         [savedEnd]="savedEnd"
         (chosen)="persistClientPlan($event)"
       ></app-program-overflow>
-      <section class="np-card np-card--settings" [attr.inert]="readOnly ? '' : null">
+      <section class="np-card np-card--settings" *ngIf="!isEditMode" [attr.inert]="readOnly ? '' : null">
         <div class="np-settings-kicker">
           <span class="np-settings-kicker__dot"></span>
           <span>{{ 'GLOBAL_PLAN_SETTINGS' | translate }}</span><span class="np-settings-summary" *ngIf="planSettingsCollapsed">{{ workoutPlan.name }} · {{ durationWeeks }} {{ 'WEEKS' | translate }}<ng-container *ngIf="isClientMode"> · {{ programSchedule.formatDate(startDate) }} – {{ programSchedule.formatDate(endDate) }}</ng-container></span>
@@ -263,7 +286,6 @@
         </ng-container>
       </section>
 
-      <app-workout-week-panel *ngIf="days.length && !readOnly" [week]="getSelectedWeekNumber()" [ready]="getWeekReadyCount(workoutWeeks[getSelectedWeekNumber() - 1].days)" [range]="''" [saving]="savingDraft" [showSave]="false" [narrow]="showExerciseSelector" [canDuplicate]="copy.canDuplicateWeek" (duplicate)="copy.openWeek()"></app-workout-week-panel>
 
       <section class="np-card np-card--day" [attr.inert]="readOnly ? '' : null" [class.np-card--readonly]="readOnly">
 
@@ -337,6 +359,16 @@
             <div class="wk-day-editor__identity">
               <div class="wk-day-editor__titleline">
                 <h3 class="wk-day-editor__title">{{ getDayDisplayTitle(selectedDay) }}</h3>
+                <!-- Nom de la séance, modifiable dans le titre : « Jour 1 · Leg Day ✎ ». -->
+                <label class="wk-day-editor__name" *ngIf="!selectedDay.isRestDay && selectedWorkoutSession as session"
+                       [class.is-empty]="!session.name?.trim()">
+                  <span class="wk-day-editor__dot" aria-hidden="true"></span>
+                  <input type="text" class="wk-day-editor__nameinput" [(ngModel)]="session.name" required
+                         [readonly]="readOnly" [size]="nameFieldSize(session.name)"
+                         [placeholder]="'WORKOUT_NAME' | translate" [attr.aria-label]="'WORKOUT_NAME' | translate"
+                         [attr.aria-invalid]="!session.name?.trim()" />
+                  <i-feather *ngIf="!readOnly" name="edit-2" class="wk-day-editor__nameico" aria-hidden="true"></i-feather>
+                </label>
                 <span class="wk-day-editor__date" *ngIf="getSelectedDayDateLabel() as selectedDayDate">{{ selectedDayDate }}</span>
                 <span
                   *ngIf="dayRailState(selectedDay) as state"
@@ -348,53 +380,52 @@
                   {{ (state === 'REST' ? 'REST_DAY' : state === 'FILLED' ? 'PROGRAM_DAY_FILLED' : state === 'INVALID' ? 'PROGRAM_DAY_TO_FIX' : state === 'GAP' ? 'PROGRAM_DAY_GAP' : 'PROGRAM_DAY_EMPTY') | translate }}
                 </span>
               </div>
-              <small class="wk-day-editor__week">{{ 'WEEK_NUMBER' | translate:{ number: getSelectedWeekNumber() } }}</small>
+              <small class="wk-day-editor__week">
+                {{ 'WEEK_NUMBER' | translate:{ number: getSelectedWeekNumber() } }}
+                <!-- Résumé de la séance : « 6 exercices · 18 séries · ~50 min ». -->
+                <ng-container *ngIf="!selectedDay.isRestDay && sessionSummaryText() as summary"> · {{ summary }}</ng-container>
+              </small>
             </div>
 
+            <!-- Menu « ⋮ » du jour : les actions du jour au même endroit, l'en-tête reste léger. -->
             <div class="wk-day-editor__actions">
-            <!-- « Copier ce jour »: onto other days of this program, or kept for another one (copy-days-modal). -->
-            <button
-              type="button"
-              *ngIf="!copy.readOnly"
-              class="wk-restmark wk-copymark"
-              style="margin-inline-end: 10px"
-              [style.opacity]="copy.canCopyDay ? null : 0.5"
-              [disabled]="!copy.canCopyDay"
-              [title]="(copy.canCopyDay ? 'COPY_DAYS.BUTTON_COPY_DAY_HINT' : 'COPY_DAYS.BUTTON_COPY_DAY_EMPTY') | translate"
-              (click)="copy.openDay()"
-            >
-              <i-feather name="copy" class="wk-restmark__icon"></i-feather>
-              {{ 'COPY_DAYS.BUTTON_COPY_DAY' | translate }}
-            </button>
-              <button
-                type="button"
-                class="wk-restmark"
-                [class.is-active]="selectedDay.isRestDay"
-                (click)="toggleRestDay()"
-              >
-                <i-feather name="moon" class="wk-restmark__icon"></i-feather>
-                {{ (selectedDay.isRestDay ? 'REST_DAY' : 'MARK_AS_REST_DAY') | translate }}
+              <!-- Vue compacte : une ligne par exercice, toute la séance d'un coup (plus simple pour changer l'ordre). -->
+              <button type="button" class="wkex__collapseall" *ngIf="!selectedDay.isRestDay && selectedWorkoutSession?.exercises?.length"
+                      [attr.aria-pressed]="allCollapsed()" (click)="toggleCollapseAll()">
+                <i-feather [name]="allCollapsed() ? 'maximize-2' : 'minimize-2'" class="wkex__collapseico"></i-feather>
+                {{ allCollapsed() ? ht('Expand all', 'Tout déplier') : ht('Collapse all', 'Tout replier') }}
               </button>
-
-              <button type="button" class="wk-kebab" [attr.aria-label]="'DAY_OPTIONS' | translate">
-                <i-feather name="more-vertical" class="wk-kebab__icon"></i-feather>
-              </button>
+              <div class="wkdaymenu" *ngIf="!readOnly">
+                <button type="button" class="wk-kebab" [attr.aria-label]="'DAY_OPTIONS' | translate" [title]="'DAY_OPTIONS' | translate"
+                        [attr.aria-expanded]="dayMenuOpen" aria-haspopup="menu" (click)="toggleDayMenu($event)">
+                  <i-feather name="more-vertical" class="wk-kebab__icon"></i-feather>
+                </button>
+                <div class="wkdaymenu__list" role="menu" *ngIf="dayMenuOpen" (click)="$event.stopPropagation()">
+                  <button type="button" role="menuitem" class="wkdaymenu__item" *ngIf="!copy.readOnly" [disabled]="!copy.canCopyDay"
+                          [title]="(copy.canCopyDay ? 'COPY_DAYS.BUTTON_COPY_DAY_HINT' : 'COPY_DAYS.BUTTON_COPY_DAY_EMPTY') | translate"
+                          (click)="dayMenuOpen = false; copy.openDay()">
+                    <i-feather name="copy" class="wkdaymenu__ico"></i-feather>
+                    {{ 'COPY_DAYS.BUTTON_COPY_DAY' | translate }}
+                  </button>
+                  <button type="button" role="menuitem" class="wkdaymenu__item" (click)="dayMenuOpen = false; toggleRestDay()">
+                    <i-feather [name]="selectedDay.isRestDay ? 'activity' : 'moon'" class="wkdaymenu__ico"></i-feather>
+                    {{ (selectedDay.isRestDay ? 'DAY_MENU_TRAINING' : 'MARK_AS_REST_DAY') | translate }}
+                  </button>
+                  <button type="button" role="menuitem" class="wkdaymenu__item" *ngIf="!selectedDay.isRestDay"
+                          [disabled]="!selectedWorkoutSession?.exercises?.length" (click)="dayMenuOpen = false; clearDay()">
+                    <i-feather name="x-circle" class="wkdaymenu__ico"></i-feather>
+                    {{ 'DAY_MENU_CLEAR' | translate }}
+                  </button>
+                  <button type="button" role="menuitem" class="wkdaymenu__item wkdaymenu__item--danger" *ngIf="days.length > 1"
+                          (click)="dayMenuOpen = false; deleteDay(selectedDay)">
+                    <i-feather name="trash-2" class="wkdaymenu__ico"></i-feather>
+                    {{ 'DAY_MENU_DELETE' | translate }}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
-          <ng-container *ngIf="!selectedDay.isRestDay && selectedWorkoutSession as session">
-            <div class="np-field wk-workout-name">
-              <label class="np-label">{{ 'WORKOUT_NAME' | translate }} <span class="np-danger">*</span></label>
-              <input
-                class="np-input"
-                type="text"
-                [(ngModel)]="session.name"
-                [placeholder]="'WORKOUT_NAME' | translate"
-                required
-                [attr.aria-invalid]="!session.name?.trim()"
-              />
-            </div>
-          </ng-container>
         </div>
 
         <div *ngIf="selectedDay?.isRestDay" class="wk-restbox">
@@ -470,11 +501,36 @@
           </ng-template>
         </ng-container>
 
-        <div *ngIf="!selectedDay?.isRestDay" class="wkex mb-6">
+        <!-- Glisser depuis la bibliothèque : la séance s'entoure de pointillés, une place s'ouvre où l'exercice va tomber. -->
+        <div *ngIf="!selectedDay?.isRestDay" class="wkex mb-6" [class.is-lib-target]="!!libDrag" [class.is-lib-over]="libDrag && libDropIndex !== null">
           <h3 class="wkex__heading">{{ 'EXERCISES' | translate }} {{ selectedDay ? getDayExerciseCount(selectedDay) : 0 }}</h3>
 
+          <!-- Bloc « Échauffement » : les exercices d'échauffement sont rangés en haut de la séance. -->
+          <div class="wkwarm-top" *ngIf="!facade.pendingGroup">
+            <span *ngIf="facade.warmupCount" class="wkwarm-title">
+              <i-feather name="zap" class="wkgrp-badge__ico"></i-feather>
+              {{ 'WARM_UP_BLOCK' | translate }}
+            </span>
+            <button *ngIf="!facade.warmupCount" type="button" class="wkwarm-add" [class.is-active]="facade.addTargetWarmup" (click)="facade.startWarmup()">
+              <i-feather name="zap" class="wkgrp-badge__ico"></i-feather>
+              {{ 'WARM_UP_ADD' | translate }}
+            </button>
+          </div>
+
           <ng-container *ngIf="selectedDay?.workoutSessions[0]?.exercises.length">
-            <div class="wkex__stack" cdkDropList (cdkDropListDropped)="onDropExercise($event)">
+            <!-- Astuce montrée une seule fois (fermée par ✕ ou au premier déplacement). -->
+            <div *ngIf="showDragTip" class="wkdrag-tip" role="note">
+              <i-feather name="info" class="wkdrag-tip__ico"></i-feather>
+              <span>{{ 'DRAG_TIP' | translate }}</span>
+              <button type="button" class="wkdrag-tip__close" [attr.aria-label]="'CLOSE' | translate" (click)="dismissDragTip()">✕</button>
+            </div>
+
+            <!-- Glisser-déposer : dès qu'on appuie sur ☰, la liste passe en lignes (un groupe = une ligne),
+                 un trait bleu montre où l'élément va tomber, seulement aux places permises. -->
+            <div class="wkex__stack" [class.is-sorting]="!!sortMode" cdkDropList cdkDropListLockAxis="y"
+                 [style.padding-top.px]="sortSpacerTop || null" [style.padding-bottom.px]="sortSpacerBottom || null"
+                 [cdkDropListDisabled]="readOnly" [cdkDropListSortPredicate]="sortPredicate"
+                 (cdkDropListDropped)="onDropExercise($event)">
               <ng-container
                 *ngFor="
                   let exercise of selectedDay.workoutSessions[0].exercises;
@@ -482,19 +538,108 @@
                   trackBy: trackByExercise
                 "
               >
+                <ng-container *ngIf="!sortMode && facade.warmupCount && i === facade.warmupCount">
+                  <button type="button" class="wkwarm-add" [class.is-active]="facade.addTargetWarmup" (click)="facade.startWarmup()">
+                    <i-feather name="zap" class="wkgrp-badge__ico"></i-feather>
+                    {{ 'WARM_UP_ADD_MORE' | translate }}
+                  </button>
+                  <span class="wkwarm-title wkwarm-title--main">{{ 'WARM_UP_MAIN' | translate }}</span>
+                </ng-container>
+
+                <div *ngIf="libDrag && libDropIndex === i" class="wklib-slot" aria-hidden="true">
+                  <i-feather name="plus-circle" class="wklib-slot__ico"></i-feather>
+                  {{ 'LIB_DROP_HERE' | translate }}
+                </div>
+
+                <div *ngIf="facade.isGroupStartAt(i)" class="wkgrp-head" [class.is-circuit]="facade.groupTypeAt(i) === 'CIRCUIT'"
+                     [class.is-alone]="sortMode === 'units'" [attr.data-grp-head]="exercise.supersetGroupId"
+                     cdkDrag [cdkDragData]="{ kind: 'head', i: i }" [cdkDragStartDelay]="dragDelay"
+                     (cdkDragStarted)="onDragStarted()" (cdkDragEnded)="onDragEnded()">
+                  <div *ngIf="!readOnly" class="wkex-card__drag wkgrp-drag" cdkDragHandle [title]="'DRAG_GROUP' | translate"
+                       (mousedown)="beginSort('units', i, $event)" (touchstart)="beginSort('units', i, $event)">
+                    <i-feather name="menu" class="np-ico"></i-feather>
+                  </div>
+                  <span class="wkgrp-badge">
+                    <i-feather [name]="facade.groupTypeAt(i) === 'CIRCUIT' ? 'repeat' : 'link'" class="wkgrp-badge__ico"></i-feather>
+                    {{ (facade.groupTypeAt(i) === 'CIRCUIT' ? 'WKGRP_CIRCUIT' : 'WKGRP_SUPERSET') | translate }}
+                  </span>
+                  <span *ngIf="sortMode" class="wkgrp-sortline">{{ groupSummary(i) }}</span>
+                  <div *cdkDragPlaceholder class="wkdrop-line"></div>
+                  <div *cdkDragPreview class="wkdrag-preview" [class.is-circuit]="facade.groupTypeAt(i) === 'CIRCUIT'">
+                    <i-feather [name]="facade.groupTypeAt(i) === 'CIRCUIT' ? 'repeat' : 'link'" class="wkdrag-preview__ico"></i-feather>
+                    {{ groupSummary(i) }}
+                  </div>
+                  <ng-container *ngIf="!sortMode">
+                  <div class="wkgrp-field">
+                    <span class="wkgrp-field__label">{{ (facade.groupTypeAt(i) === 'CIRCUIT' ? 'WKGRP_ROUNDS' : 'WKGRP_SETS') | translate }}</span>
+                    <button type="button" class="wkgrp-step" [attr.aria-label]="'WKGRP_LESS' | translate" (click)="facade.changeGroupCount(i, -1)">−</button>
+                    <strong class="wkgrp-field__value">{{ facade.groupCountAt(i) }}</strong>
+                    <button type="button" class="wkgrp-step" [attr.aria-label]="'WKGRP_MORE' | translate" (click)="facade.changeGroupCount(i, 1)">+</button>
+                  </div>
+                  <label class="wkgrp-field">
+                    <span class="wkgrp-field__label">{{ (facade.groupTypeAt(i) === 'CIRCUIT' ? 'WKGRP_REST_ROUNDS' : 'WKGRP_REST_AFTER') | translate }}</span>
+                    <input
+                      type="number"
+                      class="wkex-input wkgrp-rest"
+                      min="0"
+                      step="15"
+                      inputmode="numeric"
+                      [ngModel]="facade.groupRestAt(i)"
+                      (ngModelChange)="facade.changeGroupRest(i, $event)"
+                      (keydown)="preventInvalidNumericKey($event)"
+                    />
+                    <span class="wkgrp-field__label">s</span>
+                  </label>
+                  <span class="wkgrp-spacer"></span>
+                  <button type="button" class="wkex-action" [title]="'WKGRP_DUPLICATE' | translate" [attr.aria-label]="'WKGRP_DUPLICATE' | translate" (click)="facade.duplicateGroup(i)">
+                    <i-feather name="copy" class="wkex-action__icon"></i-feather>
+                  </button>
+                  <button type="button" class="wkex-action" [title]="'WKGRP_UNGROUP' | translate" [attr.aria-label]="'WKGRP_UNGROUP' | translate" (click)="facade.ungroupAt(i)">
+                    <i-feather name="scissors" class="wkex-action__icon"></i-feather>
+                  </button>
+                  <div class="wkdaymenu wkgrp-menu" *ngIf="!readOnly">
+                    <button type="button" class="wkex-action" [title]="'WKGRP_OPTIONS' | translate" [attr.aria-label]="'WKGRP_OPTIONS' | translate"
+                            aria-haspopup="menu" [attr.aria-expanded]="groupMenuAt === i" (click)="toggleGroupMenu(i, $event)">
+                      <i-feather name="more-vertical" class="wkex-action__icon"></i-feather>
+                    </button>
+                    <div class="wkdaymenu__list" role="menu" *ngIf="groupMenuAt === i" (click)="$event.stopPropagation()">
+                      <button type="button" role="menuitem" class="wkdaymenu__item" [disabled]="!facade.canMoveGroupAt(i, -1)" (click)="moveGroupBy(i, -1)">
+                        <i-feather name="arrow-up" class="wkdaymenu__ico"></i-feather>
+                        {{ 'WKGRP_MOVE_UP' | translate }}
+                      </button>
+                      <button type="button" role="menuitem" class="wkdaymenu__item" [disabled]="!facade.canMoveGroupAt(i, 1)" (click)="moveGroupBy(i, 1)">
+                        <i-feather name="arrow-down" class="wkdaymenu__ico"></i-feather>
+                        {{ 'WKGRP_MOVE_DOWN' | translate }}
+                      </button>
+                    </div>
+                  </div>
+                  </ng-container>
+                </div>
+
                 <article
+                  *ngIf="!(sortMode === 'units' && isInSuperset(i))"
                   class="wkex-card"
+                  [attr.data-exid]="exercise.id"
+                  [class.is-collapsed]="isCollapsed(exercise)"
+                  [class.wkgrp-member]="isInSuperset(i)" [class.wkgrp-member--last]="facade.isGroupEndAt(i)"
+                  [class.is-circuit]="isInSuperset(i) && facade.groupTypeAt(i) === 'CIRCUIT'"
                   [class.superset]="isInSuperset(i)"
                   [class.is-second]="isSecondOfSuperset(i)"
-                  cdkDrag
-                  [cdkDragDisabled]="isInSuperset(i)"
+                  [class.is-just-added]="exercise.id === justAddedId"
+                  cdkDrag [cdkDragData]="{ kind: 'ex', i: i }" [cdkDragStartDelay]="dragDelay"
+                  (cdkDragStarted)="onDragStarted()" (cdkDragEnded)="onDragEnded()"
                 >
+                  <div *cdkDragPlaceholder class="wkdrop-line"></div>
+                  <div *cdkDragPreview class="wkdrag-preview">
+                    <i-feather name="menu" class="wkdrag-preview__ico"></i-feather>
+                    <span *ngIf="isInSuperset(i)" class="wkdrag-preview__badge">{{ facade.memberLabelAt(i) }}</span>
+                    {{ exercise.name }}
+                  </div>
                   <div class="wkex-card__inner">
                     <div class="wkex-card__header">
-                      <div *ngIf="!isInSuperset(i)" class="wkex-card__drag" cdkDragHandle>
-                        <i-feather name="menu" class="np-ico"></i-feather>
-                      </div>
-                      <div *ngIf="isInSuperset(i)" class="wkex-card__drag is-disabled">
+                      <div *ngIf="!readOnly" class="wkex-card__drag" cdkDragHandle [title]="'DRAG_EXERCISE' | translate"
+                           (mousedown)="beginSort(isInSuperset(i) ? 'members' : 'units', i, $event)"
+                           (touchstart)="beginSort(isInSuperset(i) ? 'members' : 'units', i, $event)">
                         <i-feather name="menu" class="np-ico"></i-feather>
                       </div>
                       <div class="wkex-card__media">
@@ -516,11 +661,32 @@
                       <div class="wkex-card__titlewrap">
                         <h4 class="wkex-card__title">
                           {{ exercise.name }}
-                          <span *ngIf="isInSuperset(i)" class="wkex-badge">
-                            {{ 'SUPERSET' | translate }}
-                          </span>
+                          <span *ngIf="isInSuperset(i)" class="wkex-badge">{{ facade.memberLabelAt(i) }}</span>
                         </h4>
-                        <small class="wkex-summary">{{ exercise.type }} · {{ exercise.sets?.length || 0 }} {{ 'SETS' | translate }}</small>
+                        <small class="wkex-summary" *ngIf="!isCollapsed(exercise)">{{ exercise.type }} · {{ exercise.sets?.length || 0 }} {{ 'SETS' | translate }}</small>
+                        <!-- Replié : le résumé des séries, un clic rouvre la carte. -->
+                        <button *ngIf="isCollapsed(exercise)" type="button" class="wkex-collapsedline" (click)="toggleCollapse(exercise)">
+                          {{ exerciseLine(exercise) }}
+                        </button>
+
+                        <!-- Jour déjà fait : ce que le client a fait CE jour-là. Jour à venir : la dernière fois AVANT ce jour. -->
+                        <button *ngIf="lastTime(exercise) as last" type="button" class="wkex-last"
+                                [class.is-day]="last.kind === 'DAY'" [class.is-below]="last.below"
+                                [class.is-muted]="last.state !== 'DONE'"
+                                [title]="ht('See the whole history', 'Voir tout l’historique')" (click)="historyExercise = exercise.name">
+                          <span class="wkex-last__tag">
+                            <i-feather [name]="last.kind === 'LAST' ? 'clock' : last.state === 'DONE' ? 'check-circle' : 'minus-circle'" class="wkex-last__ico"></i-feather>
+                            <ng-container *ngIf="last.kind === 'LAST'">{{ ht('Last time', 'Dernière fois') }}</ng-container>
+                            <ng-container *ngIf="last.kind === 'DAY' && last.state === 'DONE'">{{ ht('Client did', 'Fait par le client') }}</ng-container>
+                            <ng-container *ngIf="last.state === 'SKIPPED'">{{ ht('Skipped by the client', 'Passé par le client') }}</ng-container>
+                            <ng-container *ngIf="last.state === 'NOT_LOGGED'">{{ ht('Not logged by the client', 'Pas noté par le client') }}</ng-container>
+                            · {{ last.date }}
+                          </span>
+                          <span class="wkex-last__value" *ngIf="last.state === 'DONE' && last.done">{{ last.done }}</span>
+                          <span class="wkex-last__plan" *ngIf="last.planned">{{ ht('planned', 'prévu') }} {{ last.planned }}</span>
+                          <span class="wkex-last__ok" *ngIf="last.state === 'DONE' && !last.below && last.kind === 'DAY'">{{ ht('as planned', 'comme prévu') }}</span>
+                          <em *ngIf="last.difficulty" [class.is-hard]="last.difficulty === 'HARD'" [class.is-easy]="last.difficulty === 'EASY'">{{ difficultyText(last.difficulty) }}</em>
+                        </button>
 
                         <ng-container
                           *ngIf="editingExerciseDescription === exercise.id; else addNotesBtn"
@@ -557,7 +723,13 @@
 
                       </div>
 
-                      <div class="wkex-card__actions"><button type="button" class="wkex-action wkex-action--note" [title]="'EXERCISE_NOTES' | translate" [attr.aria-label]="'EXERCISE_NOTES' | translate" (click)="setEditingExerciseDescription(editingExerciseDescription === exercise.id ? null : exercise.id)"><i-feather name="message-square" class="wkex-action__icon"></i-feather></button>
+                      <div class="wkex-card__actions">
+                        <button type="button" class="wkex-action wkex-action--collapse"
+                                [title]="isCollapsed(exercise) ? ht('Expand', 'Déplier') : ht('Collapse', 'Replier')"
+                                [attr.aria-label]="isCollapsed(exercise) ? ht('Expand', 'Déplier') : ht('Collapse', 'Replier')"
+                                [attr.aria-expanded]="!isCollapsed(exercise)" (click)="toggleCollapse(exercise)">
+                          <i-feather [name]="isCollapsed(exercise) ? 'chevron-down' : 'chevron-up'" class="wkex-action__icon"></i-feather>
+                        </button><button type="button" class="wkex-action wkex-action--note" [title]="'EXERCISE_NOTES' | translate" [attr.aria-label]="'EXERCISE_NOTES' | translate" (click)="setEditingExerciseDescription(editingExerciseDescription === exercise.id ? null : exercise.id)"><i-feather name="message-square" class="wkex-action__icon"></i-feather></button>
                         <button
                           type="button"
                           class="wkex-action wkex-action--video"
@@ -582,14 +754,65 @@
                       </div>
                     </div>
 
-                    <div *ngIf="exercise.sets?.length > 0" class="wkex-sets" [class.wkex-sets--no-weight]="!facade.shouldShowWeightField() || exercise.type === 'CARDIO'">
+                    <!-- Exercice seul : une ligne « séries · reps · poids · repos » tant que les séries sont pareilles. -->
+                    <div *ngIf="exercise.sets?.length > 0 && !isInSuperset(i) && !facade.isSingleDetail(exercise)" class="wkset1">
+                      <div class="wkset1__row">
+                        <div class="wkset1__field">
+                          <span class="wkset1__label">{{ 'WKSET_SETS' | translate }}</span>
+                          <div class="wkset1__stepper">
+                            <button type="button" class="wkgrp-step" [attr.aria-label]="'WKGRP_LESS' | translate" [disabled]="exercise.sets.length <= 1" (click)="facade.changeSetCount(exercise, -1)">−</button>
+                            <strong class="wkset1__count">{{ exercise.sets.length }}</strong>
+                            <button type="button" class="wkgrp-step" [attr.aria-label]="'WKGRP_MORE' | translate" (click)="facade.changeSetCount(exercise, 1)">+</button>
+                          </div>
+                        </div>
+                        <div class="wkset1__field">
+                          <span class="wkset1__label">
+                            <ng-container *ngIf="exercise.type === 'CARDIO'; else wkset1Unit">{{ 'WKSET_MINUTES' | translate }}</ng-container>
+                            <ng-template #wkset1Unit>
+                              <select class="wkgrp-unit" [attr.aria-label]="'WKGRP_UNIT' | translate" [ngModel]="facade.measureOf(exercise)" (ngModelChange)="facade.changeExerciseMeasure(exercise, $event)">
+                                <option value="REPS">{{ 'WKGRP_REPS' | translate }}</option>
+                                <option value="TIME">{{ 'WKGRP_SECONDS' | translate }}</option>
+                              </select>
+                            </ng-template>
+                          </span>
+                          <input type="number" class="wkex-input wkset1__input" min="0" step="1" inputmode="numeric"
+                                 [attr.aria-label]="(exercise.type === 'CARDIO' ? 'WKSET_MINUTES' : facade.measureOf(exercise) === 'TIME' ? 'WKGRP_SECONDS' : 'WKGRP_REPS') | translate"
+                                 [ngModel]="facade.singleValue(exercise, exercise.sets[0])"
+                                 (ngModelChange)="facade.singleChange(exercise, 'value', $event)"
+                                 (keydown)="preventInvalidNumericKey($event)" />
+                        </div>
+                        <label class="wkset1__field" *ngIf="facade.shouldShowWeightField() && exercise.type !== 'CARDIO'">
+                          <span class="wkset1__label">{{ 'WEIGHT_WITH_UNIT' | translate:{ unit: facade.getWeightUnitLabel() } }}</span>
+                          <input type="text" class="wkex-input wkset1__input" placeholder="—" autocomplete="off" inputmode="decimal"
+                                 [value]="facade.weightText(exercise.sets[0]?.weight)"
+                                 (input)="facade.singleChange(exercise, 'weight', $any($event.target).value)"
+                                 (blur)="$any($event.target).value = facade.weightText(exercise.sets[0]?.weight)"
+                                 (keydown)="preventInvalidNumericKey($event, true)" />
+                        </label>
+                        <label class="wkset1__field">
+                          <span class="wkset1__label">{{ 'REST_SECONDS' | translate }}</span>
+                          <input type="number" class="wkex-input wkset1__input" min="0" step="15" inputmode="numeric" list="wk-rest-presets"
+                                 [ngModel]="facade.restSeconds(exercise.sets[0])"
+                                 (ngModelChange)="facade.singleChange(exercise, 'rest', $event)"
+                                 (keydown)="preventInvalidNumericKey($event)" />
+                        </label>
+                      </div>
+                      <div class="wkgrp-links">
+                        <button type="button" class="wkgrp-link" (click)="facade.openSetDetail(exercise)">
+                          {{ 'WKGRP_BY_SET' | translate }}
+                          <i-feather name="chevron-down" class="wkgrp-link__ico"></i-feather>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div *ngIf="exercise.sets?.length > 0 && !isInSuperset(i) && facade.isSingleDetail(exercise)" class="wkex-sets" [class.wkex-sets--no-weight]="!facade.shouldShowWeightField() || exercise.type === 'CARDIO'">
                       <div class="wkex-sets__head">
                         <div class="wkex-sets__th">{{ 'SET' | translate }}</div>
-                        <div class="wkex-sets__th" *ngIf="facade.shouldShowWeightField() && exercise.type !== 'CARDIO'">{{ 'WEIGHT_WITH_UNIT' | translate:{ unit: facade.getWeightUnitLabel() } }}</div>
                         <div class="wkex-sets__th">
-                          {{ (exercise.type === 'CARDIO' ? 'MINUTES' : 'REPS') | translate }}
+                          {{ (exercise.type === 'CARDIO' ? 'MINUTES' : facade.measureOf(exercise) === 'TIME' ? 'WKGRP_SECONDS' : 'REPS') | translate }}
                         </div>
-                        <div class="wkex-sets__th">{{ 'REST' | translate }}</div>
+                        <div class="wkex-sets__th" *ngIf="facade.shouldShowWeightField() && exercise.type !== 'CARDIO'">{{ 'WEIGHT_WITH_UNIT' | translate:{ unit: facade.getWeightUnitLabel() } }}</div>
+                        <div class="wkex-sets__th">{{ 'REST_SECONDS' | translate }}</div>
                         <div class="wkex-sets__th wkex-sets__th--empty"></div>
                       </div>
 
@@ -659,25 +882,7 @@
 
                           <div
                             class="wkex-sets__cell"
-                            [attr.data-label]="'WEIGHT_WITH_UNIT' | translate:{ unit: facade.getWeightUnitLabel() }"
-                            *ngIf="facade.shouldShowWeightField() && exercise.type !== 'CARDIO'"
-                          >
-                            <input
-                              type="number"
-                              class="wkex-input"
-                              min="0"
-                              step="any"
-                              inputmode="decimal"
-                              [ngModel]="set.weight"
-                              (ngModelChange)="handleSetChange(exercise.id, si, 'weight', $event)"
-                              (keydown)="preventInvalidNumericKey($event, true)"
-                              [disabled]="exercise.type === 'CARDIO'"
-                            />
-                          </div>
-
-                          <div
-                            class="wkex-sets__cell"
-                            [attr.data-label]="(exercise.type === 'CARDIO' ? 'MINUTES' : 'REPS') | translate"
+                            [attr.data-label]="(exercise.type === 'CARDIO' ? 'MINUTES' : facade.measureOf(exercise) === 'TIME' ? 'WKGRP_SECONDS' : 'REPS') | translate"
                           >
                             <input
                               type="number"
@@ -686,12 +891,12 @@
                               step="1"
                               inputmode="numeric"
                               pattern="[0-9]*"
-                              [ngModel]="exercise.type === 'CARDIO' ? set.duration : set.reps"
+                              [ngModel]="exercise.type === 'CARDIO' ? set.duration : facade.measureOf(exercise) === 'TIME' ? set.durationSec : set.reps"
                               (ngModelChange)="
                                 handleSetChange(
                                   exercise.id,
                                   si,
-                                  exercise.type === 'CARDIO' ? 'duration' : 'reps',
+                                  exercise.type === 'CARDIO' ? 'duration' : facade.measureOf(exercise) === 'TIME' ? 'durationSec' : 'reps',
                                   $event
                                 )
                               "
@@ -699,37 +904,52 @@
                             />
                           </div>
 
-                          <div class="wkex-sets__cell wkex-sets__cell--rest" [attr.data-label]="'REST' | translate">
-                            <div class="wkex-restbox">
-                              <span class="wkex-restbox__label">{{ 'MIN_ABBREVIATION' | translate }}:</span>
-                              <input
-                                type="number"
-                                class="wkex-restbox__input"
-                                min="0"
-                                step="1"
-                                inputmode="numeric"
-                                [ngModel]="set.restMin"
-                                (ngModelChange)="handleSetChange(exercise.id, si, 'restMin', $event)"
-                                (keydown)="preventInvalidNumericKey($event)"
-                              />
-                            </div>
+                          <div
+                            class="wkex-sets__cell"
+                            [attr.data-label]="'WEIGHT_WITH_UNIT' | translate:{ unit: facade.getWeightUnitLabel() }"
+                            *ngIf="facade.shouldShowWeightField() && exercise.type !== 'CARDIO'"
+                          >
+                            <input
+                              type="text"
+                              class="wkex-input"
+                              placeholder="—"
+                              autocomplete="off"
+                              inputmode="decimal"
+                              [value]="facade.weightText(set.weight)"
+                              (input)="handleSetChange(exercise.id, si, 'weight', $any($event.target).value)"
+                              (blur)="$any($event.target).value = facade.weightText(set.weight)"
+                              (keydown)="preventInvalidNumericKey($event, true)"
+                              [disabled]="exercise.type === 'CARDIO'"
+                            />
+                          </div>
 
-                            <div class="wkex-restbox">
-                              <span class="wkex-restbox__label">{{ 'SEC_ABBREVIATION' | translate }}:</span>
-                              <input
-                                type="number"
-                                class="wkex-restbox__input"
-                                min="0"
-                                step="1"
-                                inputmode="numeric"
-                                [ngModel]="set.restSec"
-                                (ngModelChange)="handleSetChange(exercise.id, si, 'restSec', $event)"
-                                (keydown)="preventInvalidNumericKey($event)"
-                              />
-                            </div>
+                          <div class="wkex-sets__cell wkex-sets__cell--rest" [attr.data-label]="'REST_SECONDS' | translate">
+                            <input
+                              type="number"
+                              class="wkex-input"
+                              min="0"
+                              step="15"
+                              inputmode="numeric"
+                              list="wk-rest-presets"
+                              [attr.aria-label]="'REST_SECONDS' | translate"
+                              [ngModel]="facade.restSeconds(set)"
+                              (ngModelChange)="facade.setFieldChange(exercise, si, 'rest', $event)"
+                              (keydown)="preventInvalidNumericKey($event)"
+                            />
                           </div>
 
                           <div class="wkex-sets__cell wkex-sets__cell--action">
+                            <!-- ↓ : les séries d'en dessous prennent les chiffres de celle-ci (ex. 3 séries lourdes après l'échauffement). -->
+                            <button
+                              *ngIf="si < exercise.sets.length - 1"
+                              type="button"
+                              class="wkex-action wkex-action--copydown"
+                              [title]="'WKSET_COPY_DOWN' | translate"
+                              [attr.aria-label]="'WKSET_COPY_DOWN' | translate"
+                              (click)="facade.copySetDown(exercise, si)"
+                            >
+                              <i-feather name="arrow-down" class="wkex-action__icon"></i-feather>
+                            </button>
                             <button
                               *ngIf="exercise.sets.length > 1"
                               type="button"
@@ -744,36 +964,200 @@
                         </div>
                       </div>
 
-                      <button type="button" class="wkex-addset" (click)="handleAddSet(exercise.id)">
-                        <span aria-hidden="true">＋</span>
-                        {{ 'ADD_SET' | translate }}
-                      </button>
+                      <div class="wkgrp-links">
+                        <button type="button" class="wkgrp-link" (click)="handleAddSet(exercise.id)">
+                          <span aria-hidden="true">＋</span> {{ 'ADD_SET' | translate }}
+                        </button>
+                        <button type="button" class="wkgrp-link" (click)="facade.flattenSingleSets(exercise)">
+                          {{ 'WKGRP_SAME_VALUE' | translate }}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div *ngIf="isInSuperset(i)" class="wkgrp-sets">
+                      <div class="wkgrp-sets__grid" [class.wkgrp-sets__grid--no-weight]="!(facade.shouldShowWeightField() && exercise.type !== 'CARDIO')" [class.wkgrp-sets__grid--detail]="facade.isSetDetail(exercise)">
+                        <div class="wkex-sets__th">{{ (facade.groupTypeAt(i) === 'CIRCUIT' ? 'WKGRP_ROUND' : 'WKGRP_SET') | translate }}</div>
+                        <div class="wkex-sets__th">
+                          <select
+                            class="wkgrp-unit"
+                            [attr.aria-label]="'WKGRP_UNIT' | translate"
+                            [ngModel]="facade.measureOf(exercise)"
+                            (ngModelChange)="facade.changeExerciseMeasure(exercise, $event)"
+                          >
+                            <option value="REPS">{{ 'WKGRP_REPS' | translate }}</option>
+                            <option value="TIME">{{ 'WKGRP_SECONDS' | translate }}</option>
+                          </select>
+                        </div>
+                        <div class="wkex-sets__th" *ngIf="facade.shouldShowWeightField() && exercise.type !== 'CARDIO'">{{ 'WEIGHT_WITH_UNIT' | translate:{ unit: facade.getWeightUnitLabel() } }}</div>
+
+                        <div class="wkex-sets__th" *ngIf="facade.isSetDetail(exercise)"></div>
+                        <ng-container *ngIf="!facade.isSetDetail(exercise); else wkgrpDetail">
+                          <div class="wkgrp-sets__label">{{ (facade.groupTypeAt(i) === 'CIRCUIT' ? 'WKGRP_ALL_ROUNDS' : 'WKGRP_ALL_SETS') | translate:{ count: exercise.sets?.length || 0 } }}</div>
+                          <input
+                            type="number"
+                            class="wkex-input"
+                            min="0"
+                            step="1"
+                            inputmode="numeric"
+                            [attr.aria-label]="(facade.measureOf(exercise) === 'TIME' ? 'WKGRP_SECONDS' : 'WKGRP_REPS') | translate"
+                            [ngModel]="facade.groupSetValue(exercise, 0)"
+                            (ngModelChange)="facade.groupSetChange(exercise, -1, 'value', $event)"
+                            (keydown)="preventInvalidNumericKey($event)"
+                          />
+                          <input
+                            *ngIf="facade.shouldShowWeightField() && exercise.type !== 'CARDIO'"
+                            type="text"
+                            class="wkex-input"
+                            placeholder="—"
+                            autocomplete="off"
+                            inputmode="decimal"
+                            [attr.aria-label]="'WEIGHT_WITH_UNIT' | translate:{ unit: facade.getWeightUnitLabel() }"
+                            [value]="facade.weightText(exercise.sets?.[0]?.weight)"
+                            (input)="facade.groupSetChange(exercise, -1, 'weight', $any($event.target).value)"
+                            (blur)="$any($event.target).value = facade.weightText(exercise.sets?.[0]?.weight)"
+                            (keydown)="preventInvalidNumericKey($event, true)"
+                          />
+                        </ng-container>
+
+                        <ng-template #wkgrpDetail>
+                          <ng-container *ngFor="let set of exercise.sets; let si = index">
+                            <div class="wkgrp-sets__label">{{ si + 1 }}</div>
+                            <input
+                              type="number"
+                              class="wkex-input"
+                              min="0"
+                              step="1"
+                              inputmode="numeric"
+                              [attr.aria-label]="(facade.measureOf(exercise) === 'TIME' ? 'WKGRP_SECONDS' : 'WKGRP_REPS') | translate"
+                              [ngModel]="facade.groupSetValue(exercise, si)"
+                              (ngModelChange)="facade.groupSetChange(exercise, si, 'value', $event)"
+                              (keydown)="preventInvalidNumericKey($event)"
+                            />
+                            <input
+                              *ngIf="facade.shouldShowWeightField() && exercise.type !== 'CARDIO'"
+                              type="text"
+                              class="wkex-input"
+                              placeholder="—"
+                              autocomplete="off"
+                              inputmode="decimal"
+                              [attr.aria-label]="'WEIGHT_WITH_UNIT' | translate:{ unit: facade.getWeightUnitLabel() }"
+                              [value]="facade.weightText(set.weight)"
+                              (input)="facade.groupSetChange(exercise, si, 'weight', $any($event.target).value)"
+                              (blur)="$any($event.target).value = facade.weightText(set.weight)"
+                              (keydown)="preventInvalidNumericKey($event, true)"
+                            />
+                            <!-- ↓ : les séries (ou tours) d'en dessous prennent les chiffres de celle-ci. -->
+                            <button
+                              *ngIf="si < exercise.sets.length - 1; else wkgrpNoCopy"
+                              type="button"
+                              class="wkex-action wkex-action--copydown"
+                              [title]="'WKSET_COPY_DOWN' | translate"
+                              [attr.aria-label]="'WKSET_COPY_DOWN' | translate"
+                              (click)="facade.copySetDown(exercise, si)"
+                            >
+                              <i-feather name="arrow-down" class="wkex-action__icon"></i-feather>
+                            </button>
+                            <ng-template #wkgrpNoCopy><span></span></ng-template>
+                          </ng-container>
+                        </ng-template>
+                      </div>
+
+                      <div class="wkgrp-links">
+                        <ng-container *ngIf="facade.isSetDetail(exercise); else wkgrpOpen">
+                          <button type="button" class="wkgrp-link" (click)="facade.flattenGroupSets(exercise)">
+                            {{ 'WKGRP_SAME_VALUE' | translate }}
+                          </button>
+                        </ng-container>
+                        <ng-template #wkgrpOpen>
+                          <button type="button" class="wkgrp-link" (click)="facade.openSetDetail(exercise)">
+                            {{ (facade.groupTypeAt(i) === 'CIRCUIT' ? 'WKGRP_BY_ROUND' : 'WKGRP_BY_SET') | translate }}
+                            <i-feather name="chevron-down" class="wkgrp-link__ico"></i-feather>
+                          </button>
+                        </ng-template>
+                      </div>
                     </div>
                   </div>
                 </article>
 
+                <div *ngIf="!sortMode && facade.isGroupEndAt(i)" class="wkgrp-foot" [class.is-circuit]="facade.groupTypeAt(i) === 'CIRCUIT'">
+                  <button type="button" class="wkgrp-add" [class.is-active]="facade.isAddingToGroup(i)" (click)="facade.addToGroup(i)">
+                    <span aria-hidden="true">＋</span>
+                    {{ (facade.groupTypeAt(i) === 'CIRCUIT' ? 'WKGRP_ADD_TO_CIRCUIT' : 'WKGRP_ADD_TO_SUPERSET') | translate }}
+                  </button>
+                  <div *ngIf="facade.suggestCircuitAt(i)" class="wkgrp-hint">
+                    <span>{{ 'WKGRP_TOO_LONG' | translate }}</span>
+                    <button type="button" class="wkgrp-link" (click)="facade.convertGroup(i, 'CIRCUIT')">{{ 'WKGRP_TO_CIRCUIT' | translate }}</button>
+                  </div>
+                </div>
+
+                <!-- Entre deux exercices seuls : « Lier en superset », un vrai bouton lisible posé sur un trait. -->
                 <div
-                  *ngIf="canShowSupersetButton(i)"
+                  *ngIf="!sortMode && !libDrag && canShowSupersetButton(i) && !isSupersetPair(i) && facade.canLinkAt(i) && !isCollapsed(exercise) && !isCollapsed(selectedDay.workoutSessions[0].exercises[i + 1])"
                   class="wkex-supersetbar"
-                  [class.is-active]="isSupersetPair(i)"
                 >
                   <button
                     type="button"
                     class="wkex-supersetbtn"
-                    [class.is-active]="isSupersetPair(i)"
+                    [title]="'WKGRP_SUPERSET_HELP' | translate"
                     (click)="toggleSuperset(i)"
                   >
-                    {{ isSupersetPair(i) ? ('REMOVE_SUPERSET' | translate) : ('ADD_SUPERSET' | translate) }}
+                    <i-feather name="link" class="wkex-supersetbtn__ico"></i-feather>
+                    {{ 'WKGRP_LINK_SUPERSET' | translate }}
                   </button>
                 </div>
               </ng-container>
+
+              <div *ngIf="libDrag && libDropIndex === selectedDay.workoutSessions[0].exercises.length" class="wklib-slot" aria-hidden="true">
+                <i-feather name="plus-circle" class="wklib-slot__ico"></i-feather>
+                {{ 'LIB_DROP_HERE' | translate }}
+              </div>
             </div>
+
+            <!-- Après un déplacement : « Déplacé · Annuler » (5 s), ou pourquoi ce n'était pas permis. -->
+            <div *ngIf="moveToast" class="wkmove-toast" role="status" aria-live="polite">
+              <span>{{ moveToast.text }}</span>
+              <button *ngIf="moveToast.undo" type="button" class="wkmove-toast__undo" (click)="undoMove()">{{ 'DRAG_UNDO' | translate }}</button>
+            </div>
+
+            <!-- Toute la séance est un échauffement : le bouton vient après la liste. -->
+            <button *ngIf="facade.warmupCount && facade.warmupCount === selectedDay.workoutSessions[0].exercises.length" type="button"
+                    class="wkwarm-add wkwarm-add--end" [class.is-active]="facade.addTargetWarmup" (click)="facade.startWarmup()">
+              <i-feather name="zap" class="wkgrp-badge__ico"></i-feather>
+              {{ 'WARM_UP_ADD_MORE' | translate }}
+            </button>
           </ng-container>
 
-          <button type="button" class="wkex-addexercise" (click)="openExerciseSelector()">
-            <span class="wkex-plus">＋</span>
-             {{ 'ADD_EXERCISE' | translate }}
-          </button>
+          <div *ngIf="facade.pendingGroup as pg" class="wkgrp-head wkgrp-head--pending" [class.is-circuit]="pg.type === 'CIRCUIT'">
+            <span class="wkgrp-badge">
+              <i-feather [name]="pg.type === 'CIRCUIT' ? 'repeat' : 'link'" class="wkgrp-badge__ico"></i-feather>
+              {{ (pg.type === 'CIRCUIT' ? 'WKGRP_CIRCUIT' : 'WKGRP_SUPERSET') | translate }}
+            </span>
+            <span class="wkgrp-field__label">{{ 'WKGRP_PICK' | translate }}</span>
+          </div>
+
+          <!-- Pendant qu'un nouveau groupe attend ses exercices, on cache l'ajout normal : un seul choix à l'écran. -->
+          <ng-container *ngIf="!facade.pendingGroup">
+            <div *ngIf="libDrag && libDropIndex !== null && !selectedDay?.workoutSessions[0]?.exercises?.length" class="wklib-slot" aria-hidden="true">
+              <i-feather name="plus-circle" class="wklib-slot__ico"></i-feather>
+              {{ 'LIB_DROP_HERE' | translate }}
+            </div>
+            <button type="button" class="wkex-addexercise" [class.wkex-addexercise--after-group]="facade.trailingGroupType" (click)="openExerciseSelector()">
+              <span class="wkex-plus">＋</span>
+              {{ 'ADD_EXERCISE' | translate }}
+            </button>
+
+            <div class="wkgrp-create">
+              <span class="wkgrp-field__label">{{ 'WKGRP_OR_CREATE' | translate }}</span>
+              <button type="button" class="wkgrp-chip" [title]="'WKGRP_SUPERSET_HELP' | translate" (click)="facade.startGroup('SUPERSET')">
+                <i-feather name="link" class="wkgrp-badge__ico"></i-feather>
+                {{ 'WKGRP_SUPERSET' | translate }}
+              </button>
+              <button type="button" class="wkgrp-chip" [title]="'WKGRP_CIRCUIT_HELP' | translate" (click)="facade.startGroup('CIRCUIT')">
+                <i-feather name="repeat" class="wkgrp-badge__ico"></i-feather>
+                {{ 'WKGRP_CIRCUIT' | translate }}
+              </button>
+            </div>
+          </ng-container>
         </div>
         </div>
       </section>
@@ -788,8 +1172,11 @@
       <aside class="wkdrawer" role="dialog" [attr.aria-label]="'CHOOSE_EXERCISE' | translate">
         <div class="wkdrawer__head">
           <div class="wkdrawer__heading">
-            <h2 class="wkdrawer__title">{{ 'CHOOSE_EXERCISE' | translate }}</h2>
+            <h2 class="wkdrawer__title">
+              {{ (facade.addTargetWarmup ? 'WARM_UP_DRAWER' : facade.addTargetGroup ? (facade.addTargetGroup.type === 'CIRCUIT' ? 'WKGRP_DRAWER_CIRCUIT' : 'WKGRP_DRAWER_SUPERSET') : 'CHOOSE_EXERCISE') | translate }}
+            </h2>
             <p class="wkdrawer__count">{{ 'EXERCISES_AVAILABLE' | translate:{ count: totalExercises } }}</p>
+            <p *ngIf="canDragFromLibrary" class="wkdrawer__draghint">{{ 'LIB_DRAG_HINT' | translate }}</p>
           </div>
           <button type="button" class="wkdrawer__close" [attr.aria-label]="'CLOSE' | translate" (click)="closeExerciseSelector()">✕</button>
         </div>
@@ -899,6 +1286,10 @@
             <li
               class="wkdrawer__item"
               [class.is-added]="isExerciseAdded(ex)"
+              [class.is-draggable]="canDragFromLibrary"
+              [class.is-lib-dragging]="libDrag === ex"
+              [attr.title]="canDragFromLibrary ? ('LIB_DRAG_ITEM' | translate) : null"
+              (pointerdown)="onLibPointerDown(ex, $event)"
               *ngFor="let ex of exerciseDatabase"
               (mouseenter)="hoveringExerciseId = ex.id"
               (mouseleave)="hoveringExerciseId = null"
@@ -908,6 +1299,7 @@
                   *ngIf="getExerciseThumbnail(ex); else drawerThumbFallback"
                   [src]="getExerciseThumbnail(ex)"
                   [alt]="ex.name"
+                  draggable="false"
                   loading="lazy"
                 />
 
@@ -929,6 +1321,11 @@
                   <ng-container *ngIf="ex.muscle || ex.exerciseRef?.muscle">
                     · {{ 'EXERCISE_MUSCLE_' + (ex.muscle || ex.exerciseRef?.muscle) | translate }}
                   </ng-container>
+                </div>
+                <!-- Déjà dans la séance : on le dit, mais « + » l'ajoute quand même (ex. squat lourd puis léger). -->
+                <div class="wkdrawer__insession" *ngIf="!isExerciseAdded(ex) && isExerciseInSession(ex)">
+                  <i-feather name="check"></i-feather>
+                  {{ 'ALREADY_IN_SESSION' | translate }}
                 </div>
               </div>
 
@@ -1151,6 +1548,16 @@
 </div>
 
 
+<!-- Choix rapides du champ « Repos (s) ». -->
+<datalist id="wk-rest-presets">
+  <option value="30"></option>
+  <option value="45"></option>
+  <option value="60"></option>
+  <option value="90"></option>
+  <option value="120"></option>
+  <option value="180"></option>
+</datalist>
+
 <!-- Copies between days: « Copier vers… », « Dupliquer la semaine », « Coller sur… ». -->
 <app-copy-days-modal
   *ngIf="copy.modal as copyModal"
@@ -1174,6 +1581,95 @@
   (fill)="fillEmptyDay($event)"
   (close)="emptyDaysPrompt = null"
 ></app-empty-days-modal>
+
+<div class="np-modal np-planedit" *ngIf="planEditOpen" role="dialog" aria-modal="true" aria-labelledby="npPlanEditTitle" (keydown.escape)="closePlanEdit()">
+  <div class="np-modal__backdrop" (click)="closePlanEdit()"></div>
+  <form class="np-modal__panel np-planedit__panel" (ngSubmit)="savePlanEdit()" novalidate>
+    <div class="np-modal__head">
+      <div>
+        <h3 id="npPlanEditTitle" class="np-modal__title">{{ 'PLAN_EDIT_TITLE' | translate }}</h3>
+        <p class="np-planedit__sub">{{ 'PLAN_EDIT_SUBTITLE' | translate }}</p>
+      </div>
+      <button type="button" class="np-modal__close" (click)="closePlanEdit()" [attr.aria-label]="'CLOSE' | translate">
+        <i-feather name="x" class="np-ico"></i-feather>
+      </button>
+    </div>
+
+    <div class="np-modal__body np-planedit__body">
+      <div class="np-field">
+        <label class="np-label" for="npPlanEditName">{{ 'PLAN_TITLE' | translate }} <span class="np-danger">*</span></label>
+        <input
+          id="npPlanEditName"
+          class="np-input"
+          [class.is-invalid]="planEditError"
+          type="text"
+          name="planEditName"
+          autocomplete="off"
+          [(ngModel)]="planEdit.name"
+          (ngModelChange)="planEditError = ''"
+          [placeholder]="'PLAN_NAME' | translate"
+        />
+        <p class="np-planedit__error" *ngIf="planEditError" role="alert">{{ planEditError | translate }}</p>
+      </div>
+
+      <div class="np-field">
+        <label class="np-label" for="npPlanEditDetails">{{ 'PLAN_EDIT_DESCRIPTION' | translate }}</label>
+        <textarea
+          id="npPlanEditDetails"
+          class="np-input np-textarea"
+          rows="4"
+          name="planEditDetails"
+          [(ngModel)]="planEdit.details"
+          [placeholder]="'ENTER_PLAN_DESCRIPTION' | translate"
+        ></textarea>
+      </div>
+
+      <div class="np-field">
+        <label class="np-label" for="npPlanEditWeeks">{{ 'DURATION_WEEKS' | translate }} <span class="np-danger">*</span></label>
+        <select id="npPlanEditWeeks" class="np-input" name="planEditWeeks" [(ngModel)]="planEdit.weeks">
+          <option *ngFor="let option of durationOptions" [ngValue]="option">
+            {{ 'DURATION_OPTION' | translate:{ weeks: option, days: option * 7 } }}
+          </option>
+        </select>
+        <p class="np-help" *ngIf="planEdit.weeks < durationWeeks">
+          {{ 'PLAN_EDIT_SHORTER' | translate:{ days: (durationWeeks - planEdit.weeks) * 7 } }}
+        </p>
+      </div>
+
+      <app-client-program-dates
+        *ngIf="isClientMode"
+          kind="WORKOUT"
+          [planId]="workoutPlan.id || null"
+          [planName]="workoutPlan.name"
+          [clientId]="clientId"
+          [clientName]="clientName"
+          [startDate]="startDate"
+          [endDate]="endDate"
+          [dayCount]="days.length"
+          [visibleDays]="visibleDaysCount"
+          [started]="clientStarted"
+          [readOnly]="readOnly"
+          [stoppedAt]="stoppedAt"
+          (moved)="onClientDatesMoved($event)"
+      ></app-client-program-dates>
+
+      <div class="np-field" *ngIf="canCreateTemplate && !isClientMode">
+        <label class="np-checkline">
+          <input type="checkbox" name="planEditVisible" [(ngModel)]="planEdit.visible" />
+          <span>{{ 'VISIBLE_TO_OTHER_COACHES' | translate }}</span>
+        </label>
+        <p class="np-help">{{ 'VISIBLE_TO_COACHES_HINT' | translate }}</p>
+      </div>
+    </div>
+
+    <div class="np-modal__foot np-planedit__foot">
+      <button type="button" class="np-planedit__btn" (click)="closePlanEdit()">{{ 'CANCEL' | translate }}</button>
+      <button type="submit" class="np-planedit__btn np-planedit__btn--primary" [disabled]="savingDraft">
+        {{ 'PLAN_EDIT_SAVE' | translate }}
+      </button>
+    </div>
+  </form>
+</div>
 
 <div class="duration-confirm" *ngIf="pendingDurationWeeks" role="dialog" aria-modal="true">
   <div class="duration-confirm__backdrop" (click)="cancelDurationReduction()"></div>
@@ -1200,4 +1696,29 @@
       </button>
     </div>
   </section>
+</div>
+
+<!-- Tout l'historique d'un exercice pour ce client (ouvert depuis « Dernière fois »). -->
+<div *ngIf="historyExercise" class="wkex-history" (click)="historyExercise = null">
+  <section class="wkex-history__panel" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+    <header class="wkex-history__head">
+      <h3>{{ historyExercise }}</h3>
+      <button type="button" [attr.aria-label]="ht('Close', 'Fermer')" (click)="historyExercise = null">✕</button>
+    </header>
+    <app-exercise-progress-detail [clientId]="clientId" [exercise]="historyExercise"></app-exercise-progress-detail>
+  </section>
+</div>
+
+<!-- Glisser depuis la bibliothèque : la carte qui suit la souris (déplacée par le code, hors d'Angular). -->
+<div *ngIf="libGhost" #libGhostEl class="wklib-ghost" aria-hidden="true">
+  <div class="wklib-ghost__card" [class.is-over]="libDropIndex !== null">
+    <div class="wklib-ghost__thumb">
+      <img *ngIf="libGhost.thumb; else libGhostNoThumb" [src]="libGhost.thumb" alt="" draggable="false" />
+      <ng-template #libGhostNoThumb><i-feather name="activity" class="wklib-ghost__noimg"></i-feather></ng-template>
+    </div>
+    <div class="wklib-ghost__meta">
+      <div class="wklib-ghost__name">{{ libGhost.name }}</div>
+      <span class="wklib-ghost__chip">{{ libGhost.sub }}</span>
+    </div>
+  </div>
 </div>

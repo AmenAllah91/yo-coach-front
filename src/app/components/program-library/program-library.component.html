@@ -4,12 +4,13 @@
       <i-feather name="arrow-left"></i-feather>
     </button>
     <div class="header-content">
-      <h1>{{ 'PROGRAM_LIBRARY' | translate }}</h1>
-      <p>{{ 'PROGRAM_LIBRARY_SUBTITLE' | translate }}</p>
+      <h1>{{ (publicTemplates ? 'PUBLIC_TEMPLATES' : 'PROGRAM_LIBRARY') | translate }}</h1>
+      <p>{{ (publicTemplates ? (isAdmin ? 'PUBLIC_TEMPLATES_SUBTITLE_ADMIN' : 'PUBLIC_TEMPLATES_SUBTITLE') : 'PROGRAM_LIBRARY_SUBTITLE') | translate }}</p>
     </div>
-    <button class="primary-btn" appWriteAction (click)="createProgram()">
+    <!-- Public templates: only the admin creates them; a coach copies them. -->
+    <button class="primary-btn" appWriteAction *ngIf="!readOnlyTemplates" (click)="createProgram()">
       <i-feather name="plus"></i-feather>
-      {{ 'CREATE_PROGRAM' | translate }}
+      {{ (publicTemplates ? 'CREATE_PUBLIC_TEMPLATE' : 'CREATE_PROGRAM') | translate }}
     </button>
   </div>
 
@@ -86,8 +87,20 @@
                 <i-feather name="chevron-down"></i-feather>
               </button>
               <div class="dropdown-menu dropdown-menu--side" (click)="$event.stopPropagation()">
+                <!-- A coach on the public templates: copy it into his programs (then adapt and assign the copy). -->
+                <ng-container *ngIf="readOnlyTemplates; else ownerMenu">
+                  <button class="dropdown-item" appWriteAction [disabled]="duplicatingId === program.id" (click)="duplicateProgram(program)">
+                    <i-feather name="copy"></i-feather>
+                    {{ 'TEMPLATE_COPY_TO_MY_PROGRAMS' | translate }}
+                  </button>
+                  <button class="dropdown-item" *ngIf="isFileProgram(program)" (click)="openProgramFile(program)">
+                    <i-feather name="eye"></i-feather>
+                    {{ 'OPEN_FILE' | translate }}
+                  </button>
+                </ng-container>
+                <ng-template #ownerMenu>
                 <ng-container *ngIf="isFileProgram(program); else appProgramMenu">
-                  <button class="dropdown-item" (click)="assignToClients(program)">
+                  <button class="dropdown-item" *ngIf="!publicTemplates" (click)="assignToClients(program)">
                     <i-feather name="users"></i-feather>
                     {{ 'ASSIGN_TO_CLIENTS' | translate }}
                   </button>
@@ -109,7 +122,7 @@
                 </ng-container>
 
                 <ng-template #appProgramMenu>
-                  <button class="dropdown-item" (click)="assignToClients(program)">
+                  <button class="dropdown-item" *ngIf="!publicTemplates" (click)="assignToClients(program)">
                     <i-feather name="users"></i-feather>
                     {{ 'ASSIGN_TO_CLIENTS' | translate }}
                   </button>
@@ -128,6 +141,7 @@
                     <i-feather name="trash-2"></i-feather>
                     {{ 'DELETE_PROGRAM' | translate }}
                   </button>
+                </ng-template>
                 </ng-template>
               </div>
             </div>
@@ -149,7 +163,17 @@
         <button type="button" class="page-btn" (click)="nextPage()" [disabled]="currentPage === totalPages - 1">&gt;</button>
       </div>
 
-      <div class="no-programs" *ngIf="filteredPrograms.length === 0 && !isLoading"><p>{{ 'NO_PROGRAMS_FOUND' | translate }}</p></div>
+      <div class="no-programs" *ngIf="filteredPrograms.length === 0 && !isLoading">
+        <app-empty-state
+          *ngIf="!publicTemplates && !searchTerm && programTypeFilter === 'ALL'"
+          icon="folder"
+          title="EMPTY_PROGRAMS_TITLE"
+          text="EMPTY_PROGRAMS_TEXT"
+          actionLabel="CREATE_PROGRAM"
+          (action)="createProgram()"></app-empty-state>
+        <p *ngIf="searchTerm || (!publicTemplates && programTypeFilter !== 'ALL')">{{ 'NO_PROGRAMS_FOUND' | translate }}</p>
+        <p *ngIf="publicTemplates && !searchTerm">{{ (isAdmin ? 'PUBLIC_TEMPLATES_EMPTY_ADMIN' : 'PUBLIC_TEMPLATES_EMPTY') | translate }}</p>
+      </div>
     </div>
   </div>
 

@@ -84,7 +84,8 @@
               <!-- Submenu -->
               <ng-container *ngIf="item.submenu?.length">
                 <ul class="submenu" [class.expanded]="item.isExpanded">
-                  <li *ngFor="let subItem of item.submenu; trackBy: trackByItem" class="submenu-item" [class.active]="subItem.isActive">
+                  <ng-container *ngFor="let subItem of item.submenu; trackBy: trackByItem">
+                  <li *ngIf="!isHidden(subItem)" class="submenu-item" [class.active]="subItem.isActive">
                     <a
                       [routerLink]="subItem.path"
                       class="submenu-link"
@@ -94,6 +95,7 @@
                       <i-feather *ngIf="isLocked(subItem)" name="lock" class="nav-lock" [attr.aria-label]="lockLabel(subItem) | translate"></i-feather>
                     </a>
                   </li>
+                  </ng-container>
                 </ul>
               </ng-container>
             </ng-container>
@@ -119,11 +121,28 @@
     </a>
   </div>
 
+  <!-- Client menu (2026-11-17): the coach, a click opens the chat. -->
+  <button *ngIf="coach" type="button" class="sidebar-coach" (click)="openCoachChat()"
+          [attr.title]="'SIDEBAR_WRITE_TO_COACH' | translate">
+    <img *ngIf="coach.avatar; else coachInitialsTpl" [src]="coach.avatar" (error)="onCoachPhotoError()" alt="" />
+    <ng-template #coachInitialsTpl><span class="sidebar-coach__initials">{{ coachInitials }}</span></ng-template>
+    <span class="sidebar-coach__copy">
+      <small>{{ 'SIDEBAR_MY_COACH' | translate }}</small>
+      <strong>{{ coach.name }}</strong>
+    </span>
+    <i-feather name="message-circle" class="sidebar-coach__chat"></i-feather>
+  </button>
+
   <div class="sidebar-account">
     <div class="account-menu" *ngIf="accountMenuOpen" (click)="$event.stopPropagation()">
       <button type="button" class="account-menu-item" (click)="openSettings()">
         <i-feather name="settings"></i-feather>
         <span>{{ 'SETTINGS' | translate }}</span>
+      </button>
+      <!-- Coach menu (2026-11-17): the subscription moved here from the sidebar. -->
+      <button *ngIf="userRoleKey === 'COACH'" type="button" class="account-menu-item" (click)="openSubscription()">
+        <i-feather name="credit-card"></i-feather>
+        <span>{{ 'MY_SUBSCRIPTION' | translate }}</span>
       </button>
       <button type="button" class="account-menu-item logout" (click)="logout()">
         <i-feather name="log-out"></i-feather>

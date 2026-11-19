@@ -2,10 +2,12 @@
   <div class="yc-container">
     <header class="yc-page-header">
       <div class="yc-page-header__copy">
-        <h1 class="yc-page-header__title">{{ t('Body Measurements', 'Mensurations') }}</h1>
+        <h1 class="yc-page-header__title">{{ t('Progress', 'Progression') }}</h1>
         <p class="yc-page-header__subtitle">{{ t('Track how your body changes', "Suivez l'évolution de votre corps") }}</p>
       </div>
     </header>
+
+    <app-progress-tabs [active]="'measurements'" [fr]="fr"></app-progress-tabs>
 
     <div *ngIf="loading" class="yc-loading"><span class="yc-spinner"></span></div>
     <p *ngIf="!loading && error && !measurements.length" class="yc-subtitle center-text">{{ error }}</p>

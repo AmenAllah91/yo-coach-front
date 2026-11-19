@@ -1,0 +1,143 @@
+@use '../../../coach-dashboard/shared/dashboard-tokens' as *;
+
+.notes { gap: 12px; }
+
+.ov-head__titles small i { font-size: 10px; margin-right: 3px; }
+
+.notes-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  margin-left: 8px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: $line-soft;
+  color: $muted;
+  font-size: 11.5px;
+  font-weight: 650;
+  vertical-align: 2px;
+}
+
+.notes-new {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  textarea {
+    width: 100%;
+    min-height: 60px;
+    padding: 10px 12px;
+    border: 1px solid $line;
+    border-radius: 10px;
+    background: light-dark(#f8fafc, #23272c);
+    color: $ink;
+    font: inherit;
+    font-size: 13px;
+    line-height: 1.45;
+    resize: vertical;
+    transition: background .15s ease, border-color .15s ease;
+
+    &::placeholder { color: $faint; }
+    &:focus { outline: none; background: $surface; border-color: $brand; box-shadow: 0 0 0 3px light-dark(#e3f4fb, #1d323c); }
+  }
+
+  &__bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+}
+
+.notes-btn {
+  height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  background: $brand-strong;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 650;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { background: light-dark(#187aa2, #2a9fcf); }
+  &:disabled { opacity: .5; cursor: default; }
+  &:focus-visible { outline: 2px solid $brand; outline-offset: 2px; }
+}
+
+.notes-ghost {
+  height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: $muted;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover { background: $line-soft; color: $ink-soft; }
+}
+
+.notes-state {
+  margin: 0;
+  font-size: 12.5px;
+  color: $muted;
+
+  &--error { color: $danger; }
+}
+
+.notes-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+// One note: a soft yellow « post-it » block, date and small icon actions underneath.
+.note {
+  padding: 10px 12px 6px;
+  border-radius: 10px;
+  background: light-dark(#fffbeb, #2c2716);
+  border: 1px solid light-dark(#f6e7b8, #3d3520);
+
+  &__text {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: $ink-soft;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+  }
+
+  &__meta {
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+
+    time { font-size: 11.5px; color: $muted; margin-right: auto; }
+  }
+
+  &__icon {
+    width: 28px;
+    height: 28px;
+    border: 0;
+    border-radius: 7px;
+    background: none;
+    color: $faint;
+    font-size: 11.5px;
+    cursor: pointer;
+
+    &:hover { background: light-dark(#f6edcf, #3a3320); color: $ink-soft; }
+    &--danger:hover { background: $danger-soft; color: $danger; }
+    &:focus-visible { outline: 2px solid $brand; outline-offset: 1px; }
+  }
+
+  .notes-new textarea { background: $surface; }
+}
+
+.notes-more { align-self: flex-start; }

@@ -395,11 +395,11 @@ export class RegisterComponent implements OnInit {
       next: (plans) => {
         this.selectedPlan = plans.find(plan => plan.id === planId) ?? null;
         if (!this.selectedPlan) {
-          this.planLoadError = 'The selected plan is no longer available. Please choose another plan.';
+          this.planLoadError = 'REGISTER_PLAN_UNAVAILABLE';
         }
       },
       error: () => {
-        this.planLoadError = 'We could not confirm the selected plan. Please return to the plans page and try again.';
+        this.planLoadError = 'REGISTER_PLAN_CHECK_ERROR';
       }
     });
   }

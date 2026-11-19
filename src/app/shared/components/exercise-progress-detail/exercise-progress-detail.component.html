@@ -1,0 +1,41 @@
+<p *ngIf="loading" class="xpd__state">{{ t('Loading…', 'Chargement…') }}</p>
+<p *ngIf="failed" class="xpd__state">{{ t('The history could not be loaded.', 'L’historique n’a pas pu être chargé.') }}</p>
+<p *ngIf="notDone" class="xpd__state">{{ t('This client has not done this exercise yet.', 'Ce client n’a pas encore fait cet exercice.') }}</p>
+
+<div *ngIf="history as h" class="xpd">
+  <div class="xpd-facts">
+    <div><small>{{ metricLabel(h) }} · {{ t('last time', 'dernière fois') }}</small><strong>{{ value(h, last(h).value) }}</strong></div>
+    <div><small>{{ t('Record', 'Record') }}</small><strong>{{ best(h) }}</strong></div>
+    <div *ngIf="delta(h) as change">
+      <small>{{ t('Since the first workout', 'Depuis la première séance') }}</small>
+      <strong [class.is-up]="change.up" [class.is-down]="!change.up && !change.flat">{{ change.flat ? t('No change', 'Pas de changement') : change.text }}</strong>
+    </div>
+    <div><small>{{ t('Workouts', 'Séances') }}</small><strong>{{ h.sessions.length }}</strong></div>
+  </div>
+
+  <figure *ngIf="points(h).length > 1" class="xpd-chart">
+    <svg [attr.viewBox]="'0 0 ' + chartW + ' ' + chartH" role="img" [attr.aria-label]="t('Progress of ', 'Progression de ') + h.name">
+      <polyline [attr.points]="polyline(h)"></polyline>
+      <circle *ngFor="let point of points(h)" [attr.cx]="point.x" [attr.cy]="point.y" r="4">
+        <title>{{ pointTitle(h, point.index, point.value) }}</title>
+      </circle>
+    </svg>
+    <figcaption *ngIf="chartDates(h) as dates"><span>{{ dates.first }}</span><span>{{ dates.last }}</span></figcaption>
+  </figure>
+
+  <h4 class="xpd-title">{{ t('Workout by workout', 'Séance par séance') }}</h4>
+  <ol class="xpd-sessions">
+    <li *ngFor="let session of recent(h)">
+      <div class="xpd-sessions__top">
+        <strong>{{ date(session, true) }}</strong>
+        <span *ngIf="isBest(h, session)" class="xpd-tag xpd-tag--best">{{ t('Record', 'Record') }}</span>
+        <span *ngIf="difficulty(session) as feel" class="xpd-tag" [class.xpd-tag--hard]="session.difficulty === 'HARD'" [class.xpd-tag--easy]="session.difficulty === 'EASY'">{{ feel }}</span>
+      </div>
+      <p><span>{{ t('Done', 'Fait') }}</span>{{ doneLine(h, session) }}</p>
+      <p *ngIf="plannedLine(h, session) as planned" class="xpd-sessions__planned" [class.is-below]="below(h, session)">
+        <span>{{ t('Planned', 'Prévu') }}</span>{{ planned }}
+      </p>
+      <p *ngIf="session.note" class="xpd-sessions__note"><i-feather name="message-square"></i-feather>{{ session.note }}</p>
+    </li>
+  </ol>
+</div>

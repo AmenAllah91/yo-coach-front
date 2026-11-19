@@ -1,3 +1,4 @@
+import { EmptyStateComponent } from 'app/shared/components/empty-state/empty-state.component';
 import { ProgramDaysBadgeComponent } from '@shared/components/program-days-badge/program-days-badge.component';
 import { WriteActionDirective } from 'app/shared/subscription/write-action.directive';
 import { Component, OnInit, OnDestroy } from '@angular/core';
@@ -33,7 +34,7 @@ const PLAN_KIND_ICONS: Record<NutritionPlanKind, string> = {
 @Component({
   selector: 'app-nutrition-plans',
   standalone: true,
-  imports: [WriteActionDirective, ProgramDaysBadgeComponent, 
+  imports: [WriteActionDirective, EmptyStateComponent, ProgramDaysBadgeComponent, 
     CommonModule,
     FormsModule,
     FeatherModule,

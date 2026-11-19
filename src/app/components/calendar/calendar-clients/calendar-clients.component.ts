@@ -10,6 +10,7 @@ import {
   EventEmitter,
   OnChanges,
   SimpleChanges,
+  HostListener,
 } from '@angular/core';
 import { Observable, finalize } from 'rxjs';
 import { DestroyRef, inject as injectService } from '@angular/core';
@@ -33,6 +34,7 @@ import { CalendarFile, FileBand, arrangeFiles, weekBands } from '@shared/models/
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ClientService } from 'app/service/client.service';
+import { ChatService } from 'app/service/chat.service';
 import { Router } from '@angular/router';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { WorkoutPlan } from '@shared/models/workout.models';
@@ -192,6 +194,24 @@ interface NutritionProgram {
   raw?: any;
 }
 
+/** What the client wrote: on the whole day (label '') or on one exercise / meal (its name). */
+interface ClientNote {
+  label: string;
+  text: string;
+}
+
+/** Notes the coach has opened (this browser): no blue dot on them any more. */
+const SEEN_NOTES_KEY = 'yo-coach.calendar.seen-notes';
+/** Older notes never get the dot (the first visit would light up every past day). */
+const NEW_NOTE_DAYS = 14;
+
+/** A short stable key for a note (it is stored, not its text). */
+function noteHash(text: string): string {
+  let hash = 5381;
+  for (let i = 0; i < text.length; i++) hash = ((hash << 5) + hash + text.charCodeAt(i)) | 0;
+  return (hash >>> 0).toString(36);
+}
+
 /** A cell of the week in rows (lot C, L1): its title, one line under it, its status. */
 interface WeekCell<T> {
   item: T;
@@ -201,6 +221,10 @@ interface WeekCell<T> {
   /** The detail of the day (as a coach's program sheet): its exercises, or its meals. */
   exercises?: ExerciseLine[];
   meals?: MealLine[];
+  /** What the client wrote on the workout (its overall note, then each exercise's note), shown on the card. */
+  notes?: ClientNote[];
+  /** A recent note the coach has not opened yet (blue dot). */
+  notesNew?: boolean;
   /** A workout that can be dragged onto another day (not done, not past, program not stopped: K1, C4). */
   movable?: boolean;
 }
@@ -218,6 +242,8 @@ interface WeekRowDay {
   tasksDone: number;
   tasksTone: string | null;
   checkIns: CalendarCheckIn[];
+  /** The client wrote something recent the coach has not opened yet (blue dot on the day). */
+  unreadNote: boolean;
   /** A file band covers the day (nothing else to add under it). */
   workoutCovered: boolean;
   nutritionCovered: boolean;
@@ -233,6 +259,10 @@ interface WeekPlan {
   /** Grid rows of a type: one per file band, then the cells. */
   workoutRows: string;
   nutritionRows: string;
+  /** Rows with nothing all week: folded into one line under the grid (nutrition can be opened to add some). */
+  emptyNutrition: boolean;
+  emptyTasks: boolean;
+  emptyCheckIns: boolean;
 }
 
 /** « Ce jour-là » (lot C, L2-L3): what was planned that day face to what the client did. */
@@ -368,6 +398,8 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
   @Input() embeddedCoachId: string | null = null;
   /** The client's name inside their profile (the calendar has no list of clients there). */
   @Input() embeddedClientName = '';
+  /** The client's photo inside their profile: shown next to what they wrote (notes as messages). */
+  @Input() embeddedClientPhoto = '';
   @Input() hideClientFilter = false;
   /** A file band clicked: the client profile opens it as its tab does. Alone, the calendar opens it itself. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -398,6 +430,7 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
     private coachSettingsService: CoachSettingsService,
     private translate: TranslateService,
     private profileCache: ClientProfileCacheService,
+    private chatService: ChatService,
   ) {}
 
   ngOnInit(): void {
@@ -423,7 +456,7 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
       this.getClients();
     }
     // A program assigned, moved or shifted from a tab: the calendar reads its months again.
-    this.programSchedule.changed$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.loadCalendar());
+    this.programSchedule.changed$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.refreshCalendar());
     // A phone-sized window: the compact month and the week as a list (CC-24).
     const media = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(max-width: 767px)') : null;
     if (media) {
@@ -435,6 +468,61 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
       media.addEventListener('change', onChange);
       this.destroyRef.onDestroy(() => media.removeEventListener('change', onChange));
     }
+    // A large screen: the day of the week opens on the right side, next to the week (not under it).
+    const large = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(min-width: 1200px)') : null;
+    if (large) {
+      this.wide = large.matches;
+      const onLarge = (event: MediaQueryListEvent) => (this.wide = event.matches);
+      large.addEventListener('change', onLarge);
+      this.destroyRef.onDestroy(() => large.removeEventListener('change', onLarge));
+    }
+    this.countHelpVisit();
+  }
+
+  /** A screen of 1200 px or more (the side panel fits next to the week). */
+  wide = false;
+
+  /** The day panel of the week on the right side (large screen); elsewhere it stays under the week. */
+  get sidePanel(): boolean {
+    return this.wide && !this.narrow && this.currentView === 'week' && !!this.dayDetail;
+  }
+
+  /** Échap closes the side panel (not while one of its windows is open: Échap closes that window). */
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.sidePanel && !this.removeTarget && !this.shiftTarget && !this.copyWeek) this.closeDay();
+  }
+
+  /* ---- The help (drag hint, legend of the symbols): shown the first 3 visits, then behind a « ? » button. ---- */
+
+  helpOpen = true;
+
+  private countHelpVisit(): void {
+    try {
+      const visits = Number(localStorage.getItem('yo-coach.calendar-visits')) || 0;
+      localStorage.setItem('yo-coach.calendar-visits', String(visits + 1));
+      this.helpOpen = visits < 3;
+    } catch {
+      // No storage: the help stays shown.
+    }
+  }
+
+  toggleHelp(): void {
+    this.helpOpen = !this.helpOpen;
+  }
+
+  /** « Aujourd'hui »: the period of the view that holds today. */
+  goToday(): void {
+    this.currentDate = new Date();
+    this.showPeriod();
+  }
+
+  /** Today is already on the screen: « Aujourd'hui » has nothing to do. */
+  get showsToday(): boolean {
+    const today = todayIso();
+    if (this.currentView === 'day') return this.currentDayString === today;
+    if (this.currentView === 'week') return this.getWeekDates().some((date) => this.formatDateToYYYYMMDD(date) === today);
+    return this.monthKey(this.currentDate) === this.monthKey(new Date());
   }
 
   goBack(): void { window.history.back(); }
@@ -520,11 +608,18 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
   private tasksByMonth = new Map<string, TaskCalendarItem[]>();
   private checkInsByMonth = new Map<string, CalendarCheckIn[]>();
   private readGeneration = 0;
+  /**
+   * While the same client's months are read again (after a change): the new plans go here, and the screen keeps the
+   * old ones until every month on the screen has arrived (no blank calendar, no blink).
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private freshPlans: { workout: Map<string, any>; meal: Map<string, any> } | null = null;
   /** A month on the screen is being read (after the first one): a thin bar says it, the grid stays. */
   periodLoading = false;
 
-  /** Everything again from the server: another client, or after a change made here or elsewhere. */
+  /** Everything again from the server, screen emptied first: another client (or the first load). */
   loadCalendar(): void {
+    this.freshPlans = null;
     this.readGeneration++;
     this.monthsRead.clear();
     this.monthsReading.clear();
@@ -536,6 +631,23 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
     const hasClient = !!this.selectedClient && this.selectedClient !== 'all';
     this.workoutsLoaded = this.nutritionLoaded = !hasClient;
     this.applyPlans();
+    this.readPeriod();
+  }
+
+  /**
+   * The same client, after a change made here or elsewhere: every month is read again, but the screen keeps what it
+   * shows until the new data of its months has arrived (the thin bar says it is reading).
+   */
+  refreshCalendar(): void {
+    if (!this.selectedClient || this.selectedClient === 'all' || !this.programsLoaded) {
+      this.loadCalendar();
+      return;
+    }
+    this.readGeneration++;
+    this.monthsRead.clear();
+    this.monthsReading.clear();
+    this.monthsFailed.clear();
+    this.freshPlans = { workout: new Map(), meal: new Map() };
     this.readPeriod();
   }
 
@@ -587,7 +699,17 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
         this.tasksByMonth.set(month, tasks?.items || []);
         this.updateMonthGrid();
       },
-      error: (err) => console.error('Error loading the client tasks', err),
+      error: (err) => {
+        console.error('Error loading the client tasks', err);
+        // An empty Tasks row would read « no tasks »: say it could not be read, with « Réessayer ».
+        if (neighbour || generation !== this.readGeneration) return;
+        this.toast.show({
+          type: 'error',
+          title: this.translate.instant('CALENDAR_TASKS_LOAD_ERROR'),
+          actions: [{ label: this.translate.instant('RETRY'), run: () => this.refreshCalendar() }],
+          duration: 10000,
+        });
+      },
     });
     this.programSchedule.calendar(this.selectedClient, from, to).subscribe({
       next: (period) => {
@@ -595,10 +717,12 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
         this.monthsReading.delete(month);
         this.monthsFailed.delete(month);
         this.monthsRead.add(month);
-        (period?.workoutPlans || []).forEach((plan) => plan?.id && this.workoutPlansById.set(plan.id, plan));
-        (period?.mealPlans || []).forEach((plan) => plan?.id && this.mealPlansById.set(plan.id, plan));
+        const workoutPlans = this.freshPlans?.workout || this.workoutPlansById;
+        const mealPlans = this.freshPlans?.meal || this.mealPlansById;
+        (period?.workoutPlans || []).forEach((plan) => plan?.id && workoutPlans.set(plan.id, plan));
+        (period?.mealPlans || []).forEach((plan) => plan?.id && mealPlans.set(plan.id, plan));
         this.checkInsByMonth.set(month, period?.checkIns || []);
-        this.applyPlans();
+        if (!this.freshPlans) this.applyPlans();
         this.afterRead();
       },
       error: (err) => {
@@ -610,7 +734,7 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
           this.toast.show({
             type: 'error',
             title: this.translate.instant('CALENDAR_LOAD_ERROR'),
-            actions: [{ label: this.translate.instant('RETRY'), run: () => this.loadCalendar() }],
+            actions: [{ label: this.translate.instant('RETRY'), run: () => this.refreshCalendar() }],
             duration: 10000,
           });
         }
@@ -622,6 +746,16 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
   /** Once no month of the screen is being read: the screen is ready, the months around are read in the background. */
   private afterRead(): void {
     if (this.monthsOnScreen().some((month) => this.monthsReading.has(month))) return;
+    if (this.freshPlans) {
+      // Every month on the screen is back: the new plans replace the old ones at once. A month that failed keeps the
+      // old plans (its error says so, with « Réessayer »).
+      if (!this.monthsOnScreen().some((month) => this.monthsFailed.has(month))) {
+        this.workoutPlansById = this.freshPlans.workout;
+        this.mealPlansById = this.freshPlans.meal;
+      }
+      this.freshPlans = null;
+      this.applyPlans();
+    }
     this.workoutsLoaded = this.nutritionLoaded = true;
     this.periodLoading = false;
     this.readNeighbours();
@@ -1262,13 +1396,36 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
       day.nutritionCovered = nutrition.covered[col];
     });
     const rows = (lanes: number) => [...Array.from({ length: lanes }, () => '30px'), 'minmax(64px, auto)'].join(' ');
+    // Another week: an empty nutrition row opened by « + Nutrition » folds again.
+    if (dates[0] !== this.weekShown) {
+      this.weekShown = dates[0];
+      this.nutritionRowOpened = false;
+    }
     return {
       days,
       workoutBands: workout.bands,
       nutritionBands: nutrition.bands,
       workoutRows: rows(workout.lanes),
       nutritionRows: rows(nutrition.lanes),
+      emptyNutrition: !nutrition.bands.length && days.every((day) => !day.nutrition.length),
+      emptyTasks: days.every((day) => !day.tasks.length),
+      emptyCheckIns: days.every((day) => !day.checkIns.length),
     };
+  }
+
+  /** The first day of the week drawn (to fold the nutrition row again on another week). */
+  private weekShown = '';
+  /** « + Nutrition » clicked on a week without nutrition: its row shows, with its « + » per day. */
+  nutritionRowOpened = false;
+
+  /** The rows of the week with nothing in them, said in one line under the grid (« Rien cette semaine : ... »). */
+  emptyRowsText(plan: WeekPlan): string {
+    const names = [
+      plan.emptyNutrition && !this.nutritionRowOpened ? 'CALENDAR_ROW_NUTRITION' : null,
+      plan.emptyTasks ? 'CALENDAR_ROW_TASKS' : null,
+      plan.emptyCheckIns ? 'CALENDAR_ROW_CHECKINS' : null,
+    ].filter((key): key is string => !!key).map((key) => this.translate.instant(key));
+    return names.length ? this.translate.instant('CALENDAR_EMPTY_ROWS', { rows: names.join(' · ') }) : '';
   }
 
   /** A day's cards (the week and the month show the same): its program days, its tasks and check-ins. */
@@ -1277,14 +1434,17 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
     const checkIns = this.checkInsByDate.get(dateString) || [];
     const tasks = (this.tasksByDate.get(dateString) || [])
       .filter((task) => !(task.taskType === 'FORM' && checkIns.some((checkIn) => checkIn.id === task.formAssignmentId)));
+    const workout = (this.workoutByDate.get(dateString) || []).map((item) => this.workoutCell(item, dateString));
+    const nutrition = (this.nutritionByDate.get(dateString) || []).map((item) => this.nutritionCell(item, dateString));
     return {
       date,
       dateString,
       dayNumber: date.getDate(),
       isToday: this.isToday(date),
       weekdayLabel: date.toLocaleDateString(this.calendarLocale, { weekday: 'short' }),
-      workout: (this.workoutByDate.get(dateString) || []).map((item) => this.workoutCell(item, dateString)),
-      nutrition: (this.nutritionByDate.get(dateString) || []).map((item) => this.nutritionCell(item, dateString)),
+      workout,
+      nutrition,
+      unreadNote: [...workout, ...nutrition].some((cell) => cell.notesNew),
       tasks,
       tasksDone: tasks.filter((task) => task.status === 'DONE').length,
       tasksTone: tasksTone(tasks),
@@ -1300,22 +1460,31 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
   private workoutCell(item: WorkoutProgram, date: string): WeekCell<WorkoutProgram> {
     const status = this.calendarDayStatus(item, date, true);
     let meta = this.calendarWorkoutMeta(item);
-    if (item.done && !item.restDay) {
-      const report = workoutReport(item.raw);
+    const report = item.restDay ? null : workoutReport(item.raw);
+    if (item.done && report) {
       // Nothing ticked (finished without checking the exercises): « 0/2 faits » next to « Terminée » would mislead.
       if (report.exercises.length && report.loggedExercises > 0) {
         meta = this.translate.instant('CALENDAR_EXERCISES_DONE', { done: report.doneExercises, total: report.exercises.length });
       }
     }
+    const notes = report ? this.workoutNotes(report) : [];
     return {
       item,
       title: item.restDay ? this.translate.instant('CLIENT_PROGRAMS.REST_TITLE_WORKOUT') : this.calendarWorkoutName(item),
       meta,
       status,
       exercises: item.restDay ? [] : exerciseLines(item.raw),
+      notes,
+      notesNew: this.notesUnread(date, notes),
       // A workout or a rest day moves; an empty day has nothing to move (a workout is dropped onto it).
       movable: !!item.programId && !item.emptyDay && !this.isDayLocked(item),
     };
+  }
+
+  /** The client's notes in full, for the card's tooltip (the card cuts them after a few lines). */
+  notesTitle(notes: { label: string; text: string }[]): string {
+    const head = this.translate.instant('CALENDAR_CLIENT_NOTE');
+    return `${head}\n${notes.map((note) => (note.label ? `${note.label} : ` : '') + note.text).join('\n')}`;
   }
 
   /** A nutrition cell: the day's target, the meals the client reported (or the macros), its status. */
@@ -1324,13 +1493,83 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
     const meta = report.reported
       ? this.translate.instant('CALENDAR_MEALS_REPORTED', { done: report.reported, total: report.meals.length })
       : this.calendarMacros(item);
+    const notes = this.nutritionNotes(report);
     return {
       item,
       title: this.calendarNutritionTitle(item),
       meta,
       status: this.calendarDayStatus(item, date, false),
       meals: item.cheatMeal ? [] : mealLines(item.raw),
+      notes,
+      notesNew: this.notesUnread(date, notes),
     };
+  }
+
+  /* ---- The client's notes: as messages, a blue dot until the coach opens the day, « Répondre » in the chat. ---- */
+
+  private workoutNotes(report: WorkoutReport): ClientNote[] {
+    return [
+      ...(report.note ? [{ label: '', text: report.note }] : []),
+      ...report.exercises.filter((exercise) => exercise.note).map((exercise) => ({ label: exercise.name, text: exercise.note })),
+    ];
+  }
+
+  private nutritionNotes(report: NutritionReport): ClientNote[] {
+    return [
+      ...(report.note ? [{ label: '', text: report.note }] : []),
+      ...report.meals.filter((meal) => meal.note)
+        .map((meal) => ({ label: meal.name || this.translate.instant('CALENDAR_MEAL'), text: meal.note })),
+    ];
+  }
+
+  private seenNotes = this.readSeenNotes();
+
+  private readSeenNotes(): Set<string> {
+    try {
+      const list = JSON.parse(localStorage.getItem(SEEN_NOTES_KEY) || '[]');
+      return new Set(Array.isArray(list) ? list.map(String) : []);
+    } catch {
+      return new Set();
+    }
+  }
+
+  private noteKey(date: string, note: ClientNote): string {
+    return `${this.selectedClient}|${date}|${noteHash(`${note.label}|${note.text}`)}`;
+  }
+
+  /** A note of the last 14 days the coach has not opened in the day panel yet. */
+  private notesUnread(date: string, notes: ClientNote[]): boolean {
+    if (!notes.length || date > todayIso() || date < this.addDays(todayIso(), -NEW_NOTE_DAYS)) return false;
+    return notes.some((note) => !this.seenNotes.has(this.noteKey(date, note)));
+  }
+
+  /** The day panel shows these notes: they are read (the dots go out at once). */
+  private markNotesSeen(date: string, notes: ClientNote[]): void {
+    const fresh = notes.map((note) => this.noteKey(date, note)).filter((key) => !this.seenNotes.has(key));
+    if (!fresh.length) return;
+    fresh.forEach((key) => this.seenNotes.add(key));
+    try {
+      localStorage.setItem(SEEN_NOTES_KEY, JSON.stringify([...this.seenNotes].slice(-500)));
+    } catch {
+      // No storage: read for this visit only.
+    }
+    const days = [
+      ...(this.weekPlan?.days || []),
+      ...this.monthWeeks.flatMap((week) => week.days).map((day) => day?.plan).filter((plan): plan is WeekRowDay => !!plan),
+    ].filter((day) => day.dateString === date);
+    days.forEach((day) => {
+      [...day.workout, ...day.nutrition].forEach((cell) => cell.notesNew = this.notesUnread(date, cell.notes || []));
+      day.unreadNote = [...day.workout, ...day.nutrition].some((cell) => cell.notesNew);
+    });
+  }
+
+  /** « Répondre » on a note: the chat panel opens on the client, the note quoted in the field, the coach writes under it. */
+  replyToNote(date: string, text: string, label = ''): void {
+    if (!this.selectedClient) return;
+    const day = (this.parseCalendarDate(date) || new Date())
+      .toLocaleDateString(this.calendarLocale, { weekday: 'long', day: 'numeric', month: 'long' });
+    const quote = this.translate.instant(label ? 'CALENDAR_REPLY_QUOTE_ON' : 'CALENDAR_REPLY_QUOTE', { date: day, label, text });
+    this.chatService.openPanelWithClient(String(this.selectedClient), `${quote}\n\n`);
   }
 
   /** The files of one type, when the coach's settings use them for it (K4). */
@@ -1351,6 +1590,13 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
     // The row clicked in the week: only its subject (the day view and a click on the day itself: everything).
     const focus = this.currentView === 'week' ? this.dayFocus : null;
     const shows = (subject: DaySubject) => !focus || focus === subject;
+    // The notes shown here are read: their blue dot goes out.
+    this.markNotesSeen(date, [
+      ...(shows('workout') ? this.workoutByDate.get(date) || [] : [])
+        .filter((item) => !item.restDay).flatMap((item) => this.workoutNotes(workoutReport(item.raw))),
+      ...(shows('nutrition') ? this.nutritionByDate.get(date) || [] : [])
+        .flatMap((item) => this.nutritionNotes(nutritionReport(item.raw))),
+    ]);
     return {
       date,
       focus,
@@ -1404,7 +1650,7 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
 
   /** « 3 × 10 · 60 kg · repos 2 min », « 20 min ». */
   exerciseText(line: ExerciseLine): string {
-    const sets = this.setsText(line.sets, line.cardio);
+    const sets = this.setsText(line.sets, line.cardio, line.timed);
     if (!line.restSeconds) return sets;
     const minutes = Math.floor(line.restSeconds / 60);
     const seconds = line.restSeconds % 60;
@@ -1558,8 +1804,8 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
     this.selectedDate = same ? null : date;
     this.dayFocus = same ? null : focus;
     this.dayDetail = this.selectedDate ? this.buildDayDetail(this.selectedDate) : null;
-    if (this.selectedDate) {
-      // Once drawn: the panel comes into view (it is under the week).
+    if (this.selectedDate && !this.sidePanel) {
+      // Once drawn: the panel comes into view (it is under the week; on the side, it is already in view).
       setTimeout(() => document.querySelector('.day-panel')?.scrollIntoView({ behavior: 'smooth', block: this.narrow ? 'start' : 'nearest' }));
     }
   }
@@ -1601,7 +1847,7 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
 
   onShiftSaved(): void {
     this.shiftTarget = null;
-    this.loadCalendar();
+    this.refreshCalendar();
   }
 
   /** A program not stopped nor finished: its days can still move (A9). */
@@ -1677,18 +1923,33 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
     void this.router.navigate(['/clients/profil-client', this.selectedClient], { queryParams: { tab: 'chat' } });
   }
 
-  /** « 4 × 8 · 60 kg », « 8, 8, 7 · 62 kg », « 20 min ». */
-  setsText(lines: { reps: number | null; weight: number | null; duration: number | null }[], cardio: boolean): string {
+  /** « 4 × 8 · 60 kg », « 8, 8, 7 · 62 kg », « 20 min », « 3 × 30 s · 10 kg ». */
+  setsText(lines: { reps: number | null; weight: number | null; duration: number | null; seconds?: number | null }[], cardio: boolean, timed = false): string {
     if (!lines.length) return '';
+    // Exercice au temps (measure = TIME, ou ancienne donnée sans répétitions) : secondes, même si un ancien nombre de
+    // répétitions est resté dans la série. Un cardio au temps sans secondes garde ses minutes (plus bas).
+    const hasSeconds = lines.some((line) => line.seconds != null && line.seconds > 0);
+    if ((timed && hasSeconds) || lines.every((line) => line.reps == null && line.seconds != null)) {
+      const secs = lines.map((line) => (line.seconds == null ? '–' : String(line.seconds)));
+      const text = secs.every((value) => value === secs[0])
+        ? `${lines.length > 1 ? `${lines.length} × ` : ''}${secs[0]} s`
+        : `${secs.join(', ')} s`;
+      return text + this.weightText(lines);
+    }
     if (cardio) {
       const minutes = lines.reduce((sum, line) => sum + (line.duration || 0), 0);
       return minutes ? `${lines.length > 1 ? `${lines.length} × ` : ''}${Math.round(minutes / lines.length)} min` : `${lines.length}`;
     }
     const reps = lines.map((line) => (line.reps == null ? '–' : String(line.reps)));
     const sameReps = reps.every((value) => value === reps[0]);
+    return (sameReps ? `${lines.length} × ${reps[0]}` : reps.join(', ')) + this.weightText(lines);
+  }
+
+  /** « · 60 kg » : the heaviest set, or nothing. */
+  private weightText(lines: { weight: number | null }[]): string {
     const weights = lines.map((line) => line.weight).filter((weight): weight is number => weight != null && weight > 0);
-    const weight = weights.length ? ` · ${Math.max(...weights)} ${this.weightUnitLabel}` : '';
-    return (sameReps ? `${lines.length} × ${reps[0]}` : reps.join(', ')) + weight;
+    // Converted weights (lb ↔ kg) come with many decimals: « 6.8 kg », not « 6.8038855501505315 kg ».
+    return weights.length ? ` · ${Math.round(Math.max(...weights) * 10) / 10} ${this.weightUnitLabel}` : '';
   }
 
   exerciseStateText(state: string): string {
@@ -2242,6 +2503,46 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
     return client || { id: this.selectedClient };
   }
 
+  /** Photos whose link did not answer: the initials show instead. */
+  private failedPhotos = new Set<string>();
+
+  /** The selected client's photo (profile input, else the list of clients), '' when none or broken. */
+  get clientPhoto(): string {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const client: any = this.clients.find((item) => item.id === this.selectedClient);
+    const url = String(this.embeddedClientPhoto || client?.avatarUrl || client?.image || '').trim();
+    return url && url.toLowerCase() !== 'not found' && !this.failedPhotos.has(url) ? url : '';
+  }
+
+  onClientPhotoError(url: string): void {
+    this.failedPhotos.add(url);
+  }
+
+  /** « KA » for Khalil Arfaoui: the avatar without a photo. */
+  get clientInitials(): string {
+    return this.getSelectedClientName()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0].toUpperCase())
+      .join('');
+  }
+
+  /** Under « Superset » / « Circuit » in the day panel: « 2 exercices enchaînés », « 3 exercices · 3 tours ». */
+  groupHint(lines: ExerciseLine[], start: number): string {
+    const group: ExerciseLine[] = [];
+    for (let i = start; i < lines.length; i++) {
+      if (!lines[i]?.link) break;
+      group.push(lines[i]);
+      if (lines[i].link === 'end') break;
+    }
+    const count = this.translate.instant('CALENDAR_GROUP_COUNT', { count: group.length });
+    const rounds = Math.max(0, ...group.map((line) => line.sets.length));
+    return lines[start]?.groupKind === 'CIRCUIT' && rounds > 1
+      ? `${count} · ${this.translate.instant('CALENDAR_GROUP_ROUNDS', { count: rounds })}`
+      : count;
+  }
+
   getSelectedClientName(): string {
     const client = this.clients.find((item) => item.id === this.selectedClient);
     const name = client
@@ -2364,12 +2665,12 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
   /** After a change made here: the months are read again (and the profile's copy of the plans is out of date). */
   private reloadWorkouts(): void {
     if (this.selectedClient) this.profileCache.forget('workouts', this.selectedClient);
-    this.loadCalendar();
+    this.refreshCalendar();
   }
 
   private reloadNutrition(): void {
     if (this.selectedClient) this.profileCache.forget('nutrition', this.selectedClient);
-    this.loadCalendar();
+    this.refreshCalendar();
   }
 
 }

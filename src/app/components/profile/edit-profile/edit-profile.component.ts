@@ -168,7 +168,7 @@ export class EditProfileComponent implements OnInit {
         this.isLoadingInvoices = false;
       },
       error: () => {
-        this.invoiceError = 'Invoices could not be loaded. Please try again.';
+        this.invoiceError = 'INVOICE_TAB_LOAD_ERROR';
         this.isLoadingInvoices = false;
       }
     });
@@ -215,7 +215,7 @@ export class EditProfileComponent implements OnInit {
         this.isLoadingPaymentGateways = false;
 
         if (this.paymentGateways.length === 0) {
-          this.paymentError = 'No payment method is currently available for this invoice.';
+          this.paymentError = 'INVOICE_TAB_NO_METHOD';
         }
       },
       error: (error) => {
@@ -223,7 +223,7 @@ export class EditProfileComponent implements OnInit {
 
         this.paymentError = this.getPaymentErrorMessage(
           error,
-          'Payment methods could not be loaded. Please try again.'
+          'INVOICE_TAB_METHODS_ERROR'
         );
         this.isLoadingPaymentGateways = false;
       }
@@ -247,13 +247,13 @@ export class EditProfileComponent implements OnInit {
             return;
           }
 
-          this.paymentError = response?.message || 'The payment page could not be opened.';
+          this.paymentError = response?.message || 'INVOICE_TAB_PAY_PAGE_ERROR';
           this.isPayingInvoice = false;
         },
         error: (error) => {
           this.paymentError = this.getPaymentErrorMessage(
             error,
-            'Payment could not be initiated. Please try again.'
+            'INVOICE_TAB_PAY_ERROR'
           );
           this.isPayingInvoice = false;
         }
@@ -482,10 +482,10 @@ export class EditProfileComponent implements OnInit {
   }
 
   invoicePaymentButtonLabel(invoice: CoachInvoice): string {
-    if (this.isPayingInvoice) return 'Opening secure checkout...';
+    if (this.isPayingInvoice) return this.translate.instant('INVOICE_TAB_OPENING_CHECKOUT');
 
     const amount = (Number(invoice.amount) || 0).toFixed(2);
-    return `Pay ${amount}${invoice.currency ? ` ${invoice.currency}` : ''}`;
+    return this.translate.instant('INVOICE_TAB_PAY_AMOUNT', { amount: `${amount}${invoice.currency ? ` ${invoice.currency}` : ''}` });
   }
 
   isOverdue(invoice: CoachInvoice): boolean {
@@ -498,8 +498,8 @@ export class EditProfileComponent implements OnInit {
   }
 
   invoiceStatusLabel(invoice: CoachInvoice): string {
-    if (this.isPaid(invoice)) return 'Paid';
-    return this.isOverdue(invoice) ? 'Overdue' : 'To pay';
+    if (this.isPaid(invoice)) return this.translate.instant('COACH_INVOICE_PAID');
+    return this.translate.instant(this.isOverdue(invoice) ? 'COACH_INVOICE_OVERDUE' : 'INVOICE_TAB_TO_PAY');
   }
 
   invoiceStatusClass(invoice: CoachInvoice): string {

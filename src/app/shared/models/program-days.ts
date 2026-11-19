@@ -31,13 +31,19 @@ const isSet = (value: unknown): boolean => value !== null && value !== undefined
 
 /* ---------------- workout ---------------- */
 
-/** D2: a strength set needs at least one rep; a cardio set a duration. */
+/** What a set counts: 'TIME' (seconds, superset/circuit exercise measured in time), else the exercise type. */
+export function setKind(exercise: any): string | null | undefined {
+  return String(exercise?.measure || '').toUpperCase() === 'TIME' ? 'TIME' : exercise?.type;
+}
+
+/** D2: a strength set needs at least one rep; a cardio set a duration; a timed set seconds. */
 export function workoutSetValid(set: ExerciseSet | null | undefined, exerciseType?: string | null): boolean {
   if (!set) return false;
   const weight = set.weight;
   if (isSet(weight) && (!Number.isFinite(Number(weight)) || Number(weight) < 0)) return false;
   if (isSet(set.restMin) && (!Number.isFinite(Number(set.restMin)) || Number(set.restMin) < 0)) return false;
   if (isSet(set.restSec) && (!Number.isFinite(Number(set.restSec)) || Number(set.restSec) < 0 || Number(set.restSec) >= 60)) return false;
+  if (exerciseType === 'TIME') return isSet(set.durationSec) && Number(set.durationSec) > 0;
   if (exerciseType === 'CARDIO') return isSet(set.duration) && Number(set.duration) > 0;
   return isSet(set.reps) && Number.isFinite(Number(set.reps)) && Number(set.reps) > 0;
 }
@@ -54,7 +60,7 @@ export function workoutDayStatus(day: WorkoutDay | null | undefined): ProgramDay
   if (!started.length) return 'EMPTY';
   const valid = started.every((session) => text(session.name)
     && session.exercises.every((exercise: any) => exercise && text(exercise.name) && exercise.sets?.length
-      && exercise.sets.every((set: ExerciseSet) => workoutSetValid(set, exercise.type))));
+      && exercise.sets.every((set: ExerciseSet) => workoutSetValid(set, setKind(exercise)))));
   return valid ? 'FILLED' : 'INVALID';
 }
 
@@ -116,7 +122,7 @@ function setIssueKey(set: ExerciseSet | null | undefined, exerciseType?: string 
   const restMin = set.restMin, restSec = set.restSec;
   if ((isSet(restMin) && (!Number.isFinite(Number(restMin)) || Number(restMin) < 0))
     || (isSet(restSec) && (!Number.isFinite(Number(restSec)) || Number(restSec) < 0 || Number(restSec) >= 60))) return 'PROGRAM_ISSUE_SET_REST';
-  return exerciseType === 'CARDIO' ? 'PROGRAM_ISSUE_SET_DURATION' : 'PROGRAM_ISSUE_SET_REPS';
+  return exerciseType === 'CARDIO' || exerciseType === 'TIME' ? 'PROGRAM_ISSUE_SET_DURATION' : 'PROGRAM_ISSUE_SET_REPS';
 }
 
 export function workoutDayIssue(day: WorkoutDay | null | undefined, dayNumber: number): ProgramIssue | null {
@@ -127,8 +133,8 @@ export function workoutDayIssue(day: WorkoutDay | null | undefined, dayNumber: n
       const exercise = session.exercises[e];
       if (!exercise || !text(exercise.name)) return { key: 'PROGRAM_ISSUE_EXERCISE_NAME', params: { day: dayNumber, exercise: e + 1 } };
       if (!exercise.sets?.length) return { key: 'PROGRAM_ISSUE_NO_SET', params: { day: dayNumber, exercise: e + 1 } };
-      const s = exercise.sets.findIndex((set: ExerciseSet) => !workoutSetValid(set, exercise.type));
-      if (s >= 0) return { key: setIssueKey(exercise.sets[s], exercise.type), params: { day: dayNumber, exercise: e + 1, set: s + 1 } };
+      const s = exercise.sets.findIndex((set: ExerciseSet) => !workoutSetValid(set, setKind(exercise)));
+      if (s >= 0) return { key: setIssueKey(exercise.sets[s], setKind(exercise)), params: { day: dayNumber, exercise: e + 1, set: s + 1 } };
     }
   }
   return null;
@@ -195,6 +201,27 @@ export interface ProgramDaysError {
   code: 'PROGRAM_GAP' | 'PROGRAM_INVALID_DAYS';
   error: string;
   days: number[];
+  /** What to fix and where (same keys as the checks here), when the server knows it. */
+  issue?: { key: string; day: number; exercise?: number; set?: number; meal?: number; food?: number; message?: string };
+}
+
+/**
+ * The message of a day refused by the server, always with what to fix and where: the server's issue translated, else
+ * the day numbers with what to look at.
+ */
+export function refusedDaysMessage(
+  refused: ProgramDaysError,
+  translate: (key: string, params?: any) => string,
+  fallbackKey = 'PROGRAM_SERVER_INVALID_DAYS',
+): string {
+  if (refused.issue?.key) {
+    const text = translate(refused.issue.key, refused.issue);
+    if (text && text !== refused.issue.key) return text;
+  }
+  if (refused.code === 'PROGRAM_INVALID_DAYS' && refused.days?.length) {
+    return translate(fallbackKey, { days: refused.days.join(', ') });
+  }
+  return refused.error;
 }
 
 export function programDaysError(httpError: any): ProgramDaysError | null {

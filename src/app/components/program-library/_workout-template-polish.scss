@@ -57,40 +57,6 @@
     line-height: 18px !important;
   }
 
-  .np-root .wk-restmark,
-  .np-root .wk-restmark.is-active {
-    min-height: 44px !important;
-    padding: 0 20px !important;
-    border-radius: 8px !important;
-    font-size: 14px !important;
-    line-height: 20px !important;
-  }
-
-  .np-root .wk-restmark__icon {
-    width: 17px !important;
-    height: 17px !important;
-  }
-
-  /* Workout name + description */
-  .np-root .builder-rail .wk-workout-name {
-    padding: 22px 24px 14px !important;
-  }
-
-  .np-root .builder-rail .wk-workout-name .np-label {
-    margin-bottom: 8px !important;
-    font-size: 14px !important;
-    line-height: 20px !important;
-  }
-
-  .np-root .builder-rail .wk-workout-name .np-input {
-    min-height: 48px !important;
-    height: 48px !important;
-    padding: 10px 14px !important;
-    border-radius: 8px !important;
-    font-size: 14px !important;
-    line-height: 20px !important;
-  }
-
   .np-root .builder-rail > .np-link,
   .np-root .builder-rail > ng-container > .np-link {
     min-height: 44px !important;
@@ -223,25 +189,16 @@
     font-size: 13px !important;
   }
 
-  .np-root .wkex-input,
-  .np-root .wkex-restbox {
+  .np-root .wkex-input {
     height: 36px !important;
     min-height: 36px !important;
     border-radius: 7px !important;
   }
 
-  .np-root .wkex-input,
-  .np-root .wkex-restbox__input,
-  .np-root .wkex-restbox__label {
+  .np-root .wkex-input {
     font-size: 12px !important;
   }
 
-  .np-root .wkex-addset {
-    min-height: 34px !important;
-    padding: 0 12px !important;
-    border-radius: 7px !important;
-    font-size: 12px !important;
-  }
 }
 
 /* ---------------- Mobile: same hierarchy/rhythm as the mockup ---------------- */
@@ -254,38 +211,6 @@
 
   .np-root .np-main {
     padding: 10px var(--mobile-gutter) 100px !important;
-  }
-
-  .np-root .np-pagehead {
-    min-height: 64px !important;
-    height: 64px !important;
-    padding: 8px 12px !important;
-    gap: 10px !important;
-  }
-
-  .np-root .np-pagehead .np-back {
-    width: 36px !important;
-    min-width: 36px !important;
-    height: 36px !important;
-  }
-
-  .np-root .np-pagehead .np-h5 {
-    font-size: 16px !important;
-    line-height: 20px !important;
-    font-weight: 700 !important;
-  }
-
-  .np-root .np-pagehead__meta {
-    margin-top: 1px !important;
-    font-size: 10px !important;
-    line-height: 14px !important;
-  }
-
-  .np-mobile-weeks-btn {
-    min-width: 82px !important;
-    height: 36px !important;
-    border-radius: 8px !important;
-    font-size: 12px !important;
   }
 
   /* The mockup navigates days through the Weeks panel; do not show a second day-nav strip. */
@@ -342,36 +267,6 @@
 
   .np-root .wk-day-editor__actions {
     width: 100% !important;
-  }
-
-  .np-root .wk-restmark,
-  .np-root .wk-restmark.is-active {
-    width: 100% !important;
-    min-height: 40px !important;
-    padding: 0 12px !important;
-    justify-content: center !important;
-    border-radius: 7px !important;
-    font-size: 12px !important;
-  }
-
-  /* Workout field */
-  .np-root .builder-rail .wk-workout-name {
-    padding: 17px 14px 10px !important;
-  }
-
-  .np-root .builder-rail .wk-workout-name .np-label {
-    margin-bottom: 7px !important;
-    font-size: 12px !important;
-    line-height: 18px !important;
-  }
-
-  .np-root .builder-rail .wk-workout-name .np-input {
-    height: 40px !important;
-    min-height: 40px !important;
-    padding: 8px 10px !important;
-    border-radius: 7px !important;
-    font-size: 12px !important;
-    line-height: 18px !important;
   }
 
   .np-root .builder-rail > .np-link,
@@ -521,8 +416,7 @@
     font-size: 12px !important;
   }
 
-  .np-root .wkex-input,
-  .np-root .wkex-restbox {
+  .np-root .wkex-input {
     width: 100% !important;
     height: 36px !important;
     min-height: 36px !important;
@@ -550,14 +444,6 @@
   /* Cardio has only one main value: make it full width above REST. */
   .np-root .wkex-sets--no-weight .wkex-sets__row > .wkex-sets__cell:not(.wkex-sets__cell--idx):not(.wkex-sets__cell--rest):not(.wkex-sets__cell--action) {
     grid-column: 1 / -1 !important;
-  }
-
-  .np-root .wkex-addset {
-    min-height: 32px !important;
-    margin-top: 8px !important;
-    padding: 0 10px !important;
-    border-radius: 7px !important;
-    font-size: 10px !important;
   }
 
   /* ---------------- Weeks drawer: professional mobile version of desktop sidebar ---------------- */
@@ -655,15 +541,6 @@
     font-size: 14px !important;
     line-height: 20px !important;
     font-weight: 650 !important;
-    white-space: nowrap !important;
-  }
-
-  .np-root .np-week-status {
-    margin: 0 !important;
-    padding: 2px 6px !important;
-    border-radius: 5px !important;
-    font-size: 10px !important;
-    line-height: 16px !important;
     white-space: nowrap !important;
   }
 
@@ -812,7 +689,6 @@
 
   .np-root:not(.settings-collapsed) .np-card--settings > .np-plan-title,
   .np-root:not(.settings-collapsed) .np-card--settings > .np-global-duration,
-  .np-root:not(.settings-collapsed) .np-card--settings > .program-schedule-card,
   .np-root:not(.settings-collapsed) .np-card--settings > .np-field:not(.np-plan-title):not(.np-global-duration) {
     position: static !important;
     display: block !important;
@@ -832,16 +708,6 @@
     margin-bottom: 16px !important;
   }
 
-  .np-root:not(.settings-collapsed) .np-card--settings > .program-schedule-card {
-    order: 3;
-    margin-top: 0 !important;
-    margin-bottom: 14px !important;
-    padding: 14px !important;
-    border: 1px solid light-dark(#e0e7ef, #34393f) !important;
-    border-radius: 9px !important;
-    background: light-dark(#f8fafc, #171a1f) !important;
-  }
-
   .np-root:not(.settings-collapsed) .np-card--settings > .np-field:not(.np-plan-title):not(.np-global-duration) {
     order: 4;
     margin-bottom: 14px !important;
@@ -857,8 +723,7 @@
     font-weight: 600 !important;
   }
 
-  .np-root:not(.settings-collapsed) .np-card--settings .np-label,
-  .np-root:not(.settings-collapsed) .np-card--settings .program-schedule-label {
+  .np-root:not(.settings-collapsed) .np-card--settings .np-label {
     display: block !important;
     margin-bottom: 7px !important;
     color: light-dark(#26384e, #d9e0e8) !important;
@@ -867,8 +732,7 @@
     line-height: 17px !important;
   }
 
-  .np-root:not(.settings-collapsed) .np-card--settings .np-input,
-  .np-root:not(.settings-collapsed) .np-card--settings .program-schedule-input {
+  .np-root:not(.settings-collapsed) .np-card--settings .np-input {
     width: 100% !important;
     min-height: 40px !important;
     height: 40px !important;
@@ -883,27 +747,6 @@
     min-height: 92px !important;
   }
 
-  .np-root:not(.settings-collapsed) .program-schedule-grid {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) !important;
-    gap: 14px !important;
-  }
-
-  .np-root:not(.settings-collapsed) .program-schedule-title {
-    margin-bottom: 12px !important;
-    color: light-dark(#405b7d, #98b6dc) !important;
-    font-size: 12px !important;
-    font-weight: 600 !important;
-    letter-spacing: .05em !important;
-    text-transform: uppercase !important;
-  }
-
-  .np-root:not(.settings-collapsed) .program-schedule-helper {
-    margin: 6px 0 0 !important;
-    color: light-dark(#71829a, #999fa7) !important;
-    font-size: 11px !important;
-    line-height: 16px !important;
-  }
 }
 
 @media (max-width: 520px) {
@@ -969,81 +812,13 @@
     align-items: end !important;
   }
 
-  /* Each rest input gets its own label: REST MIN / REST SEC, exactly like the template. */
-  .np-root .wkex-sets__cell--rest .wkex-restbox {
-    position: relative !important;
-    height: auto !important;
-    min-height: 0 !important;
-    padding-top: 15px !important;
-    display: flex !important;
-    align-items: center !important;
-    border: 0 !important;
-    background: transparent !important;
-    overflow: visible !important;
-  }
-
-  .np-root .wkex-sets__cell--rest .wkex-restbox::before {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    color: light-dark(#5d718b, #a8aeb6) !important;
-    font-size: 8px !important;
-    font-weight: 600 !important;
-    line-height: 11px !important;
-    letter-spacing: .045em !important;
-    text-transform: uppercase !important;
-    white-space: nowrap !important;
-  }
-
-  .np-root .wkex-sets__cell--rest .wkex-restbox:first-child::before {
-    content: 'REST MIN' !important;
-  }
-
-  .np-root .wkex-sets__cell--rest .wkex-restbox:nth-child(2)::before {
-    content: 'REST SEC' !important;
-  }
-
-  /* Keep Min / Sec as the prefix inside the bordered field. */
-  .np-root .wkex-sets__cell--rest .wkex-restbox__label {
-    position: absolute !important;
-    left: 10px !important;
-    top: 50% !important;
-    margin-top: 7px !important;
-    transform: translateY(-50%) !important;
-    z-index: 1 !important;
-    color: light-dark(#8393aa, #9298a0) !important;
-    font-size: 10px !important;
-    line-height: 1 !important;
-    pointer-events: none !important;
-  }
-
-  .np-root .wkex-sets__cell--rest .wkex-restbox__input {
-    width: 100% !important;
-    height: 36px !important;
-    min-height: 36px !important;
-    padding: 7px 9px 7px 34px !important;
-    border: 1px solid light-dark(#cbd8e8, #353d47) !important;
-    border-radius: 7px !important;
-    background: light-dark(#fff, #1d2125) !important;
-    color: light-dark(#102038, #e5ebf4) !important;
-    font-size: 11px !important;
-    box-sizing: border-box !important;
-  }
-
   /* Cardio: Minutes takes the full line, then REST MIN/SEC below. */
   .np-root .wkex-sets--no-weight .wkex-sets__row > .wkex-sets__cell:not(.wkex-sets__cell--idx):not(.wkex-sets__cell--rest):not(.wkex-sets__cell--action) {
     grid-column: 1 / -1 !important;
   }
 }
 
-/* ==========================================================================\n   FINAL MOBILE WEEKS PANEL — inline Program Structure card from template\n   ========================================================================== */
-.np-pagehead--mobile-only { display: none !important; }
-
 @media (max-width: 900px) {
-  /* Library editor has its desktop header inside .np-main; on mobile we place the
-     same header before the Program Structure panel so the order matches the mockup. */
-  .np-root .np-pagehead--mobile-only { display: flex !important; }
-  .np-root .np-pagehead--desktop-only { display: none !important; }
 
   /* Weeks is an inline expandable card, NOT a full-screen/right drawer. */
   .np-root .np-mobile-structure-backdrop { display: none !important; }
@@ -1189,15 +964,6 @@
     white-space: nowrap !important;
   }
 
-  .np-root .np-week-status {
-    margin: 0 !important;
-    padding: 1px 5px !important;
-    border-radius: 4px !important;
-    font-size: 8px !important;
-    line-height: 14px !important;
-    white-space: nowrap !important;
-  }
-
   .np-root .np-week-range {
     min-width: 0 !important;
     overflow: hidden !important;
@@ -1295,9 +1061,6 @@
     line-height: 14px !important;
     white-space: nowrap !important;
   }
-
-  .np-root .np-dayrow .np-iconbtn--add,
-  .np-root .np-dayrow .np-iconbtn--drag { display: none !important; }
 
   /* Main content starts immediately after the inline Weeks card. */
   .np-root .np-main {

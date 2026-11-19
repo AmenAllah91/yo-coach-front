@@ -500,3 +500,51 @@
   .activity-modal--detail .activity-set-row em { font-size: 10.5px; }
   .activity-modal--detail .activity-detail-summary > div > span strong { white-space: normal; }
 }
+
+/* The client's meal photo: large enough to compare with the planned meal, opens full size. */
+.nutrition-meal__content figure a { display: block; }
+.nutrition-meal__content figure img { height: 104px; cursor: zoom-in; }
+
+/* Profile dashboard: the client's feed, then « Suivi du programme » (one table at a time). */
+.profile-feed { display: block; }
+// Profile dashboard: « Aujourd'hui » then the activities on the left, weight + pictures in a column on the right.
+.dashboard-overview {
+  display: grid;
+  // Right column (weight, pictures, notes): about a third, between 340px and 440px; the activities take the rest.
+  grid-template-columns: minmax(0, 1fr) clamp(340px, 32%, 440px);
+  grid-template-rows: auto 1fr;
+  grid-template-areas: 'today side' 'feed side';
+  gap: 14px;
+  align-items: start;
+}
+.dashboard-overview__today { grid-area: today; }
+.dashboard-overview__side { grid-area: side; }
+.dashboard-overview__side-stack { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+// The feed ends where the right column ends: its card is laid over the row (absolute), so its own length never
+// makes the row taller; the list scrolls inside. At least 420px when the right column is short.
+.dashboard-overview__feed { grid-area: feed; align-self: stretch; position: relative; min-height: 420px; }
+.dashboard-overview__feed > .profile-feed { position: absolute; inset: 0; }
+@media (max-width: 1199px) {
+  .dashboard-overview { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-template-areas: 'today' 'side' 'feed'; gap: 10px; }
+  .dashboard-overview__feed { min-height: 0; }
+  .dashboard-overview__feed > .profile-feed { position: static; height: auto; }
+}
+// Between 1200px and 1400px the screen is tight (menu + client list): the right column stays at 340px.
+@media (min-width: 1200px) and (max-width: 1399px) {
+  .dashboard-overview { grid-template-columns: minmax(0, 1fr) 340px; }
+}
+.program-tracking { margin-top: 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.program-tracking__title { min-width: 0; display: flex; flex-direction: column; }
+.program-tracking__title strong { color: light-dark(#07172b, #e7edf6); font-size: 17px; }
+.program-tracking__title small { color: light-dark(#64748b, #a5abb4); font-size: 12px; }
+.program-tracking__tabs { display: inline-flex; padding: 3px; gap: 2px; border-radius: 9px; background: light-dark(#eef2f6, #23272c); }
+.program-tracking__tabs button {
+  min-height: 34px; padding: 0 14px; border: 0; border-radius: 7px; background: transparent; cursor: pointer;
+  color: light-dark(#52637a, #a5abb4); font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 7px;
+}
+.program-tracking__tabs button i { font-size: 11px; }
+.program-tracking__tabs button.is-active { background: light-dark(#fff, #33383e); color: light-dark(#07172b, #e7edf6); box-shadow: 0 1px 2px rgba(15, 23, 42, .12); }
+.program-tracking__tabs button:focus-visible { outline: 2px solid light-dark(#2b9fcf, #5fbfe6); outline-offset: 1px; }
+.program-tracking + .workout-activity, .program-tracking + .nutrition-activity { margin-top: 10px; }
+.workout-activity__header, .nutrition-activity__header { min-height: 56px; }
+@media (max-width: 560px) { .program-tracking__tabs { width: 100%; } .program-tracking__tabs button { flex: 1; justify-content: center; } }

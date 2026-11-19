@@ -56,6 +56,16 @@ describe('ActivityListComponent detail', () => {
     expect(document.body.style.overflow).toBe('');
   });
 
+  it('opens the day of a meal photo, even when the client reported nothing else that day', () => {
+    const yesterday = new Date(Date.now() - 86_400_000).toISOString();
+    cache.load.and.returnValue(of([{ id: 'plan', name: 'Cut', startDate: yesterday,
+      mealDays: [{ id: 'meal1', dayNumber: 1, meals: [{ id: 'm1', name: 'Dinner' }], clientMealLogs: [{ mealId: 'm1', photoPath: 'meal-photos/a.jpg' }] }] }]));
+    component.openRow(click(), row(activity({ type: 'MEAL_PHOTO_ADDED', category: 'NUTRITION', refId: 'meal1', photoUrl: 'https://x/a.jpg', note: 'Fish' })));
+    expect(component.detail?.nutrition?.id).toBe('meal1');
+    // "Nothing logged" would hide the photo.
+    expect(component.detail?.nutrition?.status).toBe('IN_PROGRESS');
+  });
+
   it('opens the nutrition day from plans read in the last minute', () => {
     cache.isFresh.and.returnValue(true);
     cache.snapshot.and.returnValue(plans);

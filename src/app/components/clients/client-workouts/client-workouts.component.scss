@@ -199,6 +199,27 @@
   }
 }
 
+// Titres « Échauffement » et « Séance » au-dessus des exercices.
+.ex-part {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 18px 0 8px;
+  color: var(--yc-text-secondary, #546175);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+
+  &--warmup { margin-top: 4px; color: var(--yc-primary); }
+
+  i-feather {
+    flex: none;
+    width: 14px;
+    height: 14px;
+  }
+}
+
 .superset-hint {
   display: flex;
   align-items: center;
@@ -216,6 +237,43 @@
     width: 14px;
     height: 14px;
   }
+}
+
+// Superset ou circuit : les exercices liés sont décalés, avec une chaîne à gauche (un maillon par exercice).
+.ex-group--linked {
+  margin: 22px 0 24px;
+  padding-left: 20px;
+
+  .superset-hint,
+  .player-circuit { margin-left: -20px; width: calc(100% + 20px); }
+  .superset-hint { font-weight: 700; }
+  .ex-card { position: relative; padding: 12px 10px; }
+  .ex-card:last-child { margin-bottom: 0; }
+  .ex-card:last-child .ex-chain::after { display: none; }
+}
+
+.ex-chain {
+  position: absolute;
+  left: -21px;
+  top: 30px;
+  bottom: -43px; // jusqu'au maillon de la carte suivante
+  width: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  > i {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--yc-primary);
+    color: var(--yc-button-text, #fff);
+  }
+  i-feather { width: 11px; height: 11px; }
+  &::after { content: ''; flex: 1; border-left: 2px dotted var(--yc-primary); }
 }
 
 .ex-card {
@@ -1455,3 +1513,56 @@
     width: 86px;
   }
 }
+
+// Retour au mode guidé (une série à la fois) pendant la séance.
+.player-resume {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--yc-primary);
+  color: var(--yc-button-text, #fff);
+  text-align: left;
+  cursor: pointer;
+
+  span { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  strong { font-size: 15.5px; font-weight: 700; }
+  small { font-size: 13px; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  i-feather { flex: none; width: 20px; height: 20px; }
+  &:disabled { opacity: 0.6; cursor: default; }
+}
+
+.player-circuit { width: 100%; margin-bottom: 12px; }
+
+// Difficulté ressentie sur un exercice (Facile / Bien / Dur).
+.feel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--yc-text-secondary);
+
+  > span { margin-right: 2px; font-weight: 600; }
+  strong { color: var(--yc-text-primary); }
+}
+
+.feel__chip {
+  padding: 6px 14px;
+  border: 1px solid var(--yc-border);
+  border-radius: 18px;
+  background: var(--yc-surface);
+  color: var(--yc-text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &.on { border-color: var(--yc-primary); background: var(--yc-primary); color: var(--yc-button-text, #fff); }
+}
+
+@import '../shared/week-list';

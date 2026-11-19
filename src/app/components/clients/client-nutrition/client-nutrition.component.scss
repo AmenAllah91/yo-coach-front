@@ -1,6 +1,7 @@
 // Client nutrition: same layout as the mobile NutritionScreen / NutritionDetailScreen
 // (shared classes in shared/styles/client-ui.scss and ../shared/plan-page.scss).
 @import '../shared/plan-page';
+@import '../shared/week-list';
 
 .day-card__meta strong {
   font-weight: 700;

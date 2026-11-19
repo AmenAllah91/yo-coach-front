@@ -4,10 +4,14 @@ import { Observable, concat, finalize, map, of, shareReplay, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { FoodServing, MealPlan } from '@shared/models/MealPlan';
 import { Page } from 'app/models/Page.model';
+import { localizeFood, toServerLanguage } from '@shared/models/food-language';
 
 export interface Food {
   id?: string;
   name: string;
+  /** 2026-11-13: English name of a base catalog food; nameFr = the French one while the app is in English. */
+  nameEn?: string | null;
+  nameFr?: string;
   calories: number;
   protein: number;
   carbs: number;
@@ -142,14 +146,15 @@ export class NutritionService {
 
   constructor(private http: HttpClient) {}
 
-  private fromFoodApi(food: any): Food {
+  private fromFoodApi(raw: any): Food {
+    const food: any = localizeFood(raw); // 2026-11-13: English names of the base catalog when the app is in English
     return { ...food, calories: food.energy ?? food.calories ?? null,
       carbs: food.carbohydrates ?? food.carbs ?? null,
       servingUnit: food.servingDescription ?? food.servingUnit ?? '',
       isGeneral: food.general ?? food.isGeneral };
   }
   private toFoodApi(food: Food) {
-    const { calories, carbs, servingUnit, ...fields } = food;
+    const { calories, carbs, servingUnit, ...fields } = toServerLanguage(food);
     return { ...fields, energy: calories, carbohydrates: carbs, servingDescription: servingUnit };
   }
 
@@ -192,7 +197,7 @@ export class NutritionService {
 
     return this.http.get<any>(
       `${environment.baseApiUrl}/api/food-ref/filtered?${params}`
-    );
+    ).pipe(map(response => response?.content ? { ...response, content: response.content.map((f: any) => localizeFood(f)) } : response));
   }
 
   /** Foods of the Add Food modal (first 100, custom foods first), by search: kept 2 min, the modal opens at once. */
@@ -213,7 +218,7 @@ export class NutritionService {
     const request = this.http
       .get<any>(`${environment.baseApiUrl}/api/food-ref/filtered`, { params, headers: { 'X-Skip-Loader': 'true' } })
       .pipe(
-        map((response) => [...(response?.content || [])].sort((a: any, b: any) => Number(!!a.general) - Number(!!b.general))),
+        map((response) => [...(response?.content || [])].map((f: any) => localizeFood(f)).sort((a: any, b: any) => Number(!!a.general) - Number(!!b.general))),
         tap((foods) => {
           if (this.pickerFoods.size > 50) this.pickerFoods.clear();
           this.pickerFoods.set(key, { at: Date.now(), foods });

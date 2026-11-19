@@ -99,3 +99,12 @@
   margin-left: auto !important;
   white-space: nowrap !important;
 }
+
+/* ⧉ « Dupliquer la semaine » dans l'en-tête de chaque semaine (programme et nutrition : la carte du haut de page est retirée). */
+.np-root .np-week-card { position: relative; }
+.np-root .np-week-card__head { padding-right: 40px !important; }
+.np-root .np-week-card__dup { position: absolute; top: 7px; right: 6px; width: 28px; height: 28px; display: inline-flex; align-items: center;
+  justify-content: center; border: 0; border-radius: 8px; background: none; color: light-dark(#1EA2D2, #3bb5e6); cursor: pointer; }
+.np-root .np-week-card__dup:hover:not(:disabled) { background: rgba(68, 180, 223, .12); }
+.np-root .np-week-card__dup:disabled { opacity: .35; cursor: default; }
+.np-root .np-week-card__dupico { width: 15px; height: 15px; display: inline-flex; }

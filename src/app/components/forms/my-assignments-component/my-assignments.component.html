@@ -1,76 +1,116 @@
 <div class="yc-page checkins">
   <div class="yc-container">
 
-    <!-- ===================== LIST (mobile CheckInScreen) ===================== -->
+    <!-- ===================== LIST: by week, like the client Workouts page ===================== -->
     <ng-container *ngIf="view === 'list'">
-      <header class="yc-page-header">
-        <div class="yc-page-header__copy">
-          <h1 class="yc-page-header__title">Check-ins</h1>
-          <p class="yc-page-header__subtitle">{{ t('Forms from your coach', 'Formulaires de votre coach') }}</p>
+      <header class="yc-root-header">
+        <div class="yc-root-header__copy">
+          <h1 class="yc-display">Check-ins</h1>
+          <p class="yc-root-subtitle">{{ t('Forms from your coach', 'Formulaires de votre coach') }}</p>
         </div>
+        <button type="button" class="yc-icon-btn" [attr.aria-label]="t('History', 'Historique')" [title]="t('History', 'Historique')" (click)="openHistory()">
+          <i-feather name="clock"></i-feather>
+        </button>
       </header>
 
-      <div class="yc-segmented tabs" role="tablist">
-        <button type="button" role="tab" [class.active]="tab === 0" [attr.aria-selected]="tab === 0" (click)="setTab(0)">
-          {{ t('To complete', 'À compléter') }}
-          <span *ngIf="tab === 0 && pending.length" class="yc-count">{{ pending.length }}</span>
-        </button>
-        <button type="button" role="tab" [class.active]="tab === 1" [attr.aria-selected]="tab === 1" (click)="setTab(1)">
-          {{ t('Submitted', 'Soumis') }}
-          <span *ngIf="newFeedbackCount" class="yc-count new-count" [title]="t('New comments from your coach', 'Nouveaux commentaires de votre coach')">{{ newFeedbackCount }}</span>
-        </button>
-      </div>
       <p *ngIf="!previewMode && streak >= 2" class="streak-pill">
         <i-feather name="zap"></i-feather>{{ fr ? streak + ' check-ins d’affilée' : streak + ' check-ins in a row' }}
       </p>
 
+      <app-week-strip [weekStart]="weekStart" [selected]="selectedDate" [marks]="weekMarks" [fr]="fr"
+                      (shift)="shiftWeek($event)" (pick)="selectDate($event)" (today)="goToday()"></app-week-strip>
+
       <div *ngIf="loading" class="yc-loading"><span class="yc-spinner"></span></div>
-      <p *ngIf="!loading && error && !assignments.length" class="yc-subtitle center-text">{{ error }}</p>
+      <div *ngIf="!loading && error && !assignments.length" class="center-text">
+        <p class="yc-subtitle">{{ error }}</p>
+        <button type="button" class="yc-link" (click)="loadPage(true)">{{ t('Retry', 'Réessayer') }}</button>
+      </div>
 
       <ng-container *ngIf="!loading && !(error && !assignments.length)">
-        <!-- To complete -->
-        <ng-container *ngIf="tab === 0">
-          <div *ngIf="!pending.length" class="empty">
+        <!-- Still to send from an earlier week: they can still be sent. -->
+        <ng-container *ngIf="olderOverdue as late">
+          <ng-container *ngIf="late.length">
+            <p class="wk-label wk-label--late">{{ t('Overdue', 'En retard') }} <span class="wk-label__count">{{ late.length }}</span></p>
+            <p class="wk-late-note">{{ t('You can still submit these — late answers help your coach too.', 'Vous pouvez toujours les envoyer — des réponses tardives aident aussi votre coach.') }}</p>
+            <ng-container *ngFor="let item of late; trackBy: trackById">
+              <ng-container *ngTemplateOutlet="card; context: { $implicit: item, submitted: false }"></ng-container>
+            </ng-container>
+          </ng-container>
+        </ng-container>
+
+        <ng-container *ngIf="weekDays as week">
+          <div *ngIf="weekIsEmpty(week)" class="empty">
             <span class="yc-icon-tile" style="--tile-color: var(--yc-success); --tile-size: 64px"><i-feather name="check-circle"></i-feather></span>
-            <h3>{{ t('All up to date', 'Tout est à jour') }}</h3>
-            <p class="yc-subtitle">{{ t('No pending check-ins', 'Aucun check-in en attente') }}</p>
+            <h3>{{ t('No check-in this week', 'Aucun check-in cette semaine') }}</h3>
+            <p class="yc-subtitle">{{ t('Your coach will send you one when needed', 'Votre coach vous en enverra un quand il le faudra') }}</p>
           </div>
-          <ng-container *ngIf="dueSoon.length">
-            <div class="section-head"><h2>{{ t('Due soon', 'Bientôt dus') }}</h2></div>
-            <ng-container *ngFor="let item of dueSoon; trackBy: trackById">
-              <ng-container *ngTemplateOutlet="card; context: { $implicit: item, submitted: false }"></ng-container>
+
+          <ng-container *ngIf="!weekIsEmpty(week)">
+            <!-- The day picked in the strip (today at first): its check-ins in full. -->
+            <ng-container *ngIf="focusDay(week) as focus">
+              <div class="wk-label" [attr.data-day]="focus.key">
+                <span>{{ focusLabel(focus) }}</span>
+                <span *ngIf="focus.items.length" class="wk-label__count">{{ sentCount(focus.items) }}/{{ focus.items.length }} {{ t('sent', 'envoyés') }}</span>
+              </div>
+              <p *ngIf="!focus.items.length" class="yc-card wk-none">{{ t('No check-in this day', 'Aucun check-in ce jour-là') }}</p>
+              <ng-container *ngFor="let item of focus.items; trackBy: trackById">
+                <ng-container *ngTemplateOutlet="card; context: { $implicit: item, submitted: isSubmitted(item), today: focus.today }"></ng-container>
+              </ng-container>
             </ng-container>
-          </ng-container>
-          <ng-container *ngIf="overdue.length">
-            <div class="section-head section-head--overdue">
-              <h2>{{ t('Overdue', 'En retard') }} <span class="badge">{{ overdue.length }}</span></h2>
-              <p>{{ t('You can still submit these — late answers help your coach too.', 'Vous pouvez toujours les soumettre — des réponses tardives aident aussi votre coach.') }}</p>
-            </div>
-            <ng-container *ngFor="let item of overdue; trackBy: trackById">
-              <ng-container *ngTemplateOutlet="card; context: { $implicit: item, submitted: false }"></ng-container>
+
+            <!-- The other days of the week: one short line each. -->
+            <ng-container *ngIf="otherDays(week) as others">
+              <ng-container *ngIf="others.length">
+                <p class="wk-label">{{ t('This week', 'Cette semaine') }}</p>
+                <div class="wk-list">
+                  <ng-container *ngFor="let day of others; trackBy: trackByDay">
+                    <button *ngFor="let item of day.items; trackBy: trackById" type="button" class="yc-card wk-row"
+                            [class.locked]="previewMode && !isSubmitted(item)" (click)="openFromList(item)">
+                      <span class="wk-row__date" [class.is-today]="day.today">
+                        <small>{{ weekdayLabel(day.date) }}</small>
+                        <strong>{{ day.date.getDate() }}</strong>
+                      </span>
+                      <span class="wk-row__copy">
+                        <strong>{{ title(item) }}<span *ngIf="hasNewFeedback(item)" class="new-badge">{{ t('New', 'Nouveau') }}</span></strong>
+                        <span>{{ meta(item, isSubmitted(item)) }}</span>
+                      </span>
+                      <span *ngIf="chip(item, isSubmitted(item)) as c" class="yc-chip" [style.--chip-color]="c.color">
+                        <i-feather *ngIf="c.icon" [name]="c.icon"></i-feather>{{ c.label }}
+                      </span>
+                    </button>
+                  </ng-container>
+                </div>
+              </ng-container>
             </ng-container>
           </ng-container>
         </ng-container>
-
-        <!-- Submitted -->
-        <ng-container *ngIf="tab === 1">
-          <div *ngIf="!submitted.length" class="empty">
-            <span class="yc-icon-tile" style="--tile-color: var(--yc-text-hint); --tile-size: 64px"><i-feather name="clipboard-list"></i-feather></span>
-            <h3>{{ t('No submitted check-ins', 'Aucun check-in soumis') }}</h3>
-            <p class="yc-subtitle">{{ t('No completed check-ins', 'Aucun check-in terminé') }}</p>
-          </div>
-          <ng-container *ngFor="let item of submitted; trackBy: trackById">
-            <ng-container *ngTemplateOutlet="card; context: { $implicit: item, submitted: true }"></ng-container>
-          </ng-container>
-        </ng-container>
-
-        <div *ngIf="loadingMore" class="more-loading"><span class="yc-spinner"></span></div>
       </ng-container>
-      <div #sentinel class="sentinel"></div>
     </ng-container>
 
-    <ng-template #card let-item let-submitted="submitted">
-      <button type="button" class="yc-card assignment-card" [class.locked]="previewMode && !submitted" (click)="open(item)">
+    <!-- ===================== HISTORY (same timeline as Workouts and Nutrition) ===================== -->
+    <ng-container *ngIf="view === 'history'">
+      <header class="yc-page-header">
+        <button type="button" class="yc-back" [attr.aria-label]="t('Back', 'Retour')" (click)="closeHistory()"><i-feather name="arrow-left"></i-feather></button>
+        <div class="yc-page-header__copy">
+          <h1 class="yc-page-header__title">{{ t('History', 'Historique') }}</h1>
+          <p class="yc-page-header__subtitle">{{ t('Your check-ins, day by day', 'Vos check-ins, jour par jour') }}</p>
+        </div>
+      </header>
+
+      <ng-container *ngIf="historyByDay as byDay">
+        <app-history-timeline [firstDay]="historyFirstDay(byDay)" [startDay]="historyDay" [marks]="historyMarks(byDay)" [fr]="fr" [dayTemplate]="historyDayTpl"></app-history-timeline>
+
+        <ng-template #historyDayTpl let-key="key">
+          <ng-container *ngFor="let item of byDay[key] || []; trackBy: trackById">
+            <ng-container *ngTemplateOutlet="card; context: { $implicit: item, submitted: isSubmitted(item), history: true }"></ng-container>
+          </ng-container>
+        </ng-template>
+      </ng-container>
+    </ng-container>
+
+    <ng-template #card let-item let-submitted="submitted" let-today="today" let-history="history">
+      <button type="button" class="yc-card assignment-card" [class.locked]="previewMode && !submitted" [class.assignment-card--today]="today && !submitted"
+              (click)="history ? openFromHistory(item) : openFromList(item)">
         <span class="yc-icon-tile" style="--tile-color: light-dark(#7455D9, #ac9eff); --tile-size: 46px"><i-feather name="clipboard-list"></i-feather></span>
         <span class="assignment-card__copy">
           <strong>{{ title(item) }}<span *ngIf="hasNewFeedback(item)" class="new-badge">{{ t('New', 'Nouveau') }}</span></strong>

@@ -2,10 +2,12 @@
   <div class="yc-container">
     <header class="yc-page-header">
       <div class="yc-page-header__copy">
-        <h1 class="yc-page-header__title">{{ t('Progress Pictures', 'Photos de progression') }}</h1>
+        <h1 class="yc-page-header__title">{{ t('Progress', 'Progression') }}</h1>
         <p class="yc-page-header__subtitle">{{ subtitle }}</p>
       </div>
     </header>
+
+    <app-progress-tabs [active]="'pictures'" [fr]="fr"></app-progress-tabs>
 
     <div class="toolbar">
       <button type="button" class="yc-btn yc-btn--secondary compare-btn" [class.on]="selecting" [disabled]="pictures.length < 2" (click)="toggleSelecting()">

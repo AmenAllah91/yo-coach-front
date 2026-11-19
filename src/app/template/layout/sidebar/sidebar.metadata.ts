@@ -10,6 +10,8 @@ export interface RouteInfo {
   badgeClass: string;
   roles?:string[] ;
   submenu?: RouteInfo[];
+  /** Other pages that light this entry (e.g. the « Photos » tab of « Progress »). */
+  activeOn?: string[];
   isExpanded?: boolean;
   isActive?: boolean;
 }

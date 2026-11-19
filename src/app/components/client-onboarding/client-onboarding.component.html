@@ -83,7 +83,7 @@
           <div *ngIf="q.type === 'STAR_RATING'" class="stars"><button *ngFor="let star of stars(q)" type="button" [class.selected]="star <= (answer(q) || 0)" (click)="setAnswer(q,star)">★</button></div>
         </div>
       </section>
-      <div *ngIf="submitError" class="submit-error">{{ submitError }}</div>
+      <div *ngIf="submitError" class="submit-error">{{ submitError | translate }}</div>
     </main>
     <footer class="onboarding-footer"><button *ngIf="index > 0" type="button" class="secondary-btn" [disabled]="saving" (click)="back()">← {{ 'COACH_ONBOARDING.BACK' | translate }}</button><span class="autosave">✓ {{ 'COACH_ONBOARDING.AUTOSAVE' | translate }}</span><button type="button" class="primary-btn" [disabled]="saving || (currentForm?.invalid ?? !formValid())" (click)="continue()">{{ saving ? ('COACH_ONBOARDING.SAVING' | translate) : ('COACH_ONBOARDING.CONTINUE' | translate) }} <span>→</span></button></footer>
   </article>

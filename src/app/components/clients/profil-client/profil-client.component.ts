@@ -49,6 +49,13 @@ import { ProgramScheduleService } from 'app/service/program-schedule.service';
 import { ClientSchedulePreview, ProgramOverview, changeSentence } from '@shared/models/program-schedule';
 import { ClientHeaderStatus, ClientProfilePanelComponent } from '../shared/client-profile-panel.component';
 import { ClientActivityDetailComponent } from './client-activity/client-activity-detail.component';
+import { RecentActivitiesComponent } from '../../coach-dashboard/recent-activities/recent-activities.component';
+import { ClientTodayComponent, TodayExercise, TodayStatus, TodayWorkoutView } from './overview/client-today.component';
+import { ClientProgressGlanceComponent } from './overview/client-progress-glance.component';
+import { ClientNotesComponent } from './overview/client-notes.component';
+import { ClientTagsComponent } from './overview/client-tags.component';
+import { allExercises, capitalizeFirst, estimatedWorkoutMinutes, exerciseCardImage } from '../shared/client-plan-utils';
+import { isWarmupSetType } from '@shared/models/exercise-groups';
 import {
   NutritionActivity,
   NutritionActivityStatus,
@@ -65,6 +72,7 @@ import { AiQuotaComponent } from 'app/components/ai-quota/ai-quota.component';
 import { WorkoutAiDialogComponent, workoutPrefillFromClient } from '../../program-library/workout-ai-dialog/workout-ai-dialog.component';
 import { WorkoutAiDraft, workoutDraftWeeks } from '../../../service/workout-ai.service';
 import { SignupAnswersComponent } from './signup-answers/signup-answers.component';
+import { ExerciseProgressComponent } from '@shared/components/exercise-progress/exercise-progress.component';
 
 type TabId =
   | 'dashboard'
@@ -74,28 +82,17 @@ type TabId =
   | 'chat'
   | 'measurements'
   | 'pictures'
+  | 'progress'
   | 'tasks'
   | 'calendar';
 
-/** Sections grouped under the "Overview" main tab. */
-const OVERVIEW_TABS: readonly TabId[] = ['dashboard', 'measurements', 'pictures', 'checkins'];
+/** Sections grouped under the "Progress" main tab (sub-tabs). */
+const PROGRESS_TABS: readonly TabId[] = ['measurements', 'pictures', 'progress'];
 
 
 
 
-interface Exercise {
-  name: string;
-  sets: string;
-  rest: string;
-}
-
-interface TodaysWorkout {
-  programName: string;
-  currentWeek: number;
-  totalWeeks: number;
-  name: string;
-  exercises: Exercise[];
-}
+type TodaysWorkout = TodayWorkoutView;
 
 interface NutritionMacroShares {
   items: { label: string; grams: number; color: string; percent: number }[];
@@ -145,6 +142,11 @@ type ClientPreviewSection = 'workouts' | 'nutrition' | 'tasks' | 'chat' | 'check
     FormSelectionModalComponent,
     CalendarClientsComponent,
     ProgressPicturesComponent,
+    ExerciseProgressComponent,
+    ClientTodayComponent,
+    ClientProgressGlanceComponent,
+    ClientNotesComponent,
+    ClientTagsComponent,
     BodyMeasurementsComponent,
     forwardRef(() => ChatComponent), // ChatComponent also imports this component: lazy reference breaks the cycle
     ClientWorkoutsComponent,
@@ -163,6 +165,7 @@ type ClientPreviewSection = 'workouts' | 'nutrition' | 'tasks' | 'chat' | 'check
     ClientProfilePanelComponent,
     ClientActivityDetailComponent,
     SignupAnswersComponent,
+    RecentActivitiesComponent,
   ],
   templateUrl: './profil-client.component.html',
   styleUrls: ['./profil-client.component.scss', './client-activity/client-activity.scss'],
@@ -219,7 +222,6 @@ export class ProfilClientComponent {
   assignedLoaded = false;
   /** Form names do not change while on the profile: each form is asked once. */
   private formNames = new Map<string, string>();
-  showClientStats = false;
   clientPreviewOpen = false;
   clientPreviewDevice: 'desktop' | 'mobile' = 'desktop';
   clientPreviewSection: ClientPreviewSection = 'workouts';
@@ -283,18 +285,48 @@ export class ProfilClientComponent {
   setTab(tab: TabId) {
     this.activeTab = tab;
     this.loadTabData(tab);
+    this.syncTabInUrl(tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    this.scrollActiveTabIntoView();
   }
 
-  /** "Overview" is a main tab grouping these sections, shown as sub-tabs on a second row. */
-  get isOverviewTab(): boolean {
-    return OVERVIEW_TABS.includes(this.activeTab);
+  /**
+   * The address follows the open tab (?tab=pictures, nothing for the overview). Before, it kept the tab the profile
+   * was opened with: a reload, or any later change of the address, brought back that old tab (e.g. Nutrition).
+   */
+  private syncTabInUrl(tab: TabId): void {
+    const wanted = tab === 'dashboard' ? null : tab;
+    if ((this.route.snapshot.queryParamMap.get('tab') || null) === wanted) return;
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab: wanted },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
-  /** "Overview" opens on the dashboard; clicking it again keeps the current sub-tab. */
-  openOverview(): void {
-    if (!this.isOverviewTab) this.setTab('dashboard');
+  /** Phones: the tab strip slides sideways; the active tab is centred in it so it is never cut off. */
+  private scrollActiveTabIntoView(): void {
+    setTimeout(() => {
+      const strip = document.querySelector<HTMLElement>('.profile-tabs-bar .profile-tabs');
+      const active = strip?.querySelector<HTMLElement>('.tab-link.active');
+      if (!strip || !active || strip.scrollWidth <= strip.clientWidth) return;
+      strip.scrollTo({ left: active.offsetLeft - (strip.clientWidth - active.offsetWidth) / 2, behavior: 'smooth' });
+    });
   }
+
+  /** "Progress" is a main tab grouping these sections, shown as sub-tabs on a second row. */
+  get isProgressTab(): boolean {
+    return PROGRESS_TABS.includes(this.activeTab);
+  }
+
+  /** "Progress" opens on the measurements; clicking it again keeps the current sub-tab. */
+  openProgress(): void {
+    if (!this.isProgressTab) this.setTab('measurements');
+  }
+
+  /** « Show progress summary »: weight + objective above the tabs (web only, the button is hidden on mobile). */
+  showClientStats = false;
 
   toggleClientStats(): void {
     this.showClientStats = !this.showClientStats;
@@ -341,6 +373,8 @@ export class ProfilClientComponent {
 
   userid = sessionStorage.getItem('userId');
   clientId: string = '';
+  /** « Suivi du programme »: the table shown (planned against done). */
+  trackingTab: 'workouts' | 'nutrition' = 'workouts';
   client!: Client;
   private chatService = inject(ChatService);
 
@@ -891,6 +925,66 @@ export class ProfilClientComponent {
     return !!this.activeNutritionPlan;
   }
 
+  /** « Compare » on the overview: the comparison window opens right there, the coach stays on the overview. */
+  showPicturesComparison = false;
+
+  openPicturesComparison(): void {
+    this.showPicturesComparison = true;
+  }
+
+  /** « See all pictures » in that window: the Pictures tab. */
+  openAllPictures(): void {
+    this.showPicturesComparison = false;
+    this.setTab('pictures');
+  }
+
+  private isToday(date: Date | null | undefined): boolean {
+    return !!date && this.isSameDate(date, this.startOfDay(new Date()));
+  }
+
+  get todayWorkoutActivity(): WorkoutActivity | null {
+    return this.workoutActivities.find((activity) => this.isToday(activity.scheduledDate)) || null;
+  }
+
+  get todayNutritionActivity(): NutritionActivity | null {
+    return this.nutritionActivities.find((activity) => this.isToday(activity.scheduledDate)) || null;
+  }
+
+  /** Chip of today's workout: only once the client did something (done, ongoing, missed). */
+  get todayWorkoutStatus(): TodayStatus | null {
+    const activity = this.todayWorkoutActivity;
+    if (!activity) return null;
+    const tone = activity.status === 'COMPLETED' || activity.status === 'COMPLETED_AFTER_WORKOUT' ? 'done'
+      : activity.status === 'IN_PROGRESS' ? 'progress'
+      : activity.status === 'MISSED' ? 'bad'
+      : null;
+    return tone ? { label: this.workoutActivityStatusLabel(activity), tone } : null;
+  }
+
+  /** Chip of today's nutrition: meals logged so far, or done / off plan. */
+  get todayNutritionStatus(): TodayStatus | null {
+    const activity = this.todayNutritionActivity;
+    if (!activity) return null;
+    if (activity.status === 'COMPLETED') return { label: this.nutritionDayStatusLabel(activity), tone: 'done' };
+    if (activity.status === 'OFF_PLAN') return { label: this.nutritionDayStatusLabel(activity), tone: 'warn' };
+    if (!activity.loggedMeals || !activity.plannedMeals) return null;
+    const meals = this.heroFr ? 'repas' : activity.plannedMeals > 1 ? 'meals' : 'meal';
+    return { label: `${activity.loggedMeals}/${activity.plannedMeals} ${meals}`, tone: 'progress' };
+  }
+
+  /** « Voir » on today's workout: the day's report when the client logged it, else the Workouts tab. */
+  openTodayWorkout(): void {
+    const activity = this.todayWorkoutActivity;
+    if (activity && this.todayWorkoutStatus) this.openWorkoutActivity(activity);
+    else this.setTab('workouts');
+  }
+
+  openTodayNutrition(): void {
+    const activity = this.todayNutritionActivity;
+    if (activity && this.todayNutritionStatus) this.openNutritionActivity(activity);
+    else this.setTab('nutrition');
+  }
+
   private macroSharesCache: { key: string; value: NutritionMacroShares } | null = null;
 
   /** Calorie share of each macro (protein/carbs 4 kcal/g, fat 9 kcal/g) for the dashboard donut; colors match the nutrition builder. */
@@ -1110,7 +1204,12 @@ export class ProfilClientComponent {
     });
 
     this.route.queryParams.subscribe(params => {
-      const tab = params['tab'] as TabId | undefined;
+      let tab = params['tab'] as TabId | undefined;
+      // The profile has no Chat tab any more: an old ?tab=chat link opens the chat panel on the overview.
+      if (tab === 'chat') {
+        tab = 'dashboard';
+        setTimeout(() => this.openChatPanel());
+      }
       if (tab) {
         this.activeTab = tab;
         this.loadTabData(tab);
@@ -1453,8 +1552,11 @@ export class ProfilClientComponent {
           programName: plan?.name || 'Workout program',
           currentWeek: Math.max(1, Math.ceil(currentDay / 7)),
           totalWeeks: Math.max(1, Math.ceil(totalDays / 7)),
-          name: day?.title || day?.name || day?.dayOfWeek || `Day ${currentDay}`,
+          name: capitalizeFirst(day?.title || day?.name || day?.dayOfWeek) || `${this.heroFr ? 'Jour' : 'Day'} ${currentDay}`,
           exercises,
+          totalSets: allExercises(day).reduce((sum: number, exercise: any) =>
+            sum + (exercise?.sets || []).filter((set: any) => !isWarmupSetType(set?.type)).length, 0),
+          minutes: estimatedWorkoutMinutes(day),
         };
       }
     }
@@ -1462,50 +1564,30 @@ export class ProfilClientComponent {
     return null;
   }
 
-  private extractWorkoutExercises(day: any): Exercise[] {
-    const sessions = day?.workoutSessions || [];
-    const exercises = sessions.flatMap((session: any) => session?.exercises || []);
-
-    return exercises.map((exercise: any) => ({
-      name: exercise?.name || exercise?.exerciseRef?.name || 'Exercise',
-      sets: this.formatExerciseSets(exercise),
-      rest: this.formatExerciseRest(exercise),
+  private extractWorkoutExercises(day: any): TodayExercise[] {
+    return allExercises(day).map((exercise: any) => ({
+      name: capitalizeFirst(exercise?.name || exercise?.exerciseRef?.name) || (this.heroFr ? 'Exercice' : 'Exercise'),
+      volume: this.exerciseVolume(exercise),
+      image: exerciseCardImage(exercise),
     }));
   }
 
-  private formatExerciseSets(exercise: any): string {
-    const sets = exercise?.sets || [];
-    if (!sets.length) {
-      return exercise?.duration ? `${exercise.duration} min` : 'No sets';
-    }
-
-    const reps = sets
-      .map((set: any) => set?.reps)
-      .filter((value: any) => value !== null && value !== undefined && value !== '');
-
-    if (!reps.length) return `${sets.length} sets`;
-
-    const uniqueReps = Array.from(new Set(reps.map((value: any) => String(value))));
-    const repsLabel = uniqueReps.length === 1 ? uniqueReps[0] : `${uniqueReps[0]}–${uniqueReps[uniqueReps.length - 1]}`;
-
-    return `${sets.length} sets × ${repsLabel} reps`;
-  }
-
-  private formatExerciseRest(exercise: any): string {
-    const firstSet = (exercise?.sets || []).find((set: any) =>
-      set?.restMin !== null || set?.restSec !== null || set?.rest !== null
-    );
-
-    if (!firstSet) return '--';
-
-    const min = Number(firstSet.restMin || 0);
-    const sec = Number(firstSet.restSec || 0);
-
-    if (min > 0 && sec > 0) return `${min}m ${sec}s`;
-    if (min > 0) return `${min}m`;
-    if (sec > 0) return `${sec}s`;
-
-    return firstSet.rest ? String(firstSet.rest) : '--';
+  /** « 3 × 12 », « 3 × 8–12 », « 3 × 30 s » or « 20 min »: what the client has to do, warm-up sets left out. */
+  private exerciseVolume(exercise: any): string {
+    const sets: any[] = (exercise?.sets || []).filter((set: any) => !isWarmupSetType(set?.type));
+    if (!sets.length) return exercise?.duration ? `${exercise.duration} min` : '';
+    const range = (values: any[]): string | null => {
+      const known = values.map((value) => Number(value)).filter((value) => Number.isFinite(value) && value > 0);
+      if (!known.length) return null;
+      const min = Math.min(...known);
+      const max = Math.max(...known);
+      return min === max ? `${min}` : `${min}–${max}`;
+    };
+    const reps = range(sets.map((set) => set?.reps));
+    if (reps && String(exercise?.measure || '').toUpperCase() !== 'TIME') return `${sets.length} × ${reps}`;
+    const seconds = range(sets.map((set) => set?.duration));
+    if (seconds) return `${sets.length} × ${seconds} s`;
+    return `${sets.length} ${this.heroFr ? (sets.length > 1 ? 'séries' : 'série') : (sets.length > 1 ? 'sets' : 'set')}`;
   }
 
   private extractTodaysNutrition(plans: any[]): ActiveNutritionPlan | null {
@@ -1641,12 +1723,13 @@ export class ProfilClientComponent {
         this.clientId,
         ['SUBMITTED', 'REVIEWED'],
         this.submissionSearch,
-        true // shown in place by the section loader
+        true, // shown in place by the section loader
+        true // rows only: no questions, form name included
       )
       .subscribe({
-        next: async (res) => {
+        next: (res) => {
           this.submissionAssignments = res.content || [];
-          await this.attachFormNames(this.submissionAssignments);
+          void this.attachFormNames(this.submissionAssignments);
           this.submissionsTotalPages = res.totalPages || 0;
           this.submissionsPage = res.number ?? this.submissionsPage;
           this.submissionsPagesArray = Array.from({ length: this.submissionsTotalPages }, (_, i) => i);
@@ -1836,12 +1919,13 @@ export class ProfilClientComponent {
         this.clientId,
         ['ASSIGNED', 'OPENED'],
         this.assignedSearch,
-        true // shown in place by the section loader
+        true, // shown in place by the section loader
+        true // rows only: no questions, form name included
       )
       .subscribe({
-        next: async (res) => {
+        next: (res) => {
           this.assignedAssignments = res.content || [];
-          await this.attachFormNames(this.assignedAssignments);
+          void this.attachFormNames(this.assignedAssignments);
           this.assignedTotalPages = res.totalPages || 0;
           this.assignedPage = res.number ?? this.assignedPage;
           this.assignedPagesArray = this.buildCompactPages(this.assignedPage, this.assignedTotalPages);
@@ -1896,22 +1980,31 @@ export class ProfilClientComponent {
     this.assignments = [...this.submissionAssignments, ...this.assignedAssignments];
   }
 
+  /**
+   * Form names of the rows. The server sends them with the list (one query); the list shows at once. Only a server
+   * not updated yet sends none: then the missing forms are asked in the background and the names fill in.
+   */
   private async attachFormNames(assignments: FormAssignment[]): Promise<void> {
+    assignments.forEach(a => {
+      if (a.formName) this.formNames.set(a.formId, a.formName);
+    });
     const missingFormIds = Array.from(new Set(assignments.map(a => a.formId)))
       .filter(formId => !this.formNames.has(formId));
 
-    await Promise.all(
-      missingFormIds.map(formId =>
-        this.formsApi.getFormById(formId, true).toPromise().then((f: any) => {
-          this.formNames.set(formId, f?.name ?? f?.title ?? formId);
-        }).catch(() => {
-          // Not remembered: the next list asks for this form again.
-        })
-      )
-    );
+    if (missingFormIds.length) {
+      await Promise.all(
+        missingFormIds.map(formId =>
+          this.formsApi.getFormById(formId, true).toPromise().then((f: any) => {
+            this.formNames.set(formId, f?.name ?? f?.title ?? formId);
+          }).catch(() => {
+            // Not remembered: the next list asks for this form again.
+          })
+        )
+      );
+    }
 
     assignments.forEach(a => {
-      a.formName = this.formNames.get(a.formId) ?? a.formId;
+      a.formName = this.formNames.get(a.formId) ?? a.formName ?? '';
     });
   }
 
@@ -2938,7 +3031,9 @@ export class ProfilClientComponent {
           'DESC',
           this.clientId,
           ['ASSIGNED', 'OPENED'],
-          this.assignedSearch
+          this.assignedSearch,
+          false,
+          true
         )
       ),
       switchMap((res: any) =>

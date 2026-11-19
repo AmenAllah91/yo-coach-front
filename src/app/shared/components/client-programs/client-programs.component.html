@@ -158,6 +158,9 @@
       </div>
     </article>
 
+    <!-- Bloc fourni par la page (ex. progression par exercice), sous le programme en cours. -->
+    <ng-content select="[cpAfterCurrent]"></ng-content>
+
     <!-- Upcoming / Finished (P5) -->
     <section class="cp-list" *ngIf="hasList">
       <div class="cp-seg" role="tablist">

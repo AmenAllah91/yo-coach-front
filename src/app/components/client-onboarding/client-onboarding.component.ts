@@ -106,7 +106,7 @@ export class ClientOnboardingComponent implements OnInit {
       if (state.completed && this.state?.profileUpdate) { this.goToDashboard(); return; }
       if (state.completed) { this.appOffer = 'done'; window.scrollTo({top: 0, behavior: 'smooth'}); return; }
       this.apply(state); window.scrollTo({top: 0, behavior: 'smooth'});
-    }, error: error => this.submitError = String(error?.error?.error || error?.error?.message || 'Unable to save this step. Please try again.') });
+    }, error: error => this.submitError = String(error?.error?.error || error?.error?.message || 'ONBOARDING_SAVE_ERROR') });
   }
   back(): void { if (this.index > 0 && !this.saving) this.step = this.steps[this.index - 1]; }
   startOnboarding(): void {

@@ -65,6 +65,14 @@ export interface FormSchedule {
   monthlyDay?: number;
 }
 
+/** Who a check-in reaches now (GET /forms/{id}/usage): told to the coach while editing it. */
+export interface FormUsage {
+  clients: number;
+  scheduledClients: number;
+  nextSendAt: string | null;
+  openCheckins: number;
+}
+
 export interface FormDetails {
   id?: string;
   title: string;
@@ -113,7 +121,8 @@ export class FormsApiService {
   private userUrl = `${environment.baseApiUrl}/clients/clients`;
   constructor(private http: HttpClient) {}
 
-  getMyFormsPage(page: number, size: number, status?: FormStatus, excludeArchived?: boolean, clientId?: string | null, skipLoader = false) {
+  /** includeUnfinished: with excludeArchived, also lists the check-ins still "to finish" (UNSAVED); pickers that send leave it off. */
+  getMyFormsPage(page: number, size: number, status?: FormStatus, excludeArchived?: boolean, clientId?: string | null, skipLoader = false, includeUnfinished = false) {
     let params = new HttpParams()
       .set('page', page)
       .set('size', size)
@@ -122,6 +131,7 @@ export class FormsApiService {
 
     if (status) params = params.set('status', status);
     if (excludeArchived) params = params.set('excludeArchived', 'true');
+    if (includeUnfinished) params = params.set('includeUnfinished', 'true');
     if (clientId) params = params.set('clientId', clientId);
     return this.http.get<PageResponse<Form>>(`${this.baseUrl}/page`, { params, headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {} });
   }
@@ -139,6 +149,13 @@ export class FormsApiService {
   /** ✅ NEW : GET (owner) */
   getForOwner(formId: string): Observable<FormDetails> {
     return this.http.get<FormDetails>(`${this.baseUrl}/${encodeURIComponent(formId)}/owner`);
+  }
+
+  /** Who this check-in reaches now (clients, next automatic send, check-ins not filled in): a quiet extra, never a toast. */
+  getUsage(formId: string): Observable<FormUsage> {
+    return this.http.get<FormUsage>(`${this.baseUrl}/${encodeURIComponent(formId)}/usage`, {
+      headers: { 'X-Skip-Toast': 'true', 'X-Skip-Loader': 'true' },
+    });
   }
   /** With `assignmentId`: the questions as that check-in was answered, even if the form was edited since. */
   getFormById(formId: string, silent = false, assignmentId?: string | null): Observable<FormDetails> {
@@ -225,10 +242,14 @@ export class FormsApiService {
     return this.http.get<UserDto[]>(`${this.userUrl}`);
   }
 
+  /**
+   * Before a send: a saved check-in (PUBLISHED, or an old DRAFT) is sent as it is, there is no publish step.
+   * Only one still "to finish" (UNSAVED) is saved first, which checks it is complete.
+   */
   ensurePublished(formId: string) {
     return this.getForOwner(formId).pipe(
       switchMap((details) => {
-        if (details.status === 'PUBLISHED') return of(null);
+        if (details.status === 'PUBLISHED' || details.status === 'DRAFT') return of(null);
 
         return this.updateForm(formId, {
           ...details,

@@ -1,6 +1,6 @@
 import { WorkoutDay } from './workout.models';
 import { ExerciseSet } from './exercice.models';
-import { workoutDayStatus, workoutSetValid } from './program-days';
+import { setKind, workoutDayStatus, workoutSetValid } from './program-days';
 
 /** Older names over the shared day rule (program-days.ts); an INVALID day reads as EMPTY here. */
 export type WorkoutDayPublicationState = 'EMPTY' | 'READY' | 'REST_DAY';
@@ -23,7 +23,11 @@ export function workoutSetValidationMessages(
     messages.push('Rest time is invalid. Seconds must be between 0 and 59.');
   }
 
-  if (exerciseType === 'CARDIO') {
+  if (exerciseType === 'TIME') {
+    if (!Number.isFinite(Number(set.durationSec)) || Number(set.durationSec) <= 0) {
+      messages.push('Duration must be at least 1 second.');
+    }
+  } else if (exerciseType === 'CARDIO') {
     if (!Number.isFinite(Number(set.duration)) || Number(set.duration) <= 0) {
       messages.push('Cardio duration must be greater than 0.');
     }
@@ -91,9 +95,9 @@ export function workoutDayValidationMessages(
 
       // Every set must be valid, as on the server (one valid set used to be enough here).
       exercise.sets.forEach((set: ExerciseSet, setIndex: number) => {
-        if (workoutSetValid(set, exercise.type)) return;
+        if (workoutSetValid(set, setKind(exercise))) return;
         const setNumber = setIndex + 1;
-        workoutSetValidationMessages(set, exercise.type).forEach(message => {
+        workoutSetValidationMessages(set, setKind(exercise)).forEach(message => {
           messages.push(`Day ${dayNumber}, exercise ${exerciseNumber}, set ${setNumber}: ${message.charAt(0).toLowerCase()}${message.slice(1)}`);
         });
       });

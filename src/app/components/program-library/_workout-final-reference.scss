@@ -108,7 +108,7 @@
 }
 
 /* ---------------- Header controls ---------------- */
-.np-mobile-weeks-btn,
+
 .np-mobile-structure-close,
 .np-mobile-structure-backdrop {
   display: none;
@@ -134,84 +134,6 @@
     min-height: 0 !important;
     margin: 0 !important;
   }
-
-  /* The page header is the one and only mobile top row. */
-  .np-root .np-pagehead {
-    position: sticky !important;
-    top: 0 !important;
-    z-index: 80 !important;
-    display: flex !important;
-    width: 100% !important;
-    min-height: 66px !important;
-    height: 66px !important;
-    align-items: center !important;
-    gap: 10px !important;
-    margin: 0 !important;
-    padding: 8px 12px !important;
-    border-bottom: 1px solid light-dark(#e5eaf0, #34383d) !important;
-    background: light-dark(#fff, #1d2125) !important;
-    box-sizing: border-box !important;
-  }
-
-  .np-root .np-pagehead .np-back {
-    position: static !important;
-    display: inline-flex !important;
-    width: 36px !important;
-    min-width: 36px !important;
-    height: 36px !important;
-    align-items: center !important;
-    justify-content: center !important;
-    margin: 0 !important;
-    border-radius: 50% !important;
-  }
-
-  .np-root .np-pagehead__copy {
-    display: block !important;
-    flex: 1 1 auto !important;
-    min-width: 0 !important;
-  }
-
-  .np-root .np-pagehead .np-h5 {
-    margin: 0 !important;
-    color: light-dark(#102038, #e5ebf4) !important;
-    font-size: 16px !important;
-    font-weight: 700 !important;
-    line-height: 20px !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-  }
-
-  .np-root .np-pagehead__meta {
-    display: block !important;
-    max-width: 100% !important;
-    margin: 1px 0 0 !important;
-    color: light-dark(#637795, #a3a9b1) !important;
-    font-size: 10px !important;
-    line-height: 14px !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-  }
-
-  .np-mobile-weeks-btn {
-    display: inline-flex !important;
-    flex: 0 0 auto !important;
-    min-width: 82px !important;
-    height: 36px !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 7px !important;
-    padding: 0 12px !important;
-    border: 1px solid light-dark(#cbd6e2, #353e47) !important;
-    border-radius: 8px !important;
-    background: light-dark(#fff, #1d2125) !important;
-    color: light-dark(#102038, #e5ebf4) !important;
-    font-size: 12px !important;
-    font-weight: 600 !important;
-  }
-
-  .np-mobile-weeks-btn .np-ico { width: 14px !important; height: 14px !important; }
 
   /* Program Structure becomes a real drawer opened by the Weeks button. */
   .np-root .np-aside {
@@ -297,16 +219,6 @@
     box-sizing: border-box !important;
   }
 
-  /* create-workout has its pagehead inside main: visually pin it to the viewport edges */
-  .np-root .np-main > .np-pagehead {
-    margin: -10px -10px 10px !important;
-    width: calc(100% + 20px) !important;
-  }
-
-  .np-root .np-main > .wkex-quickchoose {
-    display: none !important;
-  }
-
   .np-root .np-main > .np-card,
   .np-root .np-main > app-workout-week-panel {
     width: 100% !important;
@@ -345,14 +257,8 @@
     line-height: 21px !important;
   }
 
-  .np-root .wk-day-editor__actions,
-  .np-root .wk-restmark {
+  .np-root .wk-day-editor__actions {
     width: 100% !important;
-  }
-
-  .np-root .wk-restmark {
-    min-height: 40px !important;
-    justify-content: center !important;
   }
 
   /* Exercise card stays compact, with the photo immediately left of its words. */
@@ -445,18 +351,10 @@
     content: attr(data-label) !important;
   }
 
-  .np-root .wkex-sets__input,
+  
   .np-root .np-input {
     max-width: 100% !important;
     box-sizing: border-box !important;
-  }
-
-  .np-root .np-sticky {
-    position: sticky !important;
-    right: auto !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
   }
 
   /* Exercise chooser becomes a full-screen mobile sheet. */
@@ -474,7 +372,7 @@
 
 @media (max-width: 520px) {
   .np-root .np-main { padding-right: 8px !important; padding-left: 8px !important; }
-  .np-root .np-main > .np-pagehead { margin-right: -8px !important; margin-left: -8px !important; width: calc(100% + 16px) !important; }
+
   .np-root .wkex-card__header { grid-template-columns: 12px 42px minmax(0, 1fr) max-content !important; gap: 7px !important; }
   .np-root .wkex-card__media { width: 42px !important; min-width: 42px !important; max-width: 42px !important; height: 42px !important; min-height: 42px !important; }
   .np-root .wkex-card__actions { gap: 2px !important; }

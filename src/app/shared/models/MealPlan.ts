@@ -15,6 +15,9 @@ export interface FoodServing {
   id?: string;
   size: number;
   unit: string;
+  /** 2026-11-13: English label of a base catalog serving; unitFr = the French one while the app is in English. */
+  unitEn?: string | null;
+  unitFr?: string;
   energy?: number | null;
   protein?: number | null;
   carbohydrates?: number | null;

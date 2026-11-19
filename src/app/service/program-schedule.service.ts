@@ -246,10 +246,6 @@ export class ProgramScheduleService {
     })));
 
     const actions: ToastAction[] = [];
-    if (result.undoId) {
-      const undoId = result.undoId;
-      actions.push({ label: this.translate.instant('ASSIGN_FLOW.UNDO_ASSIGN'), icon: 'fa-undo', run: () => this.undoNow(undoId, 'ASSIGN') });
-    }
     const again = failed.filter(retryable).map(item => item.clientId);
     if (retry && again.length) {
       actions.push({ label: this.translate.instant('ASSIGN_FLOW.RETRY'), run: () => retry(again) });
@@ -263,8 +259,7 @@ export class ProgramScheduleService {
       title,
       details,
       actions,
-      hint: result.undoId ? this.translate.instant('ASSIGN_FLOW.UNDO_ASSIGN_HINT') : undefined,
-      duration: 15000,
+      duration: actions.length ? 15000 : 8000,
     });
     if (done.length) this.changed$.next();
   }

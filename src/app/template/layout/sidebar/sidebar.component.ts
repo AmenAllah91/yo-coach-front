@@ -10,10 +10,12 @@ import { ROUTES } from './sidebar-items';
 import { filter } from 'rxjs/operators';
 import { Subject, takeUntil } from 'rxjs';
 import { UsersService } from 'app/service/users.service';
+import { ChatService } from 'app/service/chat.service';
 import { DocumentService } from 'app/service/document.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { CoachSubscriptionStateService, FEATURE, featureLocked } from 'app/service/coach-subscription-state.service';
 import { CoachSubscriptionState } from 'app/models/coach-subscription-state.model';
+import { CheckinInboxService } from 'app/service/checkin-inbox.service';
 
 const DESKTOP_BREAKPOINT = 1024;
 const PINNED_STORAGE_KEY = 'sidebarPinned';
@@ -24,12 +26,15 @@ export const CHECKOUT_PATH = '/subscription/checkout';
 export const PAY_INVOICE_PATH = '/billing/pay';
 /** Paid branding pages (SUB-27): a lock is shown on them during the trial (decision SUB-03). */
 const WEBSITE_PATH = '/websites/create';
+/** The coach's check-ins entry: its badge counts the answers to read (2026-11-19). */
+const CHECKINS_PATH = '/forms/manage-checkins';
 const BRANDING_PATHS = ['/theme', WEBSITE_PATH];
 /** Plan features (2026-11-11): the menu entries a plan can lock, and their code. */
 const PATH_FEATURES: Record<string, string> = {
   [WEBSITE_PATH]: FEATURE.WEBSITE,
   '/theme': FEATURE.BRANDING,
   '/forms': FEATURE.CHECKINS,
+  [CHECKINS_PATH]: FEATURE.CHECKINS,
   '/tasks': FEATURE.TASKS,
   '/grow/contact-form': FEATURE.CONTACT_FORM,
   '/referral': FEATURE.REFERRAL,
@@ -69,6 +74,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
   /** Free plan (2026-11-10): "2/3 clients" under the upgrade button; null when the coach is not on the free plan. */
   freePlanUsage: { count: number; max: number | null } | null = null;
   readonly checkoutPath = CHECKOUT_PATH;
+  /** Client menu: the coach, shown at the bottom (a click opens the chat). Null until known / for the other roles. */
+  coach: { name: string; avatar: string } | null = null;
   brandingLocked = false;
   websiteLocked = false;
   private destroy$ = new Subject<void>();
@@ -82,6 +89,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
     private documentService: DocumentService,
     private coachSettingsService: CoachSettingsService,
     private subscriptionStateService: CoachSubscriptionStateService,
+    private chatService: ChatService,
+    private checkinInbox: CheckinInboxService,
   ) {}
 
   async ngOnInit() {
@@ -96,6 +105,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
     this.initializeSidebar();
     if (this.roles.includes('ROLE_COACH')) {
       this.loadSubscriptionState();
+      this.followCheckinBadge();
       this.coachSettingsService.configChanges$
         .pipe(takeUntil(this.destroy$))
         .subscribe((config) => {
@@ -104,6 +114,7 @@ export class SidebarComponent implements OnInit, OnDestroy {
           }
         });
     }
+    if (this.userRoleKey === 'CLIENT') this.loadCoach();
     await this.loadAccountSummary();
 
     this.router.events
@@ -113,7 +124,48 @@ export class SidebarComponent implements OnInit, OnDestroy {
       )
       .subscribe(() => {
         this.syncActiveState();
+        if (this.roles.includes('ROLE_COACH')) this.checkinInbox.refresh();
       });
+  }
+
+  /** « Check-ins 4 »: the answers waiting for the coach, kept in step with the check-ins page. */
+  private followCheckinBadge(): void {
+    this.checkinInbox.counts$.pipe(takeUntil(this.destroy$)).subscribe((counts) => {
+      const entry = this.sidebarItems.find((item) => item.path === CHECKINS_PATH);
+      if (!entry) return;
+      const n = counts?.toReview ?? 0;
+      entry.badge = n > 0 ? (n > 99 ? '99+' : String(n)) : '';
+    });
+    this.checkinInbox.refresh(true);
+  }
+
+  /** The client's coach: the one-to-one conversation of the chat (a client has a single coach). */
+  private loadCoach(): void {
+    this.chatService.getConversations(0, 10)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (page) => {
+          const conversation = (page?.content || []).find((conv) => !conv.isGroup);
+          const name = conversation?.name?.trim();
+          const avatar = String(conversation?.avatar || '').trim();
+          this.coach = name ? { name, avatar: /^https?:\/\//.test(avatar) ? avatar : '' } : null;
+        },
+        error: () => (this.coach = null),
+      });
+  }
+
+  get coachInitials(): string {
+    const parts = (this.coach?.name || '').split(/\s+/).filter(Boolean);
+    return parts.slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('') || 'C';
+  }
+
+  onCoachPhotoError(): void {
+    if (this.coach) this.coach = { ...this.coach, avatar: '' };
+  }
+
+  openCoachChat(): void {
+    void this.router.navigate(['/chat']);
+    if (window.innerWidth < DESKTOP_BREAKPOINT) this.closeSidebar();
   }
 
   private loadSubscriptionState(): void {
@@ -206,8 +258,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
         }
       } else {
         if (!item.path) continue;
-        const normalized = normalizePath(item.path);
-        if (currentUrl === normalized || currentUrl.startsWith(normalized + '/')) {
+        const paths = [item.path, ...(item.activeOn || [])].map(normalizePath);
+        if (paths.some((normalized) => currentUrl === normalized || currentUrl.startsWith(normalized + '/'))) {
           matchedItem = item;
           break;
         }
@@ -352,7 +404,8 @@ export class SidebarComponent implements OnInit, OnDestroy {
   }
 
   trackByItem(index: number, item: RouteInfo) {
-    return item.path;
+    // Group titles and parent menus have no path: their title keeps them apart.
+    return item.path || item.title;
   }
 
   toggleAccountMenu(event: Event): void {
@@ -363,6 +416,12 @@ export class SidebarComponent implements OnInit, OnDestroy {
   openSettings(): void {
     this.accountMenuOpen = false;
     void this.router.navigate(['/configuration']);
+    if (window.innerWidth < 1024) this.closeSidebar();
+  }
+
+  openSubscription(): void {
+    this.accountMenuOpen = false;
+    void this.router.navigate(['/subscription']);
     if (window.innerWidth < 1024) this.closeSidebar();
   }
 

@@ -52,6 +52,8 @@ export interface CoachSettingsConfig {
     messageReceived: boolean;
     checkInSubmitted: boolean;
     programEndingSoon: boolean;
+    /** « Ahmed n'a rien fait depuis 7 jours » (2026-11-18). */
+    clientInactive?: boolean;
   };
   publicProfile: CoachPublicProfile;
   /** Sent in the chat, in the coach's name, when a new client finishes the onboarding. "{prenom}": first name. */
@@ -255,6 +257,7 @@ export class CoachSettingsService {
         messageReceived: true,
         checkInSubmitted: true,
         programEndingSoon: true,
+        clientInactive: true,
       },
       publicProfile: {
         professionalTitle: '', bio: '', specialties: [], experience: '',

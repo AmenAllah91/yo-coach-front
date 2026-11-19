@@ -1,35 +1,14 @@
 <div class="page">
   <div class="ck-container">
-    <!-- Header -->
+    <!-- Header: one menu entry, the switch goes to the templates -->
     <div class="header page-header checkins-page-header">
       <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><span aria-hidden="true">←</span></button>
       <div class="header-left header-content">
         <h1 class="title">{{ 'CHECK_INS' | translate }}</h1>
         <p class="subtitle">{{ 'MANAGE_CHECK_INS_SUBTITLE' | translate }}</p>
       </div>
-
-      <div class="header-actions header-filters">
-        <div class="search">
-          <span class="search-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
-          </span>
-          <input
-            class="search-input"
-            type="text"
-            [value]="searchQuery"
-            (input)="onSearch($any($event.target).value)"
-            [placeholder]="'SEARCH_CLIENTS_OR_FORMS' | translate"
-            [attr.aria-label]="'SEARCH_CLIENTS_OR_FORMS' | translate" />
-        </div>
-        <select
-          *ngIf="formOptions.length > 1"
-          class="form-select"
-          [value]="formFilter"
-          (change)="onFormFilter($any($event.target).value)"
-          [attr.aria-label]="'CHK_FILTER_FORM' | translate">
-          <option value="">{{ 'CHK_ALL_FORMS' | translate }}</option>
-          <option *ngFor="let f of formOptions" [value]="f.id" [selected]="f.id === formFilter">{{ f.name }}</option>
-        </select>
+      <div class="header-actions">
+        <app-checkins-switch></app-checkins-switch>
       </div>
     </div>
 
@@ -38,10 +17,14 @@
       <button type="button" class="notice-link" (click)="loadAssignments()">{{ 'CHK_RETRY' | translate }}</button>
     </div>
     <div *ngIf="truncated && listReady" class="notice notice-info">{{ 'CHK_TRUNCATED' | translate }}</div>
+    <div *ngIf="bulkMessage" class="notice notice-info" role="status">
+      <span>{{ bulkMessage }}</span>
+      <button type="button" class="notice-link" (click)="bulkMessage = null">{{ 'CLOSE' | translate }}</button>
+    </div>
 
     <!-- Card -->
     <div class="ck-card">
-      <!-- Tabs -->
+      <!-- Tabs + filters -->
       <div class="tabs-wrap">
         <div class="tabs" role="tablist" [attr.aria-label]="'CHECK_IN_TABS' | translate">
           <button
@@ -65,63 +48,179 @@
               }">{{ counts[tab.id] }}</span>
           </button>
         </div>
+
+        <div class="header-filters">
+          <div class="search">
+            <span class="search-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+            </span>
+            <input
+              class="search-input"
+              type="text"
+              [value]="searchQuery"
+              (input)="onSearch($any($event.target).value)"
+              [placeholder]="'SEARCH_CLIENTS_OR_FORMS' | translate"
+              [attr.aria-label]="'SEARCH_CLIENTS_OR_FORMS' | translate" />
+          </div>
+          <select
+            *ngIf="formOptions.length > 1"
+            class="form-select"
+            [value]="formFilter"
+            (change)="onFormFilter($any($event.target).value)"
+            [attr.aria-label]="'CHK_FILTER_FORM' | translate">
+            <option value="">{{ 'CHK_ALL_FORMS' | translate }}</option>
+            <option *ngFor="let f of formOptions" [value]="f.id" [selected]="f.id === formFilter">{{ f.name }}</option>
+          </select>
+        </div>
       </div>
 
-      <!-- List -->
+      <!-- Select all (answers to read, late check-ins) -->
+      <div *ngIf="listReady && canSelect && filteredRows.length > 1" class="ck-selectbar">
+        <label class="ck-check ck-check-all">
+          <input type="checkbox" [checked]="allState === 'all'" [indeterminate]="allState === 'some'" (change)="toggleAll()" />
+          <span>{{ 'CHK_SELECT_ALL' | translate: { n: filteredRows.length } }}</span>
+        </label>
+        <span class="ck-selectbar-hint">{{ (activeTab === 'to_review' ? 'CHK_SELECT_HINT_REVIEW' : 'CHK_SELECT_HINT_OVERDUE') | translate }}</span>
+      </div>
+
+      <!-- List: one card per client -->
       <app-section-loader *ngIf="!listReady"></app-section-loader>
       <ng-container *ngIf="listReady">
-        <ng-container *ngIf="paginatedRows.length > 0; else emptyTpl">
-          <div
-            *ngFor="let row of paginatedRows"
-            class="ck-row"
-            [ngClass]="'tab-' + row.tab"
-            role="button"
-            tabindex="0"
-            (click)="openCheckIn(row)"
-            (keydown.enter)="openCheckIn(row)">
+        <ng-container *ngIf="paginatedGroups.length > 0; else emptyTpl">
+          <ng-container *ngFor="let group of paginatedGroups; trackBy: trackGroup">
+            <ng-container *ngTemplateOutlet="groupTpl; context: { $implicit: group, missed: false }"></ng-container>
+          </ng-container>
+        </ng-container>
+
+        <!-- Missed: late by more than a week, folded under the late list -->
+        <div *ngIf="activeTab === 'overdue' && counts.missed > 0" class="ck-missed">
+          <div class="ck-missed-head">
+            <button type="button" class="ck-missed-toggle" [attr.aria-expanded]="missedOpen" (click)="missedOpen = !missedOpen">
+              <svg class="chevron" [class.open]="missedOpen" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+              <span class="ck-missed-title">{{ 'CHK_MISSED_TITLE' | translate }}</span>
+              <span class="count-pill neutral">{{ counts.missed }}</span>
+            </button>
+            <button type="button" class="row-cta row-cta-danger" [disabled]="bulkBusy" (click)="removeRows(missedRows, $event)">
+              {{ 'CHK_REMOVE_ALL' | translate }}
+            </button>
+          </div>
+          <p class="ck-missed-hint">{{ 'CHK_MISSED_HINT' | translate }}</p>
+          <div *ngIf="missedOpen" class="ck-missed-list">
+            <ng-container *ngFor="let group of missedGroups; trackBy: trackGroup">
+              <ng-container *ngTemplateOutlet="groupTpl; context: { $implicit: group, missed: true }"></ng-container>
+            </ng-container>
+          </div>
+        </div>
+      </ng-container>
+
+      <!-- A client: one row, or a card with their check-ins under their name -->
+      <ng-template #groupTpl let-group let-missed="missed">
+        <ng-container *ngIf="group.rows.length === 1; else manyTpl">
+          <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: group.rows[0], inGroup: false }"></ng-container>
+        </ng-container>
+        <ng-template #manyTpl>
+          <div class="ck-group" [class.has-selection]="groupState(group) !== 'none'">
+            <div class="ck-group-head">
+              <label *ngIf="canSelect" class="ck-check" (click)="$event.stopPropagation()">
+                <input type="checkbox" [checked]="groupState(group) === 'all'" [indeterminate]="groupState(group) === 'some'"
+                       (change)="toggleGroup(group)" [attr.aria-label]="'CHK_SELECT_CLIENT' | translate: { client: group.name }" />
+              </label>
+              <button type="button" class="row-left group-who" (click)="openClientProfile(group.rows[0], $event)" [title]="'CHK_OPEN_PROFILE' | translate">
+                <span class="avatar">
+                  <img *ngIf="group.rows[0].avatar; else groupInitials" [src]="group.rows[0].avatar" [alt]="group.name" (error)="onAvatarError(group.rows[0])" />
+                  <ng-template #groupInitials><span class="avatar-fallback">{{ initials(group.name) }}</span></ng-template>
+                </span>
+                <span class="name-form">
+                  <span class="name">{{ group.name }}</span>
+                  <span class="formType" [class.summary-late]="activeTab === 'overdue'">{{ groupSummary(group, missed) }}</span>
+                </span>
+              </button>
+              <div class="actions">
+                <button *ngIf="activeTab === 'overdue'" class="row-cta row-cta-light" type="button" (click)="messageClient(group.rows[0], $event)">
+                  {{ 'CHK_REMIND' | translate }}
+                </button>
+                <button *ngIf="activeTab === 'overdue'" class="row-cta row-cta-ghost-danger" type="button" [disabled]="bulkBusy"
+                        (click)="removeRows(group.rows, $event)">
+                  {{ 'CHK_REMOVE_ALL' | translate }}
+                </button>
+                <button *ngIf="activeTab !== 'overdue'" class="action-btn" type="button" (click)="messageClient(group.rows[0], $event)"
+                        [title]="'MESSAGE_CLIENT' | translate" [attr.aria-label]="'MESSAGE_CLIENT' | translate">
+                  <svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path></svg>
+                </button>
+              </div>
+            </div>
+            <ng-container *ngFor="let row of group.rows; trackBy: trackRow">
+              <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: row, inGroup: true }"></ng-container>
+            </ng-container>
+          </div>
+        </ng-template>
+      </ng-template>
+
+      <!-- A check-in -->
+      <ng-template #rowTpl let-row let-inGroup="inGroup">
+        <div
+          class="ck-row"
+          [ngClass]="'tab-' + row.tab"
+          [class.in-group]="inGroup"
+          [class.is-selected]="isSelected(row)"
+          [class.can-select]="canSelect"
+          role="button"
+          tabindex="0"
+          (click)="openCheckIn(row)"
+          (keydown.enter)="openCheckIn(row)">
+          <label *ngIf="canSelect" class="ck-check" (click)="$event.stopPropagation()">
+            <input type="checkbox" [checked]="isSelected(row)" (change)="toggleRow(row)"
+                   [attr.aria-label]="'CHK_SELECT_ROW' | translate: { client: row.name, form: row.formName }" />
+          </label>
+
+          <div class="row-main">
             <div class="row-left">
-              <div class="avatar">
+              <div *ngIf="!inGroup" class="avatar">
                 <img *ngIf="row.avatar; else initialsTpl" [src]="row.avatar" [alt]="row.name" (error)="onAvatarError(row)" />
                 <ng-template #initialsTpl><div class="avatar-fallback">{{ initials(row.name) }}</div></ng-template>
               </div>
               <div class="name-form">
-                <p class="name">{{ row.name }}</p>
-                <p class="formType">{{ row.formName }}</p>
+                <p *ngIf="!inGroup" class="name">{{ row.name }}</p>
+                <p [class.formType]="!inGroup" [class.form-title]="inGroup">{{ row.formName }}</p>
               </div>
             </div>
 
-            <div class="when">
-              <p class="timing" [ngClass]="'timing-' + row.status">{{ timing(row) }}</p>
-              <p class="date" *ngIf="timingDate(row)">{{ timingDate(row) }}</p>
-            </div>
-
-            <div class="badge-cell">
-              <div class="ck-badge" [ngClass]="row.status">{{ statusLabel(row.status) }}</div>
-              <span *ngIf="row.status === 'overdue' && (overdueByClient.get(row.clientId) || 0) > 1" class="repeat"
-                    [title]="'CHK_CLIENT_LATE_TOTAL_HINT' | translate">
-                {{ 'CHK_CLIENT_LATE_TOTAL' | translate: { n: overdueByClient.get(row.clientId) } }}
+            <!-- A few answers at a glance: numbers, ratings (red when low), the client's note -->
+            <div *ngIf="row.status === 'to_review' && preview(row) as p" class="ck-preview">
+              <span *ngFor="let item of p.items" class="chip" [class.chip-alert]="item.alert" [title]="item.label">
+                <span class="chip-label">{{ item.label }}</span>
+                <span class="chip-value">{{ previewValue(item) }}</span>
+                <span *ngIf="previewChange(item) as change" class="chip-change">{{ change }}</span>
               </span>
-            </div>
-
-            <div class="actions" (click)="$event.stopPropagation()">
-              <button *ngIf="row.tab === 'to_review'" class="row-cta" type="button" (click)="openCheckIn(row)">
-                {{ 'CHK_REVIEW' | translate }}
-              </button>
-              <button *ngIf="row.tab === 'overdue'" class="row-cta row-cta-light" type="button" (click)="messageClient(row, $event)">
-                {{ 'CHK_REMIND' | translate }}
-              </button>
-              <button *ngIf="row.tab !== 'overdue'" class="action-btn" type="button" (click)="messageClient(row, $event)"
-                      [title]="'MESSAGE_CLIENT' | translate" [attr.aria-label]="'MESSAGE_CLIENT' | translate">
-                <svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path></svg>
-              </button>
-              <button *ngIf="row.tab === 'overdue'" class="action-btn action-danger" type="button" [disabled]="saving"
-                      (click)="cancelCheckIn(row, $event)" [title]="'CHK_CANCEL_CHECKIN' | translate" [attr.aria-label]="'CHK_CANCEL_CHECKIN' | translate">
-                <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"></path></svg>
-              </button>
+              <span *ngIf="p.note" class="chip-note" [title]="p.note">« {{ p.note }} »</span>
             </div>
           </div>
-        </ng-container>
-      </ng-container>
+
+          <div class="when">
+            <p class="timing" [ngClass]="'timing-' + row.status">{{ timing(row) }}</p>
+            <p class="date" *ngIf="timingDate(row)">{{ timingDate(row) }}</p>
+            <!-- The status only where the tab does not already say it -->
+            <span *ngIf="row.tab === 'pending'" class="ck-badge" [ngClass]="row.status">{{ statusLabel(row.status) }}</span>
+          </div>
+
+          <div class="actions" (click)="$event.stopPropagation()">
+            <button *ngIf="row.tab === 'to_review'" class="row-cta" type="button" (click)="openCheckIn(row)">
+              {{ 'CHK_REVIEW' | translate }}
+            </button>
+            <button *ngIf="row.tab === 'overdue' && !inGroup" class="row-cta row-cta-light" type="button" (click)="messageClient(row, $event)">
+              {{ 'CHK_REMIND' | translate }}
+            </button>
+            <button *ngIf="row.tab !== 'overdue' && !inGroup" class="action-btn" type="button" (click)="messageClient(row, $event)"
+                    [title]="'MESSAGE_CLIENT' | translate" [attr.aria-label]="'MESSAGE_CLIENT' | translate">
+              <svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path></svg>
+            </button>
+            <button *ngIf="row.tab === 'overdue'" class="action-btn action-danger" type="button" [disabled]="saving || bulkBusy"
+                    (click)="cancelCheckIn(row, $event)" [title]="'CHK_CANCEL_CHECKIN' | translate" [attr.aria-label]="'CHK_CANCEL_CHECKIN' | translate">
+              <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+            </button>
+          </div>
+        </div>
+      </ng-template>
 
       <!-- Empty -->
       <ng-template #emptyTpl>
@@ -137,17 +236,18 @@
           <ng-template #noFilterTpl>
             <h3 class="empty-title">{{ ('CHK_EMPTY_' + activeTab.toUpperCase()) | translate }}</h3>
             <p class="empty-subtitle">{{ ('CHK_EMPTY_' + activeTab.toUpperCase() + '_HINT') | translate }}</p>
+            <a *ngIf="activeTab === 'pending'" routerLink="/forms" class="notice-link empty-link">{{ 'CHK_GO_TEMPLATES' | translate }}</a>
           </ng-template>
         </div>
       </ng-template>
 
       <!-- Footer / Pagination -->
-      <div class="footer" *ngIf="listReady">
+      <div class="footer" *ngIf="listReady && totalPages > 1">
         <p class="results">
-          <strong>{{ filteredRows.length }}</strong>
-          {{ filteredRows.length !== 1 ? ('RESULTS' | translate) : ('RESULT' | translate) }}
+          <strong>{{ groups.length }}</strong>
+          {{ (groups.length !== 1 ? 'CHK_CLIENTS' : 'CHK_CLIENT') | translate }}
         </p>
-        <div class="pager" *ngIf="totalPages > 1">
+        <div class="pager">
           <button class="icon-btn" type="button" (click)="prevPage()" [disabled]="safePage <= 1" [attr.aria-label]="'PREVIOUS_PAGE' | translate">
             <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"></path></svg>
           </button>
@@ -156,6 +256,20 @@
             <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"></path></svg>
           </button>
         </div>
+      </div>
+
+      <!-- Actions on the ticked check-ins -->
+      <div *ngIf="selectedIds.size > 0" class="ck-bulk" role="region" [attr.aria-label]="'CHK_BULK_REGION' | translate">
+        <span class="ck-bulk-count">{{ (selectedIds.size === 1 ? 'CHK_SELECTED_ONE' : 'CHK_SELECTED_MANY') | translate: { n: selectedIds.size } }}</span>
+        <span class="spacer"></span>
+        <button type="button" class="btn-cancel" [disabled]="bulkBusy" (click)="clearSelection()">{{ 'CANCEL' | translate }}</button>
+        <button *ngIf="activeTab === 'to_review'" type="button" class="btn-reviewed" [disabled]="bulkBusy" (click)="bulkReviewSelected()">
+          <svg class="btn-icon" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"></path></svg>
+          {{ 'CHK_BULK_REVIEW' | translate }}
+        </button>
+        <button *ngIf="activeTab === 'overdue'" type="button" class="btn-cancel btn-danger" [disabled]="bulkBusy" (click)="bulkRemoveSelected()">
+          {{ 'CHK_BULK_REMOVE' | translate }}
+        </button>
       </div>
     </div>
   </div>
@@ -245,6 +359,7 @@
                     <span class="answer-badge">{{ answerText(a, q) }}</span>
                   </div>
                   <div *ngIf="q.type === QuestionType.TEXT || q.type === QuestionType.DATE" class="answer-display">{{ answerText(a, q) }}</div>
+                  <p *ngIf="deltaFor(q.id) as d" class="answer-delta">{{ deltaText(d) }}</p>
                 </ng-container>
               </ng-container>
               <ng-template #noAnswer><div class="answer-display answer-empty">{{ 'CHK_NO_ANSWER' | translate }}</div></ng-template>
@@ -325,6 +440,7 @@
         <span class="btn-label">{{ 'CHK_MESSAGE' | translate }}</span>
       </button>
       <span class="spacer"></span>
+      <span *ngIf="queueLength > 1" class="keys-hint">{{ 'CHK_KEYS_HINT' | translate }}</span>
 
       <ng-container *ngIf="selected.status === 'to_review'">
         <button type="button" class="btn-cancel" [disabled]="saving || detailLoading" (click)="saveReview(false)">
@@ -342,7 +458,7 @@
         <button type="button" class="btn-reviewed" [disabled]="saving" (click)="saveReview(false)">{{ 'CHK_SAVE_FEEDBACK' | translate }}</button>
       </ng-container>
 
-      <button *ngIf="selected.status === 'overdue'" type="button" class="btn-cancel btn-danger" [disabled]="saving" (click)="cancelCheckIn(selected)">
+      <button *ngIf="selected.status === 'overdue' || selected.status === 'missed'" type="button" class="btn-cancel btn-danger" [disabled]="saving" (click)="cancelCheckIn(selected)">
         {{ 'CHK_CANCEL_CHECKIN' | translate }}
       </button>
     </div>

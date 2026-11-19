@@ -1,0 +1,31 @@
+/* « Modifier le programme » (programme déjà créé) : bouton à côté du nom et fenêtre des informations.
+   Partagé par les éditeurs de nutrition (plan complet, macros par repas, macros du jour). */
+.np-toolbar__edit { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; flex: 0 0 auto;
+  border: 1px solid light-dark(#cbd6e2, #353e47); border-radius: 8px; background: light-dark(#fff, #1d2125);
+  color: light-dark(#0f172a, #e8ecf6); font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.np-toolbar__edit .np-ico { width: 15px; height: 15px; color: #44b4df; }
+.np-toolbar__edit:hover { border-color: #44b4df; color: #44b4df; }
+.np-toolbar__edit:focus-visible { outline: 2px solid #44b4df; outline-offset: 2px; }
+@media (max-width: 640px) { .np-toolbar__editlabel { display: none; } .np-toolbar__edit { width: 36px; padding: 0; justify-content: center; } }
+
+.pe-dialog { position: fixed; inset: 0; z-index: 1100; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.pe-dialog__backdrop { position: absolute; inset: 0; background: rgba(17, 24, 39, .45); }
+.pe-dialog__panel { position: relative; width: min(560px, 100%); max-height: calc(100vh - 48px); display: flex; flex-direction: column;
+  border-radius: 14px; background: light-dark(#fff, #1d2125); box-shadow: 0 20px 50px rgba(15, 23, 42, .25); overflow: hidden; }
+.pe-dialog__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 16px 18px;
+  border-bottom: 1px solid light-dark(#eef2f6, #32363c); }
+.pe-dialog__title { margin: 0; font-size: 19px; font-weight: 800; color: light-dark(#0f172a, #e8ecf6); }
+.pe-dialog__sub { margin: 2px 0 0; font-size: 13px; color: light-dark(#6b7280, #a7abb4); }
+.pe-dialog__close { width: 34px; height: 34px; flex: 0 0 34px; border-radius: 8px; border: 1px solid light-dark(#e5e7eb, #34393f);
+  background: light-dark(#fff, #1d2125); color: inherit; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.pe-dialog__close .np-ico { width: 16px; height: 16px; }
+.pe-dialog__body { padding: 16px 18px; overflow-y: auto; display: grid; gap: 14px; }
+.pe-dialog__body .np-field { margin: 0; }
+.pe-dialog__error { margin: 6px 0 0; font-size: 13px; color: light-dark(#dc2626, #ff7a72); }
+.pe-dialog .np-input.is-invalid { border-color: light-dark(#dc2626, #ff7a72); }
+.pe-dialog__foot { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 18px; border-top: 1px solid light-dark(#eef2f6, #32363c); }
+.pe-dialog__btn { min-height: 40px; padding: 0 18px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
+  border: 1px solid light-dark(#cbd6e2, #353e47); background: light-dark(#fff, #1d2125); color: light-dark(#0f172a, #e8ecf6); }
+.pe-dialog__btn--primary { border-color: #44b4df; background: #44b4df; color: #fff; }
+.pe-dialog__btn--primary:hover { background: #2ea3d1; }
+.pe-dialog__btn:disabled { opacity: .6; cursor: default; }

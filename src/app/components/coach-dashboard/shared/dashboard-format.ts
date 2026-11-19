@@ -83,6 +83,12 @@ export function activitySentence(activity: ClientActivity): { key: string; param
       return { key: 'CDASH.ACT.WORKOUT_COMPLETED', params: { title } };
     case 'NUTRITION_DAY_COMPLETED':
       return { key: 'CDASH.ACT.NUTRITION_DAY_COMPLETED', params: { title } };
+    case 'MEAL_PHOTO_ADDED': {
+      // One photo: the meal is named. Several that day: the count, the meals are on the second line.
+      const meal = activity.kinds?.[0] || '';
+      if (count > 1) return { key: 'CDASH.ACT.MEAL_PHOTOS_MANY', params: { count } };
+      return meal ? { key: 'CDASH.ACT.MEAL_PHOTO_ONE', params: { meal } } : { key: 'CDASH.ACT.MEAL_PHOTO', params: {} };
+    }
     case 'CHECK_IN_SUBMITTED':
       return { key: 'CDASH.ACT.CHECK_IN_SUBMITTED', params: { title } };
     case 'FORM_SUBMITTED':
@@ -156,6 +162,10 @@ export function dayLabel(value: string, lang: string | undefined, now = new Date
 export function activityDetail(activity: ClientActivity): { key: string; params: Record<string, unknown> } | null {
   if (activity.category === 'WORKOUT' && activity.total) {
     return { key: 'CDASH.DETAIL.EXERCISES', params: { count: activity.count ?? 0, total: activity.total } };
+  }
+  if (activity.type === 'MEAL_PHOTO_ADDED') {
+    const meals = (activity.kinds || []).join(', ');
+    return (activity.count ?? 0) > 1 && meals ? { key: 'CDASH.DETAIL.MEALS', params: { meals } } : null;
   }
   if (activity.category === 'NUTRITION' && activity.title) {
     return { key: 'CDASH.DETAIL.PLAN', params: { title: activity.title } };

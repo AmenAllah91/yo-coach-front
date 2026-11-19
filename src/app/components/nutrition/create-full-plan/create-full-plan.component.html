@@ -15,6 +15,12 @@
         <ng-template #libraryCount><span>{{ 'WEEKS_DAYS_COUNT' | translate:{ weeks: nutritionWeeks.length, days: days.length } }}</span></ng-template>
       </p>
     </div>
+    <!-- Programme déjà créé : ses informations (nom, description, durée, dates) se modifient ici, plus dans une carte. -->
+    <button type="button" class="np-toolbar__edit" *ngIf="draft.hasPlan && !draft.readOnly" (click)="openPlanEdit()"
+            [title]="'PLAN_EDIT_HINT' | translate" [attr.aria-label]="'PLAN_EDIT_BUTTON' | translate">
+      <i-feather name="edit-2" class="np-ico"></i-feather>
+      <span class="np-toolbar__editlabel">{{ 'PLAN_EDIT_BUTTON' | translate }}</span>
+    </button>
     <button type="button" class="np-toolbar__weeks" (click)="mobileStructureOpen = !mobileStructureOpen" [attr.aria-expanded]="mobileStructureOpen" [attr.aria-label]="'PROGRAM_STRUCTURE' | translate">
       <i-feather name="list" class="np-ico"></i-feather>
       <span>{{ 'PROGRAM_STRUCTURE' | translate }}</span>
@@ -38,7 +44,7 @@
   <div class="np-shell">
     <aside class="np-aside">
       <div class="np-aside__head">
-        <button type="button" class="np-mobile-structure-close" (click)="mobileStructureOpen = false" aria-label="Close weeks"><i-feather name="x" class="np-ico"></i-feather></button>
+        <button type="button" class="np-mobile-structure-close" (click)="mobileStructureOpen = false" [attr.aria-label]="'CLOSE_WEEKS' | translate"><i-feather name="x" class="np-ico"></i-feather></button>
         <h2 class="np-h6">{{ 'PROGRAM_STRUCTURE' | translate }}</h2>
         <p class="np-aside__sub">{{ 'WEEKS_DAYS_COUNT' | translate:{ weeks: nutritionWeeks.length, days: days.length } }}</p>
         <button type="button" class="np-link" (click)="draft.toggleAllWeeks(nutritionWeeks.length)">
@@ -55,6 +61,17 @@
               <span class="np-week-card__range" *ngIf="draft.weekDates(days, week.weekNumber)">{{ draft.weekDates(days, week.weekNumber) }}</span>
               <span class="np-week-card__count" [title]="'PROGRAM_DAYS_FILLED' | translate:{ count: draft.readyCount(days, week.weekNumber), total: 7 }">{{ 'PROGRAM_DAYS_FILLED_SHORT' | translate:{ count: draft.readyCount(days, week.weekNumber), total: 7 } }}</span>
             </div>
+          </button>
+          <button
+            type="button"
+            class="np-week-card__dup"
+            *ngIf="!draft.readOnly && days.length > 7"
+            [disabled]="!draft.readyCount(days, week.weekNumber)"
+            [title]="'COPY_DAYS.BUTTON_DUPLICATE_WEEK' | translate"
+            [attr.aria-label]="'COPY_DAYS.BUTTON_DUPLICATE_WEEK' | translate"
+            (click)="duplicateWeek(week, $event)"
+          >
+            <i-feather name="copy" class="np-week-card__dupico"></i-feather>
           </button>
           <ng-container *ngIf="!draft.collapsedWeeks.has(week.weekNumber)">
             <ng-container *ngFor="let item of week.days; trackBy: trackByWeekDay">
@@ -85,7 +102,7 @@
         </div>
       </div>
     </aside>
-    <button type="button" class="np-mobile-structure-backdrop" *ngIf="mobileStructureOpen" (click)="mobileStructureOpen = false" aria-label="Close weeks"></button>
+    <button type="button" class="np-mobile-structure-backdrop" *ngIf="mobileStructureOpen" (click)="mobileStructureOpen = false" [attr.aria-label]="'CLOSE_WEEKS' | translate"></button>
 
 <main class="np-main">
       <!-- A finished or stopped client plan (A9): read-only, « Dupliquer » to reuse it. -->
@@ -110,7 +127,7 @@
         [savedEnd]="draft.savedEnd"
         (chosen)="onOverflowChosen($event)"
       ></app-program-overflow>
-      <section class="np-card np-card--settings" [attr.inert]="draft.readOnly ? '' : null">
+      <section class="np-card np-card--settings" *ngIf="!draft.hasPlan" [attr.inert]="draft.readOnly ? '' : null">
         <div class="np-settings-kicker">
           <span class="np-settings-kicker__dot"></span>
           <span>{{ 'GLOBAL_PLAN_SETTINGS' | translate }}</span><span class="np-settings-summary" *ngIf="!draft.settingsVisible">{{ planName }} · {{ nutritionWeeks.length }} {{ 'WEEKS' | translate }}<ng-container *ngIf="clientMode.active"> · {{ programSchedule.formatDate(clientMode.startDate) }} – {{ programSchedule.formatDate(clientMode.endDate) }}</ng-container></span>
@@ -215,7 +232,6 @@
         </ng-container>
       </section>
 
-      <app-workout-week-panel *ngIf="selectedDay && !draft.readOnly" [week]="draft.selectedWeek(days, selectedDay)" [ready]="draft.readyCount(days, draft.selectedWeek(days, selectedDay))" [range]="draft.weekDates(days, draft.selectedWeek(days, selectedDay))" [saving]="draft.saving" [showSave]="false" [canDuplicate]="copy.canDuplicateWeek" (duplicate)="copy.openWeek()"></app-workout-week-panel>
 
       <section class="np-card np-card--day" [attr.inert]="draft.readOnly ? '' : null" [class.np-card--readonly]="draft.readOnly">
         <div class="np-mobile-days">
@@ -702,10 +718,83 @@
   </div>
 </div>
 
+<div class="pe-dialog" *ngIf="planEditOpen" role="dialog" aria-modal="true" aria-labelledby="pePlanTitle" (keydown.escape)="closePlanEdit()">
+  <div class="pe-dialog__backdrop" (click)="closePlanEdit()"></div>
+  <form class="pe-dialog__panel" (ngSubmit)="savePlanEdit()" novalidate>
+    <div class="pe-dialog__head">
+      <div>
+        <h3 id="pePlanTitle" class="pe-dialog__title">{{ 'PLAN_EDIT_TITLE' | translate }}</h3>
+        <p class="pe-dialog__sub">{{ 'PLAN_EDIT_SUBTITLE' | translate }}</p>
+      </div>
+      <button type="button" class="pe-dialog__close" (click)="closePlanEdit()" [attr.aria-label]="'CLOSE' | translate">
+        <i-feather name="x" class="np-ico"></i-feather>
+      </button>
+    </div>
+
+    <div class="pe-dialog__body">
+      <div class="np-field">
+        <label class="np-label" for="pePlanName">{{ 'PLAN_TITLE' | translate }} <span class="np-danger">*</span></label>
+        <input id="pePlanName" class="np-input" [class.is-invalid]="planEditError" type="text" name="pePlanName" autocomplete="off"
+               [(ngModel)]="planEdit.name" (ngModelChange)="planEditError = ''" />
+        <p class="pe-dialog__error" *ngIf="planEditError" role="alert">{{ planEditError | translate }}</p>
+      </div>
+
+      <div class="np-field">
+        <label class="np-label" for="pePlanDetails">{{ 'PLAN_EDIT_DESCRIPTION' | translate }}</label>
+        <textarea id="pePlanDetails" class="np-input np-textarea" rows="4" name="pePlanDetails" [(ngModel)]="planEdit.details"
+                  [placeholder]="'ENTER_PLAN_DESCRIPTION' | translate"></textarea>
+      </div>
+
+      <div class="np-field">
+        <label class="np-label" for="pePlanWeeks">{{ 'DURATION_WEEKS' | translate }} <span class="np-danger">*</span></label>
+        <select id="pePlanWeeks" class="np-input" name="pePlanWeeks" [(ngModel)]="planEdit.weeks">
+          <option *ngFor="let option of durationOptions" [ngValue]="option">
+            {{ 'WEEK_DAY_OPTION' | translate:{weeks: option, days: option * 7} }}
+          </option>
+        </select>
+        <p class="np-help" *ngIf="planEdit.weeks < durationWeeks">
+          {{ 'PLAN_EDIT_SHORTER' | translate:{ days: (durationWeeks - planEdit.weeks) * 7 } }}
+        </p>
+        <p class="np-help np-weeks-issue" *ngIf="draft.weeksIssue(days) as weeksIssue" role="alert">{{ weeksIssue }}</p>
+      </div>
+
+          <app-client-program-dates
+            *ngIf="clientMode.active"
+            kind="NUTRITION"
+            [planId]="draft.currentPlanId"
+            [planName]="planName"
+            [clientId]="clientMode.clientId"
+            [clientName]="clientMode.clientName"
+            [startDate]="clientMode.startDate"
+            [endDate]="clientMode.endDate"
+            [dayCount]="days.length"
+            [visibleDays]="draft.visibleDaysCount(days)"
+            [started]="clientMode.started(days)"
+            [readOnly]="draft.readOnly"
+            [stoppedAt]="draft.stoppedAt"
+            (moved)="clientMode.moved($event.start, days, draft)"
+          ></app-client-program-dates>
+
+      <div class="np-field" *ngIf="canCreateTemplate && !clientMode.active">
+        <label class="np-checkline">
+          <input type="checkbox" name="pePlanVisible" [(ngModel)]="planEdit.visible" />
+          <span>{{ 'VISIBLE_TO_OTHER_COACHES' | translate }}</span>
+        </label>
+        <p class="np-help">{{ 'NUTRITION_TEMPLATE_VISIBILITY_HELP' | translate }}</p>
+      </div>
+    </div>
+
+    <div class="pe-dialog__foot">
+      <button type="button" class="pe-dialog__btn" (click)="closePlanEdit()">{{ 'CANCEL' | translate }}</button>
+      <button type="submit" class="pe-dialog__btn pe-dialog__btn--primary" [disabled]="draft.saving">{{ 'PLAN_EDIT_SAVE' | translate }}</button>
+    </div>
+  </form>
+</div>
+
 <div class="duration-confirm" *ngIf="pendingDurationWeeks" role="dialog" aria-modal="true">
-  <div class="duration-confirm__backdrop" (click)="cancelDurationReduction()"></div>
+  <div class="duration-confirm__backdrop" (click)="cancelDurationReduction(); afterDurationChoice()"></div>
   <section class="duration-confirm__card">
-    <button type="button" class="duration-confirm__close" [attr.aria-label]="'CLOSE' | translate" (click)="cancelDurationReduction()">
+    <button type="button" class="duration-confirm__close" [attr.aria-label]="'CLOSE' | translate" (click)="cancelDurationReduction(); afterDurationChoice()">
       <i-feather name="x" class="duration-confirm__closeIcon"></i-feather>
     </button>
     <div class="duration-confirm__icon">
@@ -719,10 +808,10 @@
       <p class="duration-confirm__hint">{{ 'ACTION_CANNOT_BE_UNDONE_AFTER_CONFIRM' | translate }}</p>
     </div>
     <div class="duration-confirm__actions">
-      <button type="button" class="duration-confirm__btn duration-confirm__btn--ghost" (click)="cancelDurationReduction()">
+      <button type="button" class="duration-confirm__btn duration-confirm__btn--ghost" (click)="cancelDurationReduction(); afterDurationChoice()">
         {{ 'CANCEL' | translate }}
       </button>
-      <button type="button" class="duration-confirm__btn duration-confirm__btn--danger" (click)="confirmDurationReduction()">
+      <button type="button" class="duration-confirm__btn duration-confirm__btn--danger" (click)="confirmDurationReduction(); afterDurationChoice()">
         {{ 'DELETE_DAYS' | translate }}
       </button>
     </div>

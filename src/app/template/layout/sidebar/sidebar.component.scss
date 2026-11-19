@@ -106,6 +106,74 @@ $shadow-lg: 0 22px 55px rgba(0, 0, 0, 0.34);
   border-top: 1px solid $sidebar-border;
 }
 
+// Client menu: the coach, just above the account (a click opens the chat).
+.sidebar-coach {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 18px;
+  gap: 10px;
+  align-items: center;
+  margin: 0 10px 10px;
+  padding: 8px 10px;
+  color: $text-light;
+  text-align: left;
+  background: $sidebar-bg-soft;
+  border: 1px solid $sidebar-border;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color $transition-speed ease;
+
+  &:hover,
+  &:focus-visible {
+    background: $hover-bg;
+  }
+
+  img,
+  &__initials {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+  }
+
+  img { object-fit: cover; }
+
+  &__initials {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background: rgba(68, 180, 223, 0.3);
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+
+  &__copy {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.25;
+
+    small {
+      color: $text-muted;
+      font-size: 0.72rem;
+    }
+
+    strong {
+      overflow: hidden;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  &__chat {
+    width: 18px;
+    height: 18px;
+    color: $accent;
+  }
+}
+
 .nav-lock {
   flex: 0 0 auto;
   width: 14px;
@@ -472,6 +540,8 @@ $shadow-lg: 0 22px 55px rgba(0, 0, 0, 0.34);
     .nav-group-title,
     .account-copy,
     .upgrade-copy,
+    .sidebar-coach__copy,
+    .sidebar-coach__chat,
     .nav-lock,
     .account-trigger > i-feather {
       opacity: 0;
@@ -480,6 +550,21 @@ $shadow-lg: 0 22px 55px rgba(0, 0, 0, 0.34);
 
     .sidebar-upgrade {
       padding-inline: 3px;
+    }
+
+    .sidebar-coach {
+      grid-template-columns: 1fr;
+      justify-items: center;
+      margin-inline: 3px;
+      padding-inline: 0;
+      overflow: hidden;
+      background: transparent;
+      border-color: transparent;
+
+      .sidebar-coach__copy,
+      .sidebar-coach__chat {
+        display: none;
+      }
     }
 
     .upgrade-cta {

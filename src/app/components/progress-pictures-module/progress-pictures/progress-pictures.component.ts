@@ -1,8 +1,9 @@
 import { CommonModule, Location, registerLocaleData } from '@angular/common';
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { finalize, catchError, map, switchMap } from 'rxjs/operators';
-import { forkJoin, of } from 'rxjs';
+import { finalize, map, switchMap } from 'rxjs/operators';
+import { forkJoin } from 'rxjs';
+import { cachedClientPictures, hasClientPicturesSnapshot, loadClientPictures, PROGRESS_PICTURES_DIRECTORY } from './client-pictures-loader';
 import { DocumentService } from 'app/service/document.service';
 import {
   ProgressPicture,
@@ -20,8 +21,7 @@ registerLocaleData(localeFr);
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { SectionLoaderComponent } from '@shared/components/section-loader/section-loader.component';
 
-/** Last pictures of each client (with their signed links, valid a few hours): shown at once on the next visit. */
-const PICTURES_SNAPSHOT = new Map<string, { at: number; pictures: any[] }>();
+type ComparisonPose = 'FRONT' | 'SIDE' | 'BACK';
 
 @Component({
   selector: 'app-progress-pictures',
@@ -33,9 +33,16 @@ const PICTURES_SNAPSHOT = new Map<string, { at: number; pictures: any[] }>();
 export class ProgressPicturesComponent implements OnInit {
   @Input() clientId = '';
   @Input() allowAddPicture = true;
+  /**
+   * Profile overview « Compare »: only the comparison window is shown (no gallery), open at once.
+   * Closing it emits `comparisonClosed`; « See all pictures » emits `openAll`.
+   */
+  @Input() compareOnly = false;
   @Output() pictureAdded = new EventEmitter<ProgressPicture>();
+  @Output() comparisonClosed = new EventEmitter<void>();
+  @Output() openAll = new EventEmitter<void>();
 
-  private readonly progressPicturesDirectory = 'client-progress-pictures';
+  private readonly progressPicturesDirectory = PROGRESS_PICTURES_DIRECTORY;
 
   pictures: ProgressPicture[] = [];
   loading = false;
@@ -47,7 +54,10 @@ export class ProgressPicturesComponent implements OnInit {
   addRequest: ProgressPictureRequest | null = null;
   showPicturesComparison = false;
   comparisonMode: 'single' | 'comparison' = 'comparison';
-  comparisonPose: 'FRONT' | 'SIDE' | 'BACK' = 'FRONT';
+  comparisonPose: ComparisonPose = 'FRONT';
+  readonly comparisonPoses: ComparisonPose[] = ['FRONT', 'SIDE', 'BACK'];
+  /** Comparison: the slot the next picture tapped in the list goes into. */
+  activeSlot: 'before' | 'after' = 'before';
 
   selectedSinglePicture: ProgressPicture | null = null;
   selectedAfterPicture: ProgressPicture | null = null;
@@ -76,6 +86,7 @@ export class ProgressPicturesComponent implements OnInit {
     }
 
     this.loadPictures();
+    if (this.compareOnly) this.openComparison();
   }
 
   goBack(): void {
@@ -86,46 +97,22 @@ export class ProgressPicturesComponent implements OnInit {
     if (!this.clientId) return;
 
     const clientId = this.clientId;
-    const known = PICTURES_SNAPSHOT.get(clientId);
-    if (known && Date.now() - known.at < 10 * 60_000) this.pictures = known.pictures; // signed links still valid
-    this.loading = !known;
+    const known = cachedClientPictures(clientId);
+    if (known) this.pictures = known;
+    this.loading = !hasClientPicturesSnapshot(clientId);
     this.error = null;
 
-    const folderPath = `${this.progressPicturesDirectory}/${clientId}`;
-
-    // The pictures and the fresh links of their folder are read at the same time (they were read one after the other).
-    forkJoin({
-      pictures: this.progressPicturesService.getProgressPicturesByClient(clientId, true), // shown in place by the section loader
-      freshUrls: this.documentService.getFilesInFolder(folderPath, true).pipe(
-        catchError((err) => {
-          console.error('getFilesInFolder failed:', err);
-          return of([] as string[]);
-        })
-      ),
-    })
-      .pipe(
-        map(({ pictures, freshUrls }) => {
-          const backendPictures = (pictures ?? []).sort(
-            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-          );
-          if (!backendPictures.length || !freshUrls?.length) return backendPictures;
-
-          return backendPictures.map((picture) => {
-            const currentFileName = this.extractFileName(picture.imageUrl);
-            const freshUrl = freshUrls.find((url) => {
-              const freshFileName = this.extractFileName(url);
-              return !!currentFileName && currentFileName === freshFileName;
-            });
-            return { ...picture, imageUrl: freshUrl || picture.imageUrl };
-          });
-        }),
-        finalize(() => (this.loading = false))
-      )
+    loadClientPictures(this.progressPicturesService, this.documentService, clientId)
+      .pipe(finalize(() => (this.loading = false)))
       .subscribe({
         next: (pictures) => {
           if (clientId !== this.clientId) return;
           this.pictures = pictures;
-          PICTURES_SNAPSHOT.set(clientId, { at: Date.now(), pictures });
+          // Opened before the pictures arrived: the before/after pair is chosen now.
+          if (this.showPicturesComparison && !this.selectedBeforePicture && !this.selectedSinglePicture) {
+            if (this.comparisonMode === 'comparison') this.comparisonPose = this.firstPoseWithPictures();
+            this.preselectPictures();
+          }
         },
         error: (err) => {
           console.error('loadPictures failed:', err);
@@ -159,19 +146,54 @@ export class ProgressPicturesComponent implements OnInit {
   openComparison(): void {
     this.showPicturesComparison = true;
     this.comparisonMode = 'comparison';
-    this.comparisonPose = 'FRONT';
+    this.comparisonPose = this.firstPoseWithPictures();
+    this.preselectPictures();
+  }
 
-    this.selectedAfterPicture = null;
-    this.selectedBeforePicture = null;
-    this.selectedSinglePicture = this.sortedPictures[0] || null;
-    this.comparisonSelectionError = null;
+  /** A picture of the gallery opens alone, on its own pose (a Side picture shows the Side list). */
+  openPicture(picture: ProgressPicture): void {
+    this.showPicturesComparison = true;
+    this.comparisonPose = this.poseOf(picture);
+    this.preselectPictures();
+    this.comparisonMode = 'single';
+    this.selectedSinglePicture = picture;
   }
 
   closeComparison(): void {
     this.showPicturesComparison = false;
+    this.comparisonClosed.emit();
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onComparisonKeydown(event: KeyboardEvent): void {
+    if (!this.showPicturesComparison) return;
+    if (event.key === 'Escape') {
+      this.closeComparison();
+      return;
+    }
+    if (this.comparisonMode !== 'single') return;
+    if (event.key === 'ArrowLeft') this.stepSinglePicture(-1);
+    if (event.key === 'ArrowRight') this.stepSinglePicture(1);
+  }
+
+  /**
+   * The comparison opens ready to read: the oldest picture of the pose in « Avant », the newest in « Après »
+   * (« Avant » 18 sept., « Après » 22 oct.). The coach can still pick other pictures.
+   */
+  private preselectPictures(): void {
+    const pose = this.filteredComparisonPictures;
+    const newest = pose[0] || null;
+    const oldest = pose[pose.length - 1] || null;
+    const differentDays = !!newest && !!oldest && this.dayOf(newest) !== this.dayOf(oldest);
+    this.selectedBeforePicture = differentDays ? oldest : newest;
+    this.selectedAfterPicture = differentDays ? newest : null;
+    this.activeSlot = this.selectedBeforePicture ? 'after' : 'before';
+    this.selectedSinglePicture = newest;
+    this.comparisonSelectionError = null;
   }
 
   changeComparisonMode(mode: 'single' | 'comparison'): void {
+    if (this.comparisonMode === mode) return;
     this.comparisonMode = mode;
     this.comparisonSelectionError = null;
 
@@ -179,25 +201,44 @@ export class ProgressPicturesComponent implements OnInit {
       this.selectedSinglePicture =
         this.selectedAfterPicture ||
         this.selectedBeforePicture ||
-        this.sortedPictures[0] ||
+        this.filteredComparisonPictures[0] ||
         null;
     }
   }
 
-
-  changeComparisonPose(pose: 'FRONT' | 'SIDE' | 'BACK'): void {
+  changeComparisonPose(pose: ComparisonPose): void {
     if (this.comparisonPose === pose) return;
     this.comparisonPose = pose;
-    this.selectedBeforePicture = null;
-    this.selectedAfterPicture = null;
-    this.selectedSinglePicture = this.filteredComparisonPictures[0] || null;
-    this.comparisonSelectionError = null;
+    this.preselectPictures();
   }
 
   get filteredComparisonPictures(): ProgressPicture[] {
-    return this.sortedPictures.filter(p => (p.pose || 'FRONT').toUpperCase() === this.comparisonPose);
+    return this.sortedPictures.filter(p => this.poseOf(p) === this.comparisonPose);
   }
 
+  poseCount(pose: ComparisonPose): number {
+    return this.pictures.filter(p => this.poseOf(p) === pose).length;
+  }
+
+  /** Where the next picture tapped in the list goes. */
+  setActiveSlot(slot: 'before' | 'after'): void {
+    this.activeSlot = slot;
+    this.comparisonSelectionError = null;
+  }
+
+  clearSlot(slot: 'before' | 'after', event?: Event): void {
+    event?.stopPropagation();
+    if (slot === 'before') this.selectedBeforePicture = null;
+    else this.selectedAfterPicture = null;
+    this.activeSlot = slot;
+    this.comparisonSelectionError = null;
+  }
+
+  /**
+   * Comparison: the picture goes into the active slot (« Avant » first, then « Après »).
+   * Tapping a picture already chosen takes it out. Dates in the wrong order are swapped,
+   * two pictures of the same day are refused (nothing to compare).
+   */
   selectComparisonPicture(picture: ProgressPicture): void {
     if (this.comparisonMode === 'single') {
       this.selectedSinglePicture = picture;
@@ -205,27 +246,63 @@ export class ProgressPicturesComponent implements OnInit {
       return;
     }
 
-    if (!this.selectedBeforePicture || (this.selectedBeforePicture && this.selectedAfterPicture)) {
-      this.selectedBeforePicture = picture;
-      this.selectedAfterPicture = null;
-      this.comparisonSelectionError = null;
-    } else if (!this.selectedAfterPicture) {
-      const candidateTime = new Date(picture.date).getTime();
-      const beforeTime = new Date(this.selectedBeforePicture.date).getTime();
-
-      if (candidateTime === beforeTime) {
-        this.comparisonSelectionError = 'AFTER_PICTURE_DATE_MUST_BE_LATER';
-        return;
-      }
-
-      if (candidateTime > beforeTime) {
-        this.selectedAfterPicture = picture;
-      } else {
-        this.selectedAfterPicture = this.selectedBeforePicture;
-        this.selectedBeforePicture = picture;
-      }
-      this.comparisonSelectionError = null;
+    if (this.isSelectedAsBefore(picture)) {
+      this.clearSlot('before');
+      return;
     }
+    if (this.isSelectedAsAfter(picture)) {
+      this.clearSlot('after');
+      return;
+    }
+
+    const other = this.activeSlot === 'before' ? this.selectedAfterPicture : this.selectedBeforePicture;
+    if (other && this.dayOf(other) === this.dayOf(picture)) {
+      this.comparisonSelectionError = 'PROGRESS_COMPARE_SAME_DAY';
+      return;
+    }
+
+    if (this.activeSlot === 'before') this.selectedBeforePicture = picture;
+    else this.selectedAfterPicture = picture;
+
+    const before = this.selectedBeforePicture;
+    const after = this.selectedAfterPicture;
+    if (before && after && this.dayOf(after) < this.dayOf(before)) {
+      this.selectedBeforePicture = after;
+      this.selectedAfterPicture = before;
+    }
+
+    if (!this.selectedBeforePicture) this.activeSlot = 'before';
+    else if (!this.selectedAfterPicture) this.activeSlot = 'after';
+    this.comparisonSelectionError = null;
+  }
+
+  /** Single picture: previous / next of the pose (newest first). */
+  stepSinglePicture(delta: number): void {
+    const list = this.filteredComparisonPictures;
+    if (!list.length) return;
+    const index = this.singlePictureIndex;
+    const next = Math.min(list.length - 1, Math.max(0, index + delta));
+    this.selectedSinglePicture = list[next];
+  }
+
+  get singlePictureIndex(): number {
+    const selected = this.selectedSinglePicture;
+    return selected ? this.filteredComparisonPictures.findIndex(p => p.id === selected.id) : -1;
+  }
+
+  /** « −3,2 kg » and « 35 jours » between Avant and Après (weight only when both pictures have one). */
+  get comparisonSummary(): { days: number; weightChange: number | null } | null {
+    const before = this.selectedBeforePicture;
+    const after = this.selectedAfterPicture;
+    if (!before || !after) return null;
+    const days = Math.round((this.dayOf(after) - this.dayOf(before)) / 86_400_000);
+    const weightChange = this.hasWeight(before) && this.hasWeight(after) ? after.weight - before.weight : null;
+    return { days, weightChange };
+  }
+
+  /** A weight of 0 is « not given » (old pictures saved without weight), not « 0 kg ». */
+  hasWeight(picture: ProgressPicture | null | undefined): boolean {
+    return !!picture && typeof picture.weight === 'number' && picture.weight > 0;
   }
 
   isSelectedAsBefore(picture: ProgressPicture): boolean {
@@ -234,6 +311,21 @@ export class ProgressPicturesComponent implements OnInit {
 
   isSelectedAsAfter(picture: ProgressPicture): boolean {
     return this.selectedAfterPicture?.id === picture.id;
+  }
+
+  private poseOf(picture: ProgressPicture): ComparisonPose {
+    const pose = (picture.pose || 'FRONT').toUpperCase();
+    return pose === 'SIDE' || pose === 'BACK' ? pose : 'FRONT';
+  }
+
+  private firstPoseWithPictures(): ComparisonPose {
+    return this.comparisonPoses.find(pose => this.poseCount(pose) > 0) || 'FRONT';
+  }
+
+  /** Midnight of the picture's day (pictures of the same day are not compared). */
+  private dayOf(picture: ProgressPicture): number {
+    const date = new Date(picture.date);
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
   }
 
   trackByPictureId(_: number, picture: ProgressPicture): string {
@@ -290,17 +382,4 @@ export class ProgressPicturesComponent implements OnInit {
     return this.coachSettingsService.formatWeight(weightKg);
   }
 
-  private extractFileName(pathOrUrl: string | null | undefined): string {
-    if (!pathOrUrl) return '';
-
-    const withoutQuery = pathOrUrl.split('?')[0];
-    const parts = withoutQuery.split('/');
-
-    const fileName = parts.length ? parts[parts.length - 1] : '';
-    try {
-      return decodeURIComponent(fileName).toLowerCase();
-    } catch {
-      return fileName.toLowerCase();
-    }
-  }
 }

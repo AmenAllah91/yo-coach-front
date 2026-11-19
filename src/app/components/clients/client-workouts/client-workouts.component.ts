@@ -13,6 +13,10 @@ import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { ClientThemeService } from 'app/core/service/client-theme.service';
 import { CompletionCelebrationComponent } from '../shared/completion-celebration.component';
 import { CelebrationView, workoutCelebration } from '../shared/celebration';
+import { PlayerRun, PlayerRunGroup, WorkoutPlayerComponent } from './workout-player.component';
+import { NumberOnlyDirective } from 'app/shared/number-only.directive';
+import { WeekMark, WeekStripComponent, addDays, mondayOf } from '../shared/week-strip.component';
+import { HistoryTimelineComponent } from '../shared/history-timeline.component';
 import {
   allExercises, capitalizeFirst, dateKey, estimatedWorkoutMinutes, exerciseCardImage, isRestDay, nothingToLog, planDate,
   programWeek, workoutDayTitle, youtubeVideoId,
@@ -29,12 +33,14 @@ interface DayItem { plan: any; day: any; date: Date; }
 
 interface RunSet {
   setNumber: number; reps: number | null; duration: number | null; weight: number | null;
+  /** Secondes, pour un exercice au temps (exercise.measure = 'TIME'). */
+  durationSec?: number | null;
   restMin: number | null; restSec: number | null; type: string | null; status: SetStatus;
 }
 
 /** What the coach planned for a set (never sent back: the server keeps the program as it is). A weight of 0 or
  *  nothing means « not set »; a cardio duration falls back on the exercise's. */
-interface PlannedSet { reps: number | null; duration: number | null; weight: number | null; }
+interface PlannedSet { reps: number | null; duration: number | null; durationSec?: number | null; weight: number | null; }
 
 /** Run state of one exercise of the opened day (mobile _ExerciseRunData). */
 interface RunExercise {
@@ -46,9 +52,20 @@ interface RunExercise {
   skipped: boolean;
   note: string;
   showNote: boolean;
+  /** Ce que le client a ressenti sur l'exercice (pour que le coach règle la charge) : '' tant qu'il n'a rien dit. */
+  difficulty: ExerciseDifficulty | '';
 }
 
-interface ExerciseGroup { label: string; isSuperset: boolean; letters: string[]; exercises: RunExercise[]; }
+type ExerciseDifficulty = 'EASY' | 'GOOD' | 'HARD';
+
+interface ExerciseGroup {
+  label: string; isSuperset: boolean; letters: string[]; exercises: RunExercise[];
+  /** Circuit : tours = nombre de séries ; repos du groupe en secondes (null = anciennes séances). */
+  isCircuit?: boolean; rounds?: number; rest?: number | null;
+}
+
+/** One day of the week shown: its date and what is planned on it (nothing = empty line). */
+interface WeekRow { key: string; date: Date; today: boolean; selected: boolean; items: DayItem[]; }
 
 interface FileProgram { plan: any; type: 'PDF' | 'EXCEL'; isCurrent: boolean; }
 
@@ -60,7 +77,7 @@ interface FileProgram { plan: any; type: 'PDF' | 'EXCEL'; isCurrent: boolean; }
 @Component({
   selector: 'app-client-workouts',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule, CompletionCelebrationComponent],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule, CompletionCelebrationComponent, WorkoutPlayerComponent, NumberOnlyDirective, WeekStripComponent, HistoryTimelineComponent],
   templateUrl: './client-workouts.component.html',
   styleUrl: './client-workouts.component.scss',
 })
@@ -68,11 +85,14 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   @Input() previewClientId = '';
   @Input() previewMode = false;
 
-  view: 'list' | 'files' | 'file' | 'day' = 'list';
+  view: 'list' | 'history' | 'files' | 'file' | 'day' = 'list';
   loading = true;
   error = '';
   upcoming = true;
   month = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  /** Week shown in the list (its Monday) and the day opened in it. Display only. */
+  weekStart = mondayOf(new Date());
+  selectedDate = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
   plans: any[] = [];
   showExerciseWeight = true;
   workoutFilesEnabled = false;
@@ -237,7 +257,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
         if (this.isFileProgram(plan)) { this.view = 'files'; return; }
         const first = plan.workoutDays?.[0];
         const focus = planDate(plan.startDate) || (first ? this.scheduledDate(plan, first) : null);
-        if (focus) this.month = new Date(focus.getFullYear(), focus.getMonth(), 1);
+        if (focus) { this.month = new Date(focus.getFullYear(), focus.getMonth(), 1); this.showWeekOf(focus); }
         const day = this.initialDayId ? (plan.workoutDays || []).find((d: any) => d.id === this.initialDayId) : first;
         if (day) this.openDay({ plan, day, date: this.scheduledDate(plan, day) });
         return;
@@ -327,6 +347,150 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     this.month = new Date(this.month.getFullYear(), this.month.getMonth() + delta, 1);
   }
 
+  // -------------------------------------------------------------------------
+  // Week view: the same days and statuses, shown one week at a time (display only)
+  // -------------------------------------------------------------------------
+  /** Monday to Sunday of the week shown, each with its planned days. */
+  get weekRows(): WeekRow[] {
+    const items = this.dayItems;
+    const today = this.today.getTime();
+    const selected = dateKey(this.selectedDate);
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = addDays(this.weekStart, index);
+      const key = dateKey(date);
+      return { key, date, today: date.getTime() === today, selected: key === selected, items: items.filter(item => dateKey(item.date) === key) };
+    });
+  }
+
+  weekIsEmpty(rows: WeekRow[]): boolean { return rows.every(row => !row.items.length); }
+
+  /** Mark under each day of the strip: ✓ done, ✗ missed, a dot when there is a workout (late in orange). */
+  get weekMarks(): Record<string, WeekMark> {
+    const marks: Record<string, WeekMark> = {};
+    const rank: WeekMark[] = ['late', 'planned', 'missed', 'done'];
+    for (const row of this.weekRows) {
+      for (const item of row.items) {
+        const status = this.dayStatus(item);
+        if (status === 'NOTHING') continue;
+        const mark: WeekMark = status === 'COMPLETED' ? 'done' : status === 'MISSED' ? 'missed' : status === 'OVERDUE' ? 'late' : 'planned';
+        if (!marks[row.key] || rank.indexOf(mark) < rank.indexOf(marks[row.key])) marks[row.key] = mark;
+      }
+    }
+    return marks;
+  }
+
+  /** Same rule as preparingNext, for the week shown instead of the month. */
+  get preparingNextWeek(): boolean {
+    const today = this.today.getTime();
+    const weekStart = this.weekStart.getTime();
+    const weekEnd = addDays(this.weekStart, 6).getTime();
+    return this.plans.some(plan => {
+      if (this.isFileProgram(plan)) return false;
+      const end = planDate(plan?.endDate);
+      const days = (plan.workoutDays || []).map((day: any) => this.scheduledDate(plan, day).getTime());
+      if (!end || end.getTime() < today) return false;
+      const after = days.length ? Math.max(...days) + 86_400_000 : (planDate(plan?.startDate)?.getTime() ?? today);
+      const from = Math.max(after, today);
+      return from <= end.getTime() && from <= weekEnd && end.getTime() >= weekStart;
+    });
+  }
+
+  shiftWeek(delta: number): void { this.showWeekOf(addDays(this.weekStart, delta * 7), false); }
+  goToday(): void { this.showWeekOf(this.today); }
+
+  /** Shows the week of `date`. The day opened in it: `date` itself, or today / the first planned day when browsing. */
+  private showWeekOf(date: Date, select = true): void {
+    this.weekStart = mondayOf(date);
+    if (select) { this.selectedDate = date; return; }
+    const rows = this.weekRows;
+    this.selectedDate = (rows.find(row => row.today) ?? rows.find(row => row.items.length) ?? rows[0]).date;
+  }
+
+  /** A day of the strip (or of the list) is picked: it opens in the list and comes into view. */
+  selectDate(date: Date): void {
+    this.selectedDate = date;
+    const key = dateKey(date);
+    setTimeout(() => document.querySelector(`.cw [data-day="${key}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 0);
+  }
+
+  weekdayLabel(date: Date): string { return new Intl.DateTimeFormat(this.locale, { weekday: 'short' }).format(date).toUpperCase(); }
+  trackByRow = (_: number, row: WeekRow) => row.key;
+
+  /** The day shown in full under the strip (today at first, or the day picked in the strip). */
+  focusRow(rows: WeekRow[]): WeekRow { return rows.find(row => row.selected) ?? rows.find(row => row.today) ?? rows[0]; }
+  /** The other days of the week that have something planned: one short line each. */
+  otherRows(rows: WeekRow[]): WeekRow[] { return rows.filter(row => !row.selected && row.items.length); }
+
+  /** « Today · Tue, Nov 17 » / « Aujourd’hui · mar. 17 nov. », or the date alone for another day. */
+  focusLabel(row: WeekRow): string {
+    const date = new Intl.DateTimeFormat(this.locale, { weekday: 'short', day: 'numeric', month: 'short' }).format(row.date);
+    return row.today ? `${this.t('Today', 'Aujourd’hui')} · ${date}` : capitalizeFirst(date);
+  }
+
+  /** Sets of the day, warm-ups left out (as in the workout totals). */
+  setsCount(item: DayItem): number {
+    const sets = this.exercises(item).flatMap(exercise => Array.isArray(exercise?.sets) ? exercise.sets : []);
+    const regular = sets.filter(set => this.normalizedType(set?.type) !== 'WARM_UP');
+    return (regular.length ? regular : sets).length;
+  }
+
+  /** « 7 exercises · 52 min · 18 sets » for the short lines. */
+  shortMeta(item: DayItem): string {
+    const parts = [this.exercisesCount(item)];
+    if (this.minutes(item) > 0) parts.push(`${this.minutes(item)} min`);
+    const sets = this.setsCount(item);
+    if (sets) parts.push(`${sets} ${this.t(sets > 1 ? 'sets' : 'set', sets > 1 ? 'séries' : 'série')}`);
+    return parts.join(' · ');
+  }
+
+  /** The focus card only shows a chip when the day is not simply planned (done, missed, late, in progress). */
+  showsFocusChip(item: DayItem): boolean { return !['PENDING', 'NOT_STARTED'].includes(this.dayStatus(item)); }
+
+
+  // -------------------------------------------------------------------------
+  // History: the days up to today on a timeline, under the week strip (display only)
+  // -------------------------------------------------------------------------
+  /** Day the client last opened from the history: the timeline comes back on it. */
+  historyDay: Date | null = null;
+  private dayOpenedFrom: 'list' | 'history' = 'list';
+
+  openHistory(): void { this.historyDay = null; this.view = 'history'; window.scrollTo({ top: 0 }); }
+
+  /** Today and before, by day ("2026-11-16"): what is planned later stays on the main page. */
+  get historyByDay(): Record<string, DayItem[]> {
+    const today = this.today.getTime();
+    const byDay: Record<string, DayItem[]> = {};
+    for (const item of this.dayItems) {
+      if (item.date.getTime() <= today) (byDay[dateKey(item.date)] ||= []).push(item);
+    }
+    return byDay;
+  }
+
+  historyFirstDay(byDay: Record<string, DayItem[]>): Date {
+    const first = Object.keys(byDay).sort()[0];
+    return (first ? planDate(first) : null) ?? this.today;
+  }
+
+  openDayFromHistory(item: DayItem): void {
+    this.dayOpenedFrom = 'history';
+    this.historyDay = item.date;
+    this.openDay(item);
+  }
+
+  historyMarks(byDay: Record<string, DayItem[]>): Record<string, WeekMark> {
+    const marks: Record<string, WeekMark> = {};
+    const rank: WeekMark[] = ['late', 'planned', 'missed', 'done'];
+    for (const [key, items] of Object.entries(byDay)) {
+      for (const item of items) {
+        const status = this.dayStatus(item);
+        if (status === 'NOTHING') continue;
+        const mark: WeekMark = status === 'COMPLETED' ? 'done' : status === 'MISSED' ? 'missed' : status === 'OVERDUE' ? 'late' : 'planned';
+        if (!marks[key] || rank.indexOf(mark) < rank.indexOf(marks[key])) marks[key] = mark;
+      }
+    }
+    return marks;
+  }
+
   isToday(item: DayItem): boolean { return item.date.getTime() === this.today.getTime(); }
 
   /** Persisted status, or OVERDUE for a past day that was never resolved. */
@@ -353,9 +517,9 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
         if (logged && logged[0] > 0 && logged[0] < logged[1] && item.day?.clientCompletionMode !== 'ALREADY_COMPLETED') {
           return { label: `${this.t('Partial', 'Partielle')} · ${logged[0]}/${logged[1]}`, color: '#D97706' };
         }
-        return { label: this.t('Completed', 'Terminé'), color: '#1E8E4E' };
+        return { label: this.t('Done', 'Terminé'), color: '#1E8E4E', icon: 'check' };
       }
-      case 'MISSED': return { label: this.t('Missed', 'Manqué'), color: '#D93A3A' };
+      case 'MISSED': return { label: this.t('Missed', 'Manqué'), color: '#D93A3A', icon: 'x' };
       case 'OVERDUE': return { label: this.t('Overdue', 'En retard'), color: '#D99100' };
       case 'NOTHING': return isRestDay(item.day) ? { label: this.t('Rest day', 'Repos'), color: '#7455D9' }
         : { label: this.t('No exercise', 'Aucun exercice'), color: 'var(--yc-text-secondary)' };
@@ -420,12 +584,17 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
       return known[0] >= known[known.length - 1] ? `${format(max)}–${format(min)}` : `${format(min)}–${format(max)}`;
     };
     const planned = sets.map(set => this.plannedOf(exercise, set));
+    if (String(exercise?.measure || '').toUpperCase() === 'TIME') {
+      const seconds = range(planned.map(set => set.durationSec ?? null), n => String(n));
+      if (!seconds) return this.setsWord(exercise, sets.length);
+      return sets.length > 1 ? `${sets.length} × ${seconds} s` : `${seconds} s`;
+    }
     if (exercise?.type === 'CARDIO') {
       const minutes = range(planned.map(set => set.duration), n => String(n));
-      if (!minutes) return this.t(`${sets.length} sets`, `${sets.length} séries`);
+      if (!minutes) return this.setsWord(exercise, sets.length);
       return sets.length > 1 ? `${sets.length} × ${minutes} min` : `${minutes} min`;
     }
-    const parts = [this.t(`${sets.length} set${sets.length > 1 ? 's' : ''}`, `${sets.length} série${sets.length > 1 ? 's' : ''}`)];
+    const parts = [this.setsWord(exercise, sets.length)];
     const reps = range(planned.map(set => set.reps), n => String(n));
     if (reps) parts.push(`${reps} ${this.t('reps', 'rép.')}`);
     const weight = this.showExerciseWeight ? range(planned.map(set => set.weight), n => this.displayWeight(n)) : null;
@@ -700,7 +869,9 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     this.stopTimer();
     this.item = null;
     this.exercisePage = null;
-    this.view = 'list';
+    this.player = null;
+    this.view = this.dayOpenedFrom;
+    this.dayOpenedFrom = 'list';
     document.body.classList.remove('client-workout-detail-open');
     this.load();
   }
@@ -721,18 +892,24 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
       const isSuperset = members.length > 1;
       const label = `${groupIndex}`;
       const letters = members.map((_, index) => `${label}${String.fromCharCode(65 + index)}`);
-      const group: ExerciseGroup = { label, isSuperset, letters, exercises: [] };
+      const isCircuit = !!id && String(members[0]?.groupType || '').toUpperCase() === 'CIRCUIT';
+      const group: ExerciseGroup = {
+        label, isSuperset: isSuperset || isCircuit, letters, exercises: [], isCircuit,
+        rounds: Math.max(0, ...members.map((m: any) => m?.sets?.length || 0)),
+        rest: this.toInt(members[0]?.groupRestSec),
+      };
       members.forEach((exercise, index) => {
-        const key = isSuperset ? `${label}.${index + 1}` : label;
+        const key = group.isSuperset ? `${label}.${index + 1}` : label;
         // By exercise first, by its number only for a log without id (a reordered program must not swap logs).
         const log = logs.find(item => !!exercise?.id && String(item?.exerciseId ?? '') === String(exercise.id))
           ?? logs.find(item => !item?.exerciseId && String(item?.displayNumber ?? '') === key);
         const legacy: SetStatus = log?.completed === true ? 'COMPLETED' : log?.skipped === true ? 'MISSED' : 'PENDING';
         const savedSets: any[] = Array.isArray(log?.sets) ? log.sets : [];
         const run: RunExercise = {
-          key, displayLabel: isSuperset ? letters[index] : label, exercise,
+          key, displayLabel: group.isSuperset ? letters[index] : label, exercise,
           completed: log?.completed === true, skipped: log?.skipped === true,
           note: String(log?.note ?? ''), showNote: !!String(log?.note ?? '').trim(),
+          difficulty: (['EASY', 'GOOD', 'HARD'].includes(String(log?.difficulty)) ? log.difficulty : '') as ExerciseDifficulty | '',
           sets: (exercise?.sets || []).map((source: any, setIndex: number) => {
             const setNumber = Number(source?.setNumber) || setIndex + 1;
             const saved = savedSets.find(item => Number(item?.setNumber) === setNumber);
@@ -742,6 +919,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
               setNumber,
               reps: this.toInt(saved?.reps) ?? planned.reps,
               duration: this.toInt(saved?.duration) ?? planned.duration,
+              durationSec: this.toInt(saved?.durationSec) ?? planned.durationSec ?? null,
               weight: this.positive(saved?.weight) ?? planned.weight,
               restMin: this.toInt(saved?.restMin) ?? this.toInt(source?.restMin),
               restSec: this.toInt(saved?.restSec) ?? this.toInt(source?.restSec),
@@ -779,6 +957,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     return {
       reps: this.toInt(source?.reps),
       duration: this.toInt(source?.duration) ?? this.toInt(exercise?.duration),
+      durationSec: this.toInt(source?.durationSec),
       weight: this.positive(source?.weight),
     };
   }
@@ -790,6 +969,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   /** « 10 rép. · 20 kg », « 10 rép. », « 30 min », « — »: what the coach planned for this set. */
   plannedText(run: RunExercise, index: number): string {
     const planned = this.planned(run, index);
+    if (this.isTime(run)) return planned.durationSec != null ? `${planned.durationSec} s` : '—';
     if (this.isCardio(run)) return planned.duration != null ? `${planned.duration} min` : '—';
     const parts = [planned.reps != null ? `${planned.reps} ${this.t('reps', 'rép.')}` : '—'];
     if (this.showExerciseWeight && planned.weight != null) parts.push(`${this.displayWeight(planned.weight)} ${this.weightUnit}`);
@@ -798,6 +978,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
 
   /** What the client did, in the same words: « 8 rép. · 22,5 kg ». */
   doneText(run: RunExercise, set: RunSet): string {
+    if (this.isTime(run)) return set.durationSec != null ? `${set.durationSec} s` : '—';
     if (this.isCardio(run)) return set.duration != null ? `${set.duration} min` : '—';
     const parts = [set.reps != null ? `${set.reps} ${this.t('reps', 'rép.')}` : '—'];
     if (this.showExerciseWeight && set.weight != null) parts.push(`${this.displayWeight(set.weight)} ${this.weightUnit}`);
@@ -809,6 +990,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     const set = run.sets[index];
     const planned = this.planned(run, index);
     if (field === 'weight') return set.weight != null && set.weight !== planned.weight;
+    if (this.isTime(run)) return set.durationSec != null && set.durationSec !== planned.durationSec;
     return this.isCardio(run) ? set.duration != null && set.duration !== planned.duration : set.reps != null && set.reps !== planned.reps;
   }
   private normalizeStatus(value: any): SetStatus {
@@ -847,9 +1029,18 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
 
   get canEditWorkout(): boolean { return ['IN_PROGRESS', 'PAUSED', 'LOG_WORKOUT', 'EDIT'].includes(this.runStatus); }
   get isFinished(): boolean { return this.runStatus === 'COMPLETED' || this.runStatus === 'ALREADY_COMPLETED'; }
-  get totalSets(): number { return this.runExercises.reduce((sum, run) => sum + run.sets.length, 0); }
-  get doneSets(): number { return this.runExercises.reduce((sum, run) => sum + this.count(run, 'COMPLETED'), 0); }
-  get missedSets(): number { return this.runExercises.reduce((sum, run) => sum + this.count(run, 'MISSED'), 0); }
+  /** Les séries d'échauffement ne comptent pas dans les totaux (sauf si la séance n'a que des échauffements). */
+  private get countedSets(): RunSet[] {
+    const all = this.runExercises.flatMap(run => run.sets);
+    const regular = all.filter(set => this.normalizedType(set.type) !== 'WARM_UP');
+    return regular.length ? regular : all;
+  }
+  private counted(status: SetStatus): number { return this.countedSets.filter(set => set.status === status).length; }
+  get totalSets(): number { return this.countedSets.length; }
+  get doneSets(): number { return this.counted('COMPLETED'); }
+  get missedSets(): number { return this.counted('MISSED'); }
+  /** Séries en attente du total affiché (sans les échauffements) ; `pendingSets` garde toutes les séries à renseigner. */
+  get pendingCountedSets(): number { return this.counted('PENDING'); }
   get pendingSets(): number { return this.runExercises.reduce((sum, run) => sum + this.count(run, 'PENDING'), 0); }
   get reviewedExercises(): number { return this.runExercises.filter(run => this.exerciseStatus(run) === 'COMPLETED').length; }
   get progress(): number { return this.totalSets ? Math.min((this.doneSets + this.missedSets) / this.totalSets, 1) : 0; }
@@ -898,7 +1089,55 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   isWarmup(run: RunExercise): boolean {
     return run.sets.length > 0 && run.sets.every(set => this.normalizedType(set.type) === 'WARM_UP');
   }
-  isCardio(run: RunExercise): boolean { return run.exercise?.type === 'CARDIO'; }
+  /** Bloc « Échauffement » : les exercices d'échauffement (seuls, pas dans un groupe) placés tout en haut de la séance. */
+  get warmupGroups(): number {
+    let n = 0;
+    while (n < this.groups.length && !this.groups[n].isSuperset && this.groups[n].exercises.length > 0
+      && this.groups[n].exercises.every(run => this.isWarmup(run))) n += 1;
+    return n;
+  }
+
+  isCardio(run: RunExercise): boolean { return run.exercise?.type === 'CARDIO' && !this.isTime(run); }
+
+  /** Exercice au temps (circuit « 30 s ») : la valeur est en secondes. */
+  isTime(run: RunExercise): boolean { return String(run.exercise?.measure || '').toUpperCase() === 'TIME'; }
+
+  amountValue(run: RunExercise, set: RunSet): number | null {
+    return (this.isTime(run) ? set.durationSec : this.isCardio(run) ? set.duration : set.reps) ?? null;
+  }
+
+  amountHeader(run: RunExercise): string {
+    return this.isTime(run) ? this.t('SEC', 'SEC') : this.isCardio(run) ? this.t('MIN', 'MIN') : this.t('REPS', 'RÉP.');
+  }
+
+  amountUnit(run: RunExercise): string {
+    return this.isTime(run) ? 's' : this.isCardio(run) ? 'min' : '';
+  }
+
+  /** « 3 séries », ou « 3 tours » pour un exercice de circuit. */
+  setsWord(exercise: any, n: number): string {
+    const circuit = !!exercise?.supersetGroupId && String(exercise?.groupType || '').toUpperCase() === 'CIRCUIT';
+    const s = n > 1 ? 's' : '';
+    return circuit ? this.t(`${n} round${s}`, `${n} tour${s}`) : this.t(`${n} set${s}`, `${n} série${s}`);
+  }
+
+  /** « Circuit · 3 tours · 1 → 2 → 3, repos 60 s entre les tours », « Superset · alternez 2A → 2B, repos 90 s après la paire ». */
+  groupHint(group: ExerciseGroup): string {
+    const rest = group.rest != null ? `${group.rest} s` : '';
+    if (group.isCircuit) {
+      // Mêmes repères que les cartes (3A, 3B, 3C) et que l'appli mobile.
+      const order = group.letters.join(' → ');
+      return this.t(
+        `Circuit · ${group.rounds} round${group.rounds === 1 ? '' : 's'} · ${order}${rest ? `, rest ${rest} between rounds` : ''}`,
+        `Circuit · ${group.rounds} tour${group.rounds === 1 ? '' : 's'} · ${order}${rest ? `, repos ${rest} entre les tours` : ''}`,
+      );
+    }
+    const order = group.letters.join(' → ');
+    return this.t(
+      `Superset · alternate ${order}, rest ${rest ? rest + ' ' : ''}after the pair`,
+      `Superset · alternez ${order}, repos ${rest ? rest + ' ' : ''}après la paire`,
+    );
+  }
   hasVideo(run: RunExercise): boolean { return !!this.videoLink(run); }
   coachNote(run: RunExercise): string | null { return this.clean(run.exercise?.coachNote ?? run.exercise?.notes) ?? this.clean(run.exercise?.exerciseRef?.coachNote); }
 
@@ -956,7 +1195,8 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
 
   onAmountInput(run: RunExercise, set: RunSet, value: string): void {
     const n = parseInt(String(value), 10);
-    if (this.isCardio(run)) set.duration = Number.isFinite(n) ? n : null;
+    if (this.isTime(run)) set.durationSec = Number.isFinite(n) ? n : null;
+    else if (this.isCardio(run)) set.duration = Number.isFinite(n) ? n : null;
     else set.reps = Number.isFinite(n) ? n : null;
     this.scheduleDraftSave();
   }
@@ -980,6 +1220,87 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   startWorkout(): void { this.setRunStatus('IN_PROGRESS'); }
+
+  // -------------------------------------------------------------------------
+  // Mode guidé : une série à la fois (mobile WorkoutPlayerScreen), sur les mêmes séries que la page.
+  // -------------------------------------------------------------------------
+  player: { groups: PlayerRunGroup[]; startGroup: number | null; getReady: boolean } | null = null;
+
+  /** Le mode guidé démarre (ou reprend) la séance : jamais un autre jour, ni dans l'aperçu du coach. */
+  get canOpenPlayer(): boolean {
+    return !this.previewMode && !this.isFutureDay && !this.nothingToDo && ['NOT_STARTED', 'IN_PROGRESS', 'PAUSED'].includes(this.runStatus);
+  }
+
+  openPlayer(startGroup: number | null = null): void {
+    if (!this.canOpenPlayer || this.saving) return;
+    // Premier démarrage : compte à rebours « Préparez-vous ! » avant la première série.
+    const getReady = this.runStatus === 'NOT_STARTED';
+    if (this.runStatus !== 'IN_PROGRESS') this.setRunStatus('IN_PROGRESS');
+    const warmups = this.warmupGroups;
+    this.player = {
+      startGroup,
+      getReady,
+      groups: this.groups.map((group, index) => ({
+        warmup: index < warmups,
+        grouped: group.isSuperset, circuit: !!group.isCircuit, restSec: group.rest ?? null,
+        exercises: group.exercises.map(run => ({
+          key: run.key, displayLabel: run.displayLabel, exercise: run.exercise, sets: run.sets,
+          planned: run.sets.map((_, index) => this.planned(run, index)),
+          cardio: this.isCardio(run), timed: this.isTime(run), hasVideo: this.hasVideo(run),
+        })),
+      })),
+    };
+  }
+
+  playerSetStatus(event: { run: PlayerRun; index: number; status: SetStatus }): void {
+    const run = this.runExercises.find(item => item.key === event.run.key);
+    if (!run) return;
+    run.sets[event.index].status = event.status;
+    this.recalculate(run);
+    this.scheduleDraftSave();
+  }
+
+  playerPaused(paused: boolean): void { this.setRunStatus(paused ? 'PAUSED' : 'IN_PROGRESS'); }
+
+  // -------------------------------------------------------------------------
+  // Difficulté ressentie : une question par exercice, une fois ses séries passées.
+  // -------------------------------------------------------------------------
+  readonly difficulties: { value: ExerciseDifficulty; en: string; fr: string }[] = [
+    { value: 'EASY', en: 'Easy', fr: 'Facile' },
+    { value: 'GOOD', en: 'Just right', fr: 'Bien' },
+    { value: 'HARD', en: 'Hard', fr: 'Dur' },
+  ];
+
+  /** La question vient quand l'exercice est fini (plus de série en attente, au moins une faite). */
+  canRate(run: RunExercise): boolean {
+    return this.count(run, 'PENDING') === 0 && this.count(run, 'COMPLETED') > 0;
+  }
+
+  setDifficulty(run: RunExercise, value: ExerciseDifficulty): void {
+    run.difficulty = run.difficulty === value ? '' : value;
+    this.scheduleDraftSave();
+  }
+
+  difficultyLabel(run: RunExercise): string {
+    const found = this.difficulties.find(item => item.value === run.difficulty);
+    return found ? this.t(found.en, found.fr) : '';
+  }
+
+  playerOpenExercise(playerRun: PlayerRun): void {
+    const run = this.runExercises.find(item => item.key === playerRun.key);
+    if (run) this.openExercise(run, this.hasVideo(run), true);
+  }
+
+  closePlayer(finish: boolean): void {
+    this.player = null;
+    if (finish) this.finishWorkout();
+  }
+
+  /** Nom de l'exercice où le client s'est arrêté (bandeau « Continuer série par série »). */
+  get currentExerciseName(): string {
+    const run = this.runExercises.find(item => item.key === this.currentKey);
+    return run ? this.exerciseName(run) : '';
+  }
   togglePause(): void { this.setRunStatus(this.runStatus === 'IN_PROGRESS' ? 'PAUSED' : 'IN_PROGRESS'); }
 
   enterLogCompletedMode(): void {
@@ -1135,7 +1456,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     const pending = this.fr
       ? `${n} série${n > 1 ? 's sont encore en attente et seront marquées' : ' est encore en attente et sera marquée'} comme manquée${n > 1 ? 's' : ''}.`
       : `${n} set${n > 1 ? 's are' : ' is'} still pending and will be marked as missed.`;
-    if (this.doneSets > 0 || this.runExercises.some(run => !run.sets.length && run.completed)) return pending;
+    if (!this.nothingDone) return pending;
     return `${pending} ${this.t('No set was done: the workout will be saved as missed.', 'Aucune série faite : la séance sera enregistrée comme manquée.')}`;
   }
 
@@ -1171,11 +1492,12 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
         skipped: run.skipped,
         exerciseStatus: this.exerciseStatus(run),
         note: run.note.trim(),
+        ...(run.difficulty ? { difficulty: run.difficulty } : {}),
         // The plan of each set is kept with the result (as the mobile app does): the coach compares planned and done
         // even after changing the program.
         sets: run.sets.map((set, index) => {
           const planned = this.planned(run, index);
-          return { ...set, plannedReps: planned.reps, plannedDuration: planned.duration, plannedWeight: planned.weight };
+          return { ...set, plannedReps: planned.reps, plannedDuration: planned.duration, plannedDurationSec: planned.durationSec ?? null, plannedWeight: planned.weight };
         }),
       })),
       ...(day.dayNumber != null ? { dayNumber: day.dayNumber } : {}),
@@ -1279,16 +1601,20 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   // -------------------------------------------------------------------------
   // Exercise page (mobile ExerciseDetailScreen)
   // -------------------------------------------------------------------------
-  openExercise(run: RunExercise, autoplay = false): void {
+  /** Fiche ouverte depuis la séance guidée : seulement la vidéo, le nom et les textes (pas les séries). */
+  exerciseSimple = false;
+
+  openExercise(run: RunExercise, autoplay = false, simple = false): void {
     if (this.saving) return;
     this.exercisePage = run;
+    this.exerciseSimple = simple;
     this.startedFromExercise = false;
     this.stopVideo();
     if (autoplay && this.hasVideo(run)) this.playVideo();
     window.scrollTo({ top: 0 });
   }
 
-  closeExercise(): void { this.stopVideo(); this.exercisePage = null; }
+  closeExercise(): void { this.stopVideo(); this.exercisePage = null; this.exerciseSimple = false; }
 
   private videoLink(run: RunExercise): string | null { return this.clean(run.exercise?.exerciseRef?.videoLink) ?? this.clean(run.exercise?.videoLink ?? run.exercise?.youtubeUrl ?? run.exercise?.videoUrl); }
   youtubeId(run: RunExercise): string | null { const link = this.videoLink(run); return link ? youtubeVideoId(link) : null; }

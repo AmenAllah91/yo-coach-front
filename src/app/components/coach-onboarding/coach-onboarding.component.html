@@ -61,7 +61,7 @@
         <div class="unit-row"><div><strong>{{ 'COACH_ONBOARDING.MEASUREMENTS' | translate }}</strong><span>{{ 'COACH_ONBOARDING.MEASUREMENTS_HELP' | translate }}</span></div><div class="unit-options"><button type="button" [class.selected]="unitsForm.value.measurementUnit === 'cm'" (click)="selectUnit('measurementUnit','cm')">Cm</button><button type="button" [class.selected]="unitsForm.value.measurementUnit === 'in'" (click)="selectUnit('measurementUnit','in')">In</button></div></div>
         <div class="units-note"><i class="bi bi-info-circle"></i><span>{{ 'COACH_ONBOARDING.UNITS_HINT' | translate }}</span></div>
       </form>
-      <div *ngIf="submitError" class="submit-error">{{ submitError }}</div>
+      <div *ngIf="submitError" class="submit-error">{{ submitError | translate }}</div>
     </main>
 
     <footer class="onboarding-footer">

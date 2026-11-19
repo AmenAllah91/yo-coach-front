@@ -1,5 +1,7 @@
 // Client check-ins: same layout as the mobile CheckInScreen / CheckInFormPage (shared classes in
 // shared/styles/client-ui.scss).
+@import '../../clients/shared/week-list';
+
 :host {
   display: block;
   min-height: 100%;
@@ -78,6 +80,12 @@
 
   &.locked {
     cursor: default;
+  }
+
+  // A check-in due today, still to send: blue border, like the Workouts focus card.
+  &--today {
+    border: 1.5px solid var(--yc-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--yc-primary) 10%, transparent), var(--yc-shadow-card);
   }
 
   &__copy {
@@ -836,3 +844,6 @@
   color: light-dark(#5B3FC4, #B3A1FF); background: light-dark(#F0EBFD, #2A2442);
   i-feather { width: 14px; height: 14px; }
 }
+
+.wk-row.locked { cursor: default; }
+app-history-timeline .assignment-card { margin-bottom: 0; }

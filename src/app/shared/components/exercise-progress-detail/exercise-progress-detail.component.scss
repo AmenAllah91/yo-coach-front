@@ -1,0 +1,64 @@
+// Détail d'un exercice : mêmes couleurs que le reste de l'espace coach (#44b4df).
+:host { display: block; --xp-brand: #44b4df; --xp-line: light-dark(#e5e7eb, #34393f); --xp-soft: light-dark(#6b7280, #a7abb4); }
+
+.xpd__state { margin: 8px 0; font-size: 14px; color: var(--xp-soft); }
+
+.is-up { color: light-dark(#1e8e4e, #5fd08c) !important; }
+.is-down { color: light-dark(#d93a3a, #ff7a72) !important; }
+
+.xpd-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+
+  div { display: flex; flex-direction: column; padding: 10px 12px; border-radius: 10px; background: light-dark(#f7f9fb, #171b1f); }
+  small { font-size: 12px; color: var(--xp-soft); }
+  strong { font-size: 18px; font-weight: 700; }
+}
+
+.xpd-chart {
+  margin: 14px 0 6px;
+
+  svg { display: block; width: 100%; height: auto; }
+  polyline { fill: none; stroke: var(--xp-brand); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  circle { fill: light-dark(#fff, #1d2125); stroke: var(--xp-brand); stroke-width: 2; }
+  figcaption { display: flex; justify-content: space-between; font-size: 12px; color: var(--xp-soft); }
+}
+
+.xpd-title { margin: 16px 0 8px; font-size: 14px; font-weight: 600; }
+
+.xpd-sessions {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li { padding: 10px 12px; border-radius: 10px; background: light-dark(#f7f9fb, #171b1f); }
+  p { margin: 4px 0 0; font-size: 14px; }
+  p > span { display: inline-block; min-width: 54px; margin-right: 6px; font-size: 12.5px; color: var(--xp-soft); }
+}
+
+.xpd-sessions__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+
+  strong { font-size: 13.5px; font-weight: 600; }
+}
+
+.xpd-sessions__planned { color: var(--xp-soft); &.is-below { color: light-dark(#b4661c, #f0a866); } }
+.xpd-sessions__note { display: flex; gap: 6px; font-style: italic; i-feather { flex: none; width: 14px; height: 14px; margin-top: 3px; color: var(--xp-soft); } }
+
+.xpd-tag {
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: light-dark(#eef2f6, #2a3036);
+  color: light-dark(#475569, #b9c0c8);
+}
+.xpd-tag--best { background: light-dark(#eaf7fd, #1c323b); color: light-dark(#1ea2d2, #3bb5e6); }
+.xpd-tag--hard { background: light-dark(#fdecec, #402829); color: light-dark(#d93a3a, #ff7a72); }
+.xpd-tag--easy { background: light-dark(#e9f6ee, #1f3529); color: light-dark(#1e8e4e, #5fd08c); }

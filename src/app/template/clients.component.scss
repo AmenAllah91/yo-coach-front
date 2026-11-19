@@ -1814,3 +1814,27 @@
   &--late { color: light-dark(#b91c1c, #ffa096); font-weight: 600; }
 }
 
+// Coach labels (2026-11-18): filter next to the search, chips under the client name.
+.tag-filter {
+  height: 40px;
+  max-width: 220px;
+  padding: 0 10px;
+  border: 1px solid light-dark(#e2e8f0, #34393f);
+  border-radius: 8px;
+  background: light-dark(#fff, #1d2125);
+  color: light-dark(#0f172a, #e8ecf6);
+  font-size: 13px;
+}
+.client-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.client-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: light-dark(#e8f5fb, #1d323c);
+  color: light-dark(#1f6f93, #9fd6ee);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}

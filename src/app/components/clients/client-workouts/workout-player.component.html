@@ -1,0 +1,232 @@
+<div class="wp" [class.wp--rest]="phase === 'rest'" role="dialog" aria-modal="true" [attr.aria-label]="t('Guided workout', 'Séance guidée')">
+  <div class="wp__col">
+    <!-- Compte à rebours de départ : seulement de quoi revenir à la séance. -->
+    <header *ngIf="phase === 'ready'" class="wp__top">
+      <div class="wp__bar">
+        <button type="button" class="wp-round" [attr.aria-label]="t('Back to the workout', 'Revenir à la séance')" [title]="t('Back to the workout', 'Revenir à la séance')" (click)="close()">
+          <i-feather name="x"></i-feather>
+        </button>
+      </div>
+    </header>
+
+    <header *ngIf="phase !== 'ready'" class="wp__top">
+      <div class="wp__bar">
+        <button type="button" class="wp-round" [attr.aria-label]="t('See the whole workout', 'Voir toute la séance')" [title]="t('See the whole workout', 'Voir toute la séance')" (click)="close()">
+          <i-feather name="chevron-down"></i-feather>
+        </button>
+        <span class="wp__time"><i-feather name="clock"></i-feather>{{ time }}</span>
+        <button type="button" class="wp-round" aria-label="Pause" title="Pause" [disabled]="phase === 'done'" (click)="togglePause()">
+          <i-feather name="pause"></i-feather>
+        </button>
+      </div>
+      <div class="wp__segments">
+        <span *ngFor="let segment of segments" [style.flex-grow]="segment.weight"><i [style.width.%]="segment.fill * 100"></i></span>
+      </div>
+    </header>
+
+    <!-- « Préparez-vous ! » : un grand chiffre qui bat chaque seconde, l'anneau qui se vide, et le premier exercice. -->
+    <main *ngIf="phase === 'ready'" class="wp__body wp-ready" [class.is-go]="go" [class.is-paused]="paused">
+      <div class="wp-ready__stage">
+        <span class="wp-ready__halo"></span>
+        <span class="wp-ready__halo wp-ready__halo--late"></span>
+        <svg viewBox="0 0 100 100" aria-hidden="true">
+          <circle class="wp-ready__track" cx="50" cy="50" r="45"></circle>
+          <circle class="wp-ready__arc" cx="50" cy="50" r="45" [attr.stroke-dasharray]="ringLength" [attr.stroke-dashoffset]="go ? ringLength : ringOffset"></circle>
+        </svg>
+        <div class="wp-ready__disc" aria-live="polite">
+          <strong *ngIf="go" class="wp-ready__num wp-ready__num--go">GO</strong>
+          <ng-container *ngIf="!go"><strong *ngFor="let n of readyNumber" class="wp-ready__num">{{ n }}</strong></ng-container>
+        </div>
+      </div>
+      <h2 class="wp-ready__title">{{ go ? t('Let’s go!', 'C’est parti !') : t('Get ready!', 'Préparez-vous !') }}</h2>
+      <p class="wp-ready__summary">{{ readySummary }}</p>
+
+      <div class="wp-ready__first">
+        <small>{{ groupOf(step).warmup ? t('WARM-UP FIRST', 'ON COMMENCE PAR L’ÉCHAUFFEMENT') : t('FIRST EXERCISE', 'PREMIER EXERCICE') }}</small>
+        <div class="wp-upnext">
+          <span class="wp-upnext__thumb">
+            <img *ngIf="image(run) as src" [src]="src" alt="" />
+            <i-feather *ngIf="!image(run)" name="activity"></i-feather>
+          </span>
+          <span class="wp-upnext__text">
+            <strong>{{ name(run) }}</strong>
+            <span>{{ setTitle(step, true) }} · {{ plannedLine(step) }}</span>
+          </span>
+          <button type="button" class="wp-ready__see" [attr.aria-label]="t('See the exercise', 'Voir l’exercice')" [title]="t('See the exercise', 'Voir l’exercice')" (click)="exercise.emit(run)">
+            <i-feather [name]="run.hasVideo ? 'play-circle' : 'info'"></i-feather>
+          </button>
+        </div>
+      </div>
+      <button type="button" class="wp-text wp-ready__skip" [disabled]="go" (click)="finishGetReady()">{{ t('Skip the countdown', 'Passer le compte à rebours') }}</button>
+    </main>
+
+    <!-- Série en cours -->
+    <main *ngIf="phase === 'work'" class="wp__body wp-work">
+      <div class="wp-hero" [class.wp-hero--empty]="!image(run)">
+        <img *ngIf="image(run) as src" [src]="src" alt="" />
+        <i-feather *ngIf="!image(run)" name="activity" class="wp-hero__icon"></i-feather>
+        <div class="wp-hero__text">
+          <span class="wp-chip">{{ groupChip(step) }}</span>
+          <h2>{{ name(run) }}</h2>
+        </div>
+        <button type="button" class="wp-hero__more" [attr.aria-label]="run.hasVideo ? t('Watch the video', 'Voir la vidéo') : t('See the exercise', 'Voir l’exercice')"
+                [title]="run.hasVideo ? t('Watch the video', 'Voir la vidéo') : t('See the exercise', 'Voir l’exercice')" (click)="exercise.emit(run)">
+          <i-feather [name]="run.hasVideo ? 'play' : 'info'"></i-feather>
+        </button>
+      </div>
+
+      <div class="wp-dots">
+        <ng-container *ngFor="let item of run.sets; let i = index">
+          <span *ngIf="i > 0" class="wp-dots__link" [class.is-done]="run.sets[i - 1].status === 'COMPLETED'"></span>
+          <span class="wp-dot" [class.is-current]="i === step.set" [class.is-done]="item.status === 'COMPLETED'" [class.is-missed]="item.status === 'MISSED'">
+            <i-feather *ngIf="item.status === 'COMPLETED'" name="check"></i-feather>
+            <i-feather *ngIf="item.status === 'MISSED'" name="x"></i-feather>
+            <ng-container *ngIf="item.status === 'PENDING'">{{ dotLetter(item, i) }}</ng-container>
+          </span>
+        </ng-container>
+      </div>
+
+      <div class="wp-title">
+        <h3>{{ setTitle(step) }}</h3>
+        <span *ngIf="typeLabel(set) as type" class="wp-type">{{ type }}</span>
+      </div>
+      <p class="wp-planned">
+        {{ t('Planned', 'Prévu') }} : {{ plannedLine(step) }}
+        <ng-container *ngIf="previousLine as before">&nbsp;·&nbsp; {{ t('last set', 'série d’avant') }} : {{ before }}</ng-container>
+      </p>
+
+      <!-- Exercice au temps : 5 secondes pour se placer, puis le compte à rebours. -->
+      <div *ngIf="counting" class="wp-ring" [class.wp-ring--ready]="count === 'ready'">
+        <svg viewBox="0 0 100 100" aria-hidden="true">
+          <circle class="wp-ring__track" cx="50" cy="50" r="45"></circle>
+          <circle class="wp-ring__arc" cx="50" cy="50" r="45" [attr.stroke-dasharray]="ringLength" [attr.stroke-dashoffset]="ringOffset"></circle>
+        </svg>
+        <div class="wp-ring__text">
+          <small>{{ count === 'ready' ? t('READY?', 'PRÊT ?') : t('HOLD', 'TENEZ') }}</small>
+          <strong aria-live="off">{{ leftWhole }}</strong>
+          <span>{{ t('seconds', 'secondes') }}</span>
+        </div>
+      </div>
+
+      <div *ngIf="!counting" class="wp-inputs">
+        <div *ngIf="withWeight" class="wp-stepper" [class.is-changed]="weightChanged">
+          <label for="wp-weight">{{ t('WEIGHT', 'POIDS') }} ({{ weightUnit.toUpperCase() }})</label>
+          <div>
+            <button type="button" [attr.aria-label]="t('Less weight', 'Moins de poids')" (click)="bumpWeight(-1)"><i-feather name="minus"></i-feather></button>
+            <input id="wp-weight" type="text" inputmode="decimal" appNumberOnly="decimal" maxlength="7" placeholder="—" [(ngModel)]="weightText" (ngModelChange)="onWeightInput($event)" />
+            <button type="button" [attr.aria-label]="t('More weight', 'Plus de poids')" (click)="bumpWeight(1)"><i-feather name="plus"></i-feather></button>
+          </div>
+        </div>
+        <div class="wp-stepper" [class.is-changed]="valueChanged">
+          <label for="wp-value">{{ valueLabel }}</label>
+          <div>
+            <button type="button" [attr.aria-label]="t('Less', 'Moins')" (click)="bumpValue(-1)"><i-feather name="minus"></i-feather></button>
+            <input id="wp-value" type="text" inputmode="numeric" appNumberOnly maxlength="4" placeholder="—" [(ngModel)]="valueText" (ngModelChange)="onValueInput($event)" />
+            <button type="button" [attr.aria-label]="t('More', 'Plus')" (click)="bumpValue(1)"><i-feather name="plus"></i-feather></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cardio : un chrono que le client lance ; les minutes se remplissent toutes seules. -->
+      <button *ngIf="!counting && run.cardio" type="button" class="wp-chrono" [class.is-on]="chronoOn" (click)="chronoOn = !chronoOn">
+        <span class="wp-chrono__icon"><i-feather [name]="chronoOn ? 'pause' : 'play'"></i-feather></span>
+        <span class="wp-chrono__label">{{ chronoOn ? t('Timer running', 'Chrono en cours') : chrono > 0 ? t('Resume the timer', 'Reprendre le chrono') : t('Start the timer', 'Lancer le chrono') }}</span>
+        <strong>{{ clock(chrono) }}</strong>
+      </button>
+
+      <button *ngIf="count === 'ready'" type="button" class="wp-main" (click)="startNow()">{{ t('Start now', 'Commencer maintenant') }}</button>
+      <div *ngIf="count !== 'ready'" class="wp-slide" [class.is-sliding]="sliding" [class.is-hint]="slideHint" role="button" tabindex="0"
+           [attr.aria-label]="slideLabel" [style.--wp-slide]="slide"
+           (pointerdown)="slideStart($event)" (pointermove)="slideMove($event)" (pointerup)="slideEnd()" (pointercancel)="slideEnd()"
+           (keydown.enter)="complete()" (keydown.space)="$event.preventDefault(); complete()">
+        <span class="wp-slide__fill"></span>
+        <span class="wp-slide__label">{{ slideLabel }}</span>
+        <span class="wp-slide__knob"><i-feather [name]="slide > 0.72 ? 'check' : 'chevrons-right'"></i-feather></span>
+      </div>
+
+      <div class="wp-links">
+        <button *ngIf="cursor > 0" type="button" (click)="previous()"><i-feather name="chevron-left"></i-feather>{{ t('Previous', 'Précédente') }}</button>
+        <span></span>
+        <button type="button" (click)="skip()">{{ t('Skip this set', 'Passer cette série') }}</button>
+      </div>
+      <button *ngIf="inWarmup" type="button" class="wp-text wp-skip-warmup" (click)="skipWarmup()">
+        {{ t('Skip the warm-up', 'Passer l’échauffement') }}<i-feather name="chevrons-right"></i-feather>
+      </button>
+      <p class="wp-next">{{ nextHint }}</p>
+
+      <!-- Superset ou circuit : tous les exercices du tour, celui en cours mis en avant. -->
+      <section *ngIf="groupOf(step).grouped" class="wp-round-list" [attr.aria-label]="roundTitle">
+        <h4>{{ roundTitle }}</h4>
+        <ol>
+          <li *ngFor="let item of groupOf(step).exercises; let e = index" [class.is-current]="e === step.exercise"
+              [class.is-done]="roundSet(e)?.status === 'COMPLETED'" [class.is-missed]="roundSet(e)?.status === 'MISSED'" [class.is-off]="!roundSet(e)">
+            <span class="wp-round-list__badge">
+              <i-feather *ngIf="roundSet(e)?.status === 'COMPLETED'" name="check"></i-feather>
+              <i-feather *ngIf="roundSet(e)?.status === 'MISSED'" name="x"></i-feather>
+              <ng-container *ngIf="!roundSet(e) || roundSet(e)?.status === 'PENDING'">{{ item.displayLabel }}</ng-container>
+            </span>
+            <span class="wp-round-list__text"><strong>{{ name(item) }}</strong><small>{{ roundPlanned(e) }}</small></span>
+            <em *ngIf="e === step.exercise">{{ t('Now', 'En cours') }}</em>
+          </li>
+        </ol>
+        <p>{{ roundRestLine }}</p>
+      </section>
+    </main>
+
+    <!-- Repos -->
+    <main *ngIf="phase === 'rest'" class="wp__body wp-rest">
+      <div class="wp-rest__head">
+        <h2>{{ restHeadline }}</h2>
+        <p>{{ restMessage }}</p>
+      </div>
+      <div class="wp-ring wp-ring--rest">
+        <svg viewBox="0 0 100 100" aria-hidden="true">
+          <circle class="wp-ring__track" cx="50" cy="50" r="45"></circle>
+          <circle class="wp-ring__arc" cx="50" cy="50" r="45" [attr.stroke-dasharray]="ringLength" [attr.stroke-dashoffset]="ringOffset"></circle>
+        </svg>
+        <div class="wp-ring__text">
+          <small>{{ t('REST', 'REPOS') }}</small>
+          <strong>{{ clock(leftWhole) }}</strong>
+        </div>
+      </div>
+      <div class="wp-rest__adjust">
+        <button type="button" (click)="addRest(-15)">−15 s</button>
+        <button type="button" (click)="addRest(15)">+15 s</button>
+      </div>
+      <div class="wp-upnext">
+        <span class="wp-upnext__thumb">
+          <img *ngIf="image(runOf(steps[restNext])) as src" [src]="src" alt="" />
+          <i-feather *ngIf="!image(runOf(steps[restNext]))" name="activity"></i-feather>
+        </span>
+        <span class="wp-upnext__text">
+          <small>{{ t('UP NEXT', 'ENSUITE') }}</small>
+          <strong>{{ name(runOf(steps[restNext])) }}</strong>
+          <span>{{ setTitle(steps[restNext], true) }} · {{ plannedLine(steps[restNext]) }}</span>
+        </span>
+      </div>
+      <button type="button" class="wp-main wp-main--light" (click)="skipRest()">{{ t('Skip the rest', 'Passer le repos') }}</button>
+    </main>
+
+    <!-- Fin -->
+    <main *ngIf="phase === 'done'" class="wp__body wp-done">
+      <span class="wp-done__badge"><i-feather name="check"></i-feather></span>
+      <h2>{{ t('Every set is covered', 'Toutes les séries sont passées') }}</h2>
+      <p>{{ doneSummary }}</p>
+      <!-- Dernière occasion d'écrire au coach : « Terminer la séance » enregistre tout de suite. -->
+      <div class="wp-note">
+        <label for="wp-note">{{ t('How did the workout feel? (optional)', 'Comment s\'est passée la séance ? (facultatif)') }}</label>
+        <textarea id="wp-note" rows="3" [ngModel]="note" (ngModelChange)="note = $event; noteChange.emit($event)" (keydown.escape)="$event.stopPropagation()"
+                  [placeholder]="t('Energy, difficulty, anything your coach should know...', 'Énergie, difficulté, tout ce que votre coach doit savoir...')"></textarea>
+      </div>
+      <button type="button" class="wp-main" (click)="closed.emit(true)"><i-feather name="flag"></i-feather>{{ t('Finish the workout', 'Terminer la séance') }}</button>
+      <button type="button" class="wp-text" (click)="close()">{{ t('Review my sets', 'Revoir mes séries') }}</button>
+    </main>
+  </div>
+
+  <div *ngIf="paused" class="wp-paused">
+    <i-feather name="pause"></i-feather>
+    <h2>{{ t('Workout paused', 'Séance en pause') }}</h2>
+    <p>{{ time }}</p>
+    <button type="button" class="wp-main" (click)="togglePause()"><i-feather name="play"></i-feather>{{ t('Resume', 'Reprendre') }}</button>
+  </div>
+</div>

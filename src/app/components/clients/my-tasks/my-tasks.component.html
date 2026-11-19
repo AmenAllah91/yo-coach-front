@@ -1,23 +1,18 @@
 <div class="yc-page client-tasks">
   <div class="yc-container">
-    <ng-container *ngIf="!selected; else detail">
+    <ng-container *ngIf="!selected && view === 'list'">
       <header class="yc-root-header">
         <div class="yc-root-header__copy">
           <h1 class="yc-display">{{ fr ? 'Tâches' : 'Tasks' }}</h1>
           <p class="yc-root-subtitle">{{ fr ? 'Habitudes, check-ins et mensurations' : 'Habits, check-ins and measurements' }}</p>
         </div>
+        <button type="button" class="yc-icon-btn" [attr.aria-label]="fr ? 'Historique' : 'History'" [title]="fr ? 'Historique' : 'History'" (click)="openHistory()">
+          <i-feather name="clock"></i-feather>
+        </button>
       </header>
 
-      <div class="yc-segmented" role="tablist" [attr.aria-label]="fr ? 'Période' : 'Period'">
-        <button type="button" role="tab" [attr.aria-selected]="upcoming" [class.active]="upcoming" (click)="setTab(true)">{{ fr ? 'À venir' : 'Upcoming' }}</button>
-        <button type="button" role="tab" [attr.aria-selected]="!upcoming" [class.active]="!upcoming" (click)="setTab(false)">{{ fr ? 'Passées' : 'Past' }}</button>
-      </div>
-
-      <nav class="yc-month-nav month-nav" [attr.aria-label]="fr ? 'Mois' : 'Month'">
-        <button type="button" (click)="shiftMonth(-1)"><i-feather name="chevron-left"></i-feather>{{ fr ? 'Précédent' : 'Previous' }}</button>
-        <span>{{ monthLabel }}</span>
-        <button type="button" (click)="shiftMonth(1)">{{ fr ? 'Suivant' : 'Next' }}<i-feather name="chevron-right"></i-feather></button>
-      </nav>
+      <app-week-strip [weekStart]="weekStart" [selected]="selectedDate" [marks]="weekMarks" [fr]="fr"
+                      (shift)="shiftWeek($event)" (pick)="selectDate($event)" (today)="goToday()"></app-week-strip>
 
       <div *ngIf="loading" class="yc-loading" role="status"><span class="yc-spinner"></span></div>
       <div *ngIf="!loading && error" class="tasks-error" role="alert">
@@ -26,39 +21,95 @@
       </div>
 
       <ng-container *ngIf="!loading && !error">
-        <div *ngIf="!days.length" class="tasks-empty">
-          <span class="yc-icon-tile" style="--tile-size: 60px"><i-feather name="calendar"></i-feather></span>
-          <p class="yc-card-title">
-            {{ upcoming ? (fr ? 'Aucune tâche à venir ce mois-ci' : 'No upcoming tasks this month')
-              : (fr ? 'Aucune tâche passée ce mois-ci' : 'No past tasks this month') }}
-          </p>
-        </div>
+        <ng-container *ngIf="days as week">
+          <div *ngIf="weekIsEmpty(week)" class="tasks-empty">
+            <span class="yc-icon-tile" style="--tile-size: 60px"><i-feather name="check-square"></i-feather></span>
+            <p class="yc-card-title">{{ fr ? 'Aucune tâche cette semaine' : 'No tasks this week' }}</p>
+          </div>
 
-        <section *ngFor="let day of days; trackBy: trackByDay" class="yc-card yc-card--flush task-day" [class.yc-card--today]="day.isToday">
-          <header class="task-day__head">
-            <span class="yc-overline">{{ day.weekday }}</span>
-            <strong>{{ day.label }}</strong>
-            <span *ngIf="day.isToday" class="yc-chip">{{ fr ? "Aujourd'hui" : 'Today' }}</span>
-            <span class="task-day__spacer"></span>
-            <span class="yc-caption">{{ day.done }}/{{ day.items.length }} {{ fr ? 'faites' : 'done' }}</span>
-          </header>
-          <hr class="yc-divider" />
-          <app-client-task-row
-            *ngFor="let item of day.items; let i = index; trackBy: trackByOccurrence"
-            [task]="item"
-            [fr]="fr"
-            [showDivider]="i < day.items.length - 1"
-            [toggling]="toggling.has(item.occurrenceId)"
-            [canToggle]="canToggle(item)"
-            (toggleHabit)="toggleHabit($event)"
-            (open)="open($event)">
-          </app-client-task-row>
-        </section>
+          <ng-container *ngIf="!weekIsEmpty(week)">
+            <!-- The day picked in the strip (today at first): its tasks in full. -->
+            <ng-container *ngIf="focusDay(week) as focus">
+              <div class="wk-label" [attr.data-day]="focus.key">
+                <span>{{ focusLabel(focus) }}</span>
+                <span *ngIf="focus.items.length" class="wk-label__count">{{ focus.done }}/{{ focus.items.length }} {{ fr ? 'faites' : 'done' }}</span>
+              </div>
+              <p *ngIf="!focus.items.length" class="yc-card wk-none">{{ fr ? 'Rien de prévu ce jour-là' : 'Nothing planned this day' }}</p>
+              <section *ngIf="focus.items.length" class="yc-card yc-card--flush task-day" [class.task-day--today]="focus.isToday">
+                <app-client-task-row
+                  *ngFor="let item of focus.items; let i = index; trackBy: trackByOccurrence"
+                  [task]="item" [fr]="fr" [showDivider]="i < focus.items.length - 1"
+                  [toggling]="toggling.has(item.occurrenceId)" [canToggle]="canToggle(item)"
+                  (toggleHabit)="toggleHabit($event)" (open)="open($event)">
+                </app-client-task-row>
+              </section>
+            </ng-container>
+
+            <!-- The other days of the week that have tasks: one short line each. -->
+            <ng-container *ngIf="otherDays(week) as others">
+              <ng-container *ngIf="others.length">
+                <p class="wk-label">{{ fr ? 'Cette semaine' : 'This week' }}</p>
+                <div class="wk-list">
+                  <button *ngFor="let day of others; trackBy: trackByDay" type="button" class="yc-card wk-row" (click)="selectDate(day.date)">
+                    <span class="wk-row__date" [class.is-today]="day.isToday">
+                      <small>{{ weekdayLabel(day.date) }}</small>
+                      <strong>{{ day.date.getDate() }}</strong>
+                    </span>
+                    <span class="wk-row__copy">
+                      <strong>{{ dayTitle(day) }}</strong>
+                      <span>{{ dayMeta(day) }}</span>
+                    </span>
+                    <span *ngIf="dayChip(day) as chip" class="yc-chip" [style.--chip-color]="chip.color">
+                      <i-feather *ngIf="chip.icon" [name]="chip.icon!"></i-feather>{{ chip.label }}
+                    </span>
+                  </button>
+                </div>
+              </ng-container>
+            </ng-container>
+          </ng-container>
+        </ng-container>
       </ng-container>
     </ng-container>
 
-    <ng-template #detail>
-      <ng-container *ngIf="selected as item">
+    <!-- ===================== HISTORY (same timeline as Workouts and Nutrition) ===================== -->
+    <ng-container *ngIf="!selected && view === 'history'">
+      <header class="yc-page-header">
+        <button type="button" class="yc-back" [attr.aria-label]="fr ? 'Retour' : 'Back'" (click)="closeHistory()"><i-feather name="arrow-left"></i-feather></button>
+        <div class="yc-page-header__copy">
+          <h1 class="yc-page-header__title">{{ fr ? 'Historique' : 'History' }}</h1>
+          <p class="yc-page-header__subtitle">{{ fr ? 'Vos tâches, jour par jour' : 'Your tasks, day by day' }}</p>
+        </div>
+      </header>
+
+      <div *ngIf="historyLoading" class="yc-loading" role="status"><span class="yc-spinner"></span></div>
+      <div *ngIf="!historyLoading && historyError" class="tasks-error" role="alert">
+        <p class="yc-subtitle">{{ historyError }}</p>
+        <button type="button" class="yc-link" (click)="loadHistory()">{{ fr ? 'Réessayer' : 'Retry' }}</button>
+      </div>
+
+      <ng-container *ngIf="!historyLoading && !historyError && historyByDay as byDay">
+        <app-history-timeline [firstDay]="historyFirstDay(byDay)" [startDay]="historyDay" [marks]="historyMarks(byDay)" [fr]="fr" [dayTemplate]="historyDayTpl"></app-history-timeline>
+
+        <ng-template #historyDayTpl let-key="key">
+          <section *ngIf="byDay[key]?.length" class="yc-card yc-card--flush task-day">
+            <div class="task-day__head task-day__head--static">
+              <span class="yc-caption" [class.all-done]="historyDone(byDay[key]) === byDay[key].length">
+                {{ historyDone(byDay[key]) }}/{{ byDay[key].length }} {{ fr ? 'faites' : 'done' }}
+              </span>
+            </div>
+            <hr class="yc-divider" />
+            <app-client-task-row
+              *ngFor="let item of byDay[key]; let i = index; trackBy: trackByOccurrence"
+              [task]="item" [fr]="fr" [showDivider]="i < byDay[key].length - 1"
+              [toggling]="toggling.has(item.occurrenceId)" [canToggle]="canToggle(item)"
+              (toggleHabit)="toggleHabit($event)" (open)="openFromHistory($event)">
+            </app-client-task-row>
+          </section>
+        </ng-template>
+      </ng-container>
+    </ng-container>
+
+    <ng-container *ngIf="selected as item">
         <header class="yc-page-header">
           <button type="button" class="yc-back" (click)="closeDetail()" [attr.aria-label]="fr ? 'Retour' : 'Back'"><i-feather name="arrow-left"></i-feather></button>
           <div class="yc-page-header__copy">
@@ -84,8 +135,7 @@
             </ng-container>
           </button>
         </div>
-      </ng-container>
-    </ng-template>
+    </ng-container>
   </div>
 
   <div *ngIf="toast" class="tasks-toast" role="status">{{ toast }}</div>

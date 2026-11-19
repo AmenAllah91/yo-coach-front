@@ -2,19 +2,23 @@
   <div class="page-header">
     <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><i-feather name="arrow-left"></i-feather></button>
     <div class="header-content">
-      <h1>{{ 'FORMS' | translate }}</h1>
-      <p>{{ 'MANAGE_FORMS_SUBTITLE' | translate }}</p>
+      <h1>{{ 'CHECK_INS' | translate }}</h1>
+      <p>{{ 'CHK_TEMPLATES_SUBTITLE' | translate }}</p>
     </div>
 
-    <button
-      class="primary-btn header-actions"
-      type="button"
-      appWriteAction (click)="onAdd()"
-      *ngIf="viewMode() === 'active'"
-    >
-      <i-feather name="plus"></i-feather>
-      {{ 'CREATE_FORM' | translate }}
-    </button>
+    <!-- Same switch as the client check-ins page: the menu has one « Check-ins » entry (2026-11-19). -->
+    <div class="header-actions forms-header-actions">
+      <app-checkins-switch></app-checkins-switch>
+      <button
+        class="primary-btn"
+        type="button"
+        appWriteAction (click)="onAdd()"
+        *ngIf="viewMode() === 'active'"
+      >
+        <i-feather name="plus"></i-feather>
+        {{ 'CREATE_FORM' | translate }}
+      </button>
+    </div>
   </div>
 
   <div class="forms-view-toolbar">
@@ -25,7 +29,7 @@
       </div>
     </div>
 
-    <!-- Segmented toggle Active / Unsaved / Archived -->
+    <!-- Segmented toggle Active / Archived (no publish step: an unfinished check-in sits in Active, tagged "to finish") -->
     <div class="view-toggle">
       <button
         class="view-toggle__btn"
@@ -40,22 +44,6 @@
           [class.view-toggle__badge--gray]="viewMode() !== 'active'"
         >
           {{ activeCount() }}
-        </span>
-      </button>
-
-      <button
-        class="view-toggle__btn"
-        [class.view-toggle__btn--active]="viewMode() === 'unsaved'"
-        type="button"
-        (click)="setViewMode('unsaved')"
-      >
-        {{ 'UNSAVED_STATUS' | translate }}
-        <span
-          class="view-toggle__badge"
-          [class.view-toggle__badge--purple]="viewMode() === 'unsaved'"
-          [class.view-toggle__badge--gray]="viewMode() !== 'unsaved'"
-        >
-          {{ unsavedCount() }}
         </span>
       </button>
 
@@ -84,12 +72,6 @@
     <span>{{ 'ARCHIVED_FORMS_EXPLANATION' | translate }}</span>
   </div>
 
-  <!-- Unsaved info banner -->
-  <div class="unsaved-banner" *ngIf="viewMode() === 'unsaved'">
-    <i-feather name="edit-3" class="unsaved-banner__icon"></i-feather>
-    <span>{{ 'UNSAVED_FORMS_EXPLANATION' | translate }}</span>
-  </div>
-
   <!-- ══ CONTENT ══ -->
   <div class="content">
     <div class="card">
@@ -103,7 +85,7 @@
           <div class="mobile-form-copy">
             <div class="mobile-form-heading">
               <div class="mobile-form-title">{{ f.title || ('UNTITLED' | translate) }}</div>
-              <span [class]="badgeClass(f.status)">{{ statusLabel(f.status) }}</span>
+              <span class="badge badge--unsaved" *ngIf="isUnfinished(f)">{{ 'CHECKIN_TO_FINISH' | translate }}</span>
             </div>
             <div class="mobile-form-description" *ngIf="f.description">{{ f.description }}</div>
           </div>
@@ -116,16 +98,17 @@
             <div class="dropdown-menu" [id]="'mobile-dropdown-' + f.id" *ngIf="openedActionsId() === f.id">
               <ng-container [ngSwitch]="viewMode()">
                 <ng-container *ngSwitchCase="'active'">
+                 <ng-container *ngIf="isUnfinished(f); else mobileReadyActions">
+                   <button class="dropdown-item" type="button" (click)="continueCreating(f); closeActions()"><i-feather name="play"></i-feather>{{ 'CONTINUE_CREATING' | translate }}</button>
+                   <button class="dropdown-item delete" type="button" (click)="openDelete(f); closeActions()"><i-feather name="trash-2"></i-feather>{{ 'DELETE' | translate }}</button>
+                 </ng-container>
+                 <ng-template #mobileReadyActions>
                   <button class="dropdown-item" type="button" (click)="onEditGuarded(f); closeActions()"><i-feather name="edit-2"></i-feather>{{ 'EDIT' | translate }}</button>
                   <button class="dropdown-item" type="button" (click)="openAssign(f); closeActions()"><i-feather name="users"></i-feather>{{ 'ASSIGN' | translate }}</button>
                   <button class="dropdown-item" type="button" (click)="onDuplicate(f, $event); closeActions()" [disabled]="duplicating()"><i-feather name="copy"></i-feather>{{ 'DUPLICATE' | translate }}</button>
                   <button class="dropdown-item" type="button" (click)="archiveForm(f, $event); closeActions()"><i-feather name="archive"></i-feather>{{ 'ARCHIVE' | translate }}</button>
-                  <button class="dropdown-item delete" type="button" (click)="onDeleteGuarded(f); closeActions()"><i-feather name="trash-2"></i-feather>{{ 'DELETE' | translate }}</button>
-                </ng-container>
-                <ng-container *ngSwitchCase="'unsaved'">
-                   <button class="dropdown-item" type="button" (click)="continueCreating(f); closeActions()"><i-feather name="play"></i-feather>{{ 'CONTINUE_CREATING' | translate }}</button>
-                   <button class="dropdown-item" type="button" (click)="onDuplicate(f, $event); closeActions()" [disabled]="duplicating()"><i-feather name="copy"></i-feather>{{ 'DUPLICATE' | translate }}</button>
-                   <button class="dropdown-item delete" type="button" (click)="onDeleteGuarded(f); closeActions()"><i-feather name="trash-2"></i-feather>{{ 'DELETE' | translate }}</button>
+                  <button class="dropdown-item delete" type="button" (click)="openDelete(f); closeActions()"><i-feather name="trash-2"></i-feather>{{ 'DELETE' | translate }}</button>
+                 </ng-template>
                 </ng-container>
                 <ng-container *ngSwitchCase="'archived'">
                    <button class="dropdown-item" type="button" (click)="unarchiveForm(f, $event); closeActions()"><i-feather name="rotate-ccw"></i-feather>{{ 'UNARCHIVE' | translate }}</button>
@@ -141,7 +124,6 @@
           <thead>
           <tr>
             <th>{{ 'TITLE' | translate }}</th>
-            <th class="col-status">{{ 'STATUS' | translate }}</th>
             <th class="col-date">{{ 'LAST_UPDATED' | translate }}</th>
             <th class="col-actions">{{ 'ACTIONS' | translate }}</th>
           </tr>
@@ -149,21 +131,29 @@
 
           <tbody>
           <tr *ngIf="loading()">
-            <td colspan="4" class="loading-row">{{ 'LOADING' | translate }}</td>
+            <td colspan="3" class="loading-row">{{ 'LOADING' | translate }}</td>
           </tr>
 
           <tr *ngIf="!loading() && forms().length === 0">
-            <td colspan="4" class="empty-row">{{ 'NO_FORMS_FOUND' | translate }}</td>
+            <td colspan="3" class="empty-row">
+              <app-empty-state
+                *ngIf="viewMode() === 'active' && !searchTerm().trim(); else noFormFound"
+                icon="clipboard"
+                title="EMPTY_CHECKINS_TITLE"
+                text="EMPTY_CHECKINS_TEXT"
+                actionLabel="CREATE_FORM"
+                (action)="onAdd()"></app-empty-state>
+              <ng-template #noFormFound>{{ 'NO_FORMS_FOUND' | translate }}</ng-template>
+            </td>
           </tr>
 
           <tr *ngFor="let f of forms(); trackBy: trackById">
             <td>
-              <div class="form-title">{{ f.title || ('UNTITLED' | translate) }}</div>
+              <div class="form-title">
+                {{ f.title || ('UNTITLED' | translate) }}
+                <span class="badge badge--unsaved" *ngIf="isUnfinished(f)">{{ 'CHECKIN_TO_FINISH' | translate }}</span>
+              </div>
               <div class="form-desc" *ngIf="f.description">{{ f.description }}</div>
-            </td>
-
-            <td class="col-status">
-              <span [class]="badgeClass(f.status)">{{ statusLabel(f.status) }}</span>
             </td>
 
             <td class="col-date">
@@ -191,84 +181,41 @@
                   *ngIf="openedActionsId() === f.id"
                 >
                   <ng-container [ngSwitch]="viewMode()">
-                    <!-- ACTIVE -->
+                    <!-- ACTIVE: an unfinished check-in is finished or deleted; a saved one is edited, sent, copied, archived -->
                     <ng-container *ngSwitchCase="'active'">
-                      <button
-                        class="dropdown-item"
-                        type="button"
-                        (click)="onEditGuarded(f); closeActions()"
-                      >
-                        <i-feather name="edit-2"></i-feather>
-                        {{ 'EDIT' | translate }}
-                      </button>
+                      <ng-container *ngIf="isUnfinished(f); else readyActions">
+                        <button class="dropdown-item" type="button" (click)="continueCreating(f); closeActions()">
+                          <i-feather name="play"></i-feather>
+                          {{ 'CONTINUE_CREATING' | translate }}
+                        </button>
+                        <button class="dropdown-item delete" type="button" (click)="openDelete(f); closeActions()">
+                          <i-feather name="trash-2"></i-feather>
+                          {{ 'DELETE' | translate }}
+                        </button>
+                      </ng-container>
 
-                      <button
-                        class="dropdown-item"
-                        type="button"
-                        (click)="openAssign(f); closeActions()"
-                      >
-                        <i-feather name="users"></i-feather>
-                        {{ 'ASSIGN' | translate }}
-                      </button>
-
-                      <button
-                        class="dropdown-item"
-                        type="button"
-                        (click)="onDuplicate(f, $event); closeActions()"
-                        [disabled]="duplicating()"
-                      >
-                        <i-feather name="copy"></i-feather>
-                        {{ 'DUPLICATE' | translate }}
-                      </button>
-
-                      <button
-                        class="dropdown-item"
-                        type="button"
-                        (click)="archiveForm(f, $event); closeActions()"
-                      >
-                        <i-feather name="archive"></i-feather>
-                        {{ 'ARCHIVE' | translate }}
-                      </button>
-
-                      <button
-                        class="dropdown-item delete"
-                        type="button"
-                        (click)="onDeleteGuarded(f); closeActions()"
-                      >
-                        <i-feather name="trash-2"></i-feather>
-                        {{ 'DELETE' | translate }}
-                      </button>
-                    </ng-container>
-
-                    <!-- UNSAVED -->
-                    <ng-container *ngSwitchCase="'unsaved'">
-                      <button
-                        class="dropdown-item"
-                        type="button"
-                        (click)="continueCreating(f); closeActions()"
-                      >
-                        <i-feather name="play"></i-feather>
-                        {{ 'CONTINUE_CREATING' | translate }}
-                      </button>
-
-                      <button
-                        class="dropdown-item"
-                        type="button"
-                        (click)="onDuplicate(f, $event); closeActions()"
-                        [disabled]="duplicating()"
-                      >
-                        <i-feather name="copy"></i-feather>
-                        {{ 'DUPLICATE' | translate }}
-                      </button>
-
-                      <button
-                        class="dropdown-item delete"
-                        type="button"
-                        (click)="onDeleteGuarded(f); closeActions()"
-                      >
-                        <i-feather name="trash-2"></i-feather>
-                        {{ 'DELETE' | translate }}
-                      </button>
+                      <ng-template #readyActions>
+                        <button class="dropdown-item" type="button" (click)="onEditGuarded(f); closeActions()">
+                          <i-feather name="edit-2"></i-feather>
+                          {{ 'EDIT' | translate }}
+                        </button>
+                        <button class="dropdown-item" type="button" (click)="openAssign(f); closeActions()">
+                          <i-feather name="users"></i-feather>
+                          {{ 'ASSIGN' | translate }}
+                        </button>
+                        <button class="dropdown-item" type="button" (click)="onDuplicate(f, $event); closeActions()" [disabled]="duplicating()">
+                          <i-feather name="copy"></i-feather>
+                          {{ 'DUPLICATE' | translate }}
+                        </button>
+                        <button class="dropdown-item" type="button" (click)="archiveForm(f, $event); closeActions()">
+                          <i-feather name="archive"></i-feather>
+                          {{ 'ARCHIVE' | translate }}
+                        </button>
+                        <button class="dropdown-item delete" type="button" (click)="openDelete(f); closeActions()">
+                          <i-feather name="trash-2"></i-feather>
+                          {{ 'DELETE' | translate }}
+                        </button>
+                      </ng-template>
                     </ng-container>
 
                     <!-- ARCHIVED -->
@@ -334,14 +281,28 @@
 
     <div class="modal" *ngIf="confirmOpen()" role="dialog" aria-modal="true">
       <div class="modal__content">
-        <div class="modal__title">{{ 'CONFIRM_DELETION' | translate }}</div>
+        <div class="modal__title">{{ (deleteBlocked() ? 'CHECKIN_ALREADY_SENT_TITLE' : 'CONFIRM_DELETION') | translate }}</div>
 
-        <div class="modal__text">
+        <div class="modal__text" *ngIf="!deleteBlocked()">
           {{ 'DELETE_FORM_CONFIRMATION' | translate:{ title: (selectedToDelete()?.title || ('UNTITLED' | translate)) } }}
           <div class="modal__hint">{{ 'ACTION_IRREVERSIBLE' | translate }}</div>
         </div>
 
-        <div class="modal__actions">
+        <!-- Already sent: the clients' answers are kept, so the check-in is archived instead of deleted. -->
+        <div class="modal__text" *ngIf="deleteBlocked()">
+          {{ 'FORM_ALREADY_SENT_ARCHIVE_INSTEAD' | translate }}
+        </div>
+
+        <div class="modal__actions" *ngIf="deleteBlocked()">
+          <button class="btn btn--ghost" type="button" (click)="closeDelete()" [disabled]="deleting()">
+            {{ 'CANCEL' | translate }}
+          </button>
+          <button class="btn btn--danger" type="button" (click)="archiveInsteadOfDelete()" [disabled]="deleting()">
+            {{ 'ARCHIVE' | translate }}
+          </button>
+        </div>
+
+        <div class="modal__actions" *ngIf="!deleteBlocked()">
           <button
             class="btn btn--ghost"
             type="button"

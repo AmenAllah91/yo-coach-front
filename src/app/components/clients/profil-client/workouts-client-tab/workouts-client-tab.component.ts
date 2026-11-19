@@ -39,6 +39,8 @@ export class WorkoutsClientTabComponent implements OnInit {
   /** « Voir le suivi » / a past day: the client's calendar. */
   @Output() openCalendar = new EventEmitter<string | null>();
   @ViewChild(ClientProgramsComponent) programs?: ClientProgramsComponent;
+  /** « Progression par exercice » : lue seulement quand le coach l'ouvre. */
+
   /** The program the coach asked to remove (P10). */
   removeTarget: OverviewItem | null = null;
   removing = false;

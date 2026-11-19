@@ -10,13 +10,14 @@
     </button>
 
     <div class="iq-heading">
-      <h1 class="iq-title">{{ (isPublished ? 'EDIT_CHECKIN_FORM' : 'ADD_CHECKIN_FORM') | translate }}</h1>
-      <p class="iq-subtitle">{{ (isPublished ? 'CHECKIN_EDIT_PUBLISHED_HINT' : 'CHECKIN_FORM_BUILDER_SUBTITLE') | translate }}</p>
+      <h1 class="iq-title">{{ (isSaved ? 'EDIT_CHECKIN_FORM' : 'ADD_CHECKIN_FORM') | translate }}</h1>
+      <p class="iq-subtitle" *ngIf="!reachesClients">{{ (isSaved ? 'CHECKIN_EDIT_PUBLISHED_HINT' : 'CHECKIN_FORM_BUILDER_SUBTITLE') | translate }}</p>
     </div>
 
     <div class="iq-actions">
+      <!-- New check-in: kept by the autosave in the list as "to finish". Saved one: changes wait for the Save button. -->
       <span class="iq-unsaved" *ngIf="isAutoSaving || hasUnsavedChanges">
-        {{ (isAutoSaving ? 'SAVING' : 'UNSAVED') | translate }}
+        {{ (isAutoSaving ? 'SAVING' : isSaved ? 'UNSAVED_CHANGES' : 'CHECKIN_KEPT_TO_FINISH') | translate }}
       </span>
       <button type="button" class="iq-preview" (click)="openPreview()">
         <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
@@ -28,13 +29,26 @@
         {{ 'PREVIEW_FORM' | translate }}
       </button>
       <button class="fb-savebtn fb-savebtn--desktop" type="button" (click)="saveForm()" [disabled]="isSaving || isLoading">
-        {{ (isSaving ? 'SAVING' : isPublished ? 'SAVE_CHANGES' : 'PUBLISH') | translate }}
+        {{ (isSaving ? 'SAVING' : 'SAVE') | translate }}
       </button>
     </div>
   </header>
 
   <!-- CONTENT -->
   <div class="fb-content">
+
+      <!-- Check-in in use: who gets the change, and when (the next send and the check-ins not filled in yet) -->
+      <section class="cf-usage" *ngIf="isSaved && usage && reachesClients" role="status">
+        <i class="fa-solid fa-circle-info cf-usage__icon" aria-hidden="true"></i>
+        <div class="cf-usage__text">
+          <p class="cf-usage__main">
+            {{ plural('CHECKIN_USAGE_CLIENTS', usage.clients) }}
+            <ng-container *ngIf="usage.nextSendAt">{{ 'CHECKIN_USAGE_NEXT' | translate:{ date: usageDate(usage.nextSendAt) } }}</ng-container>
+          </p>
+          <p *ngIf="usage.openCheckins > 0">{{ plural('CHECKIN_USAGE_OPEN', usage.openCheckins) }}</p>
+          <p class="cf-usage__hint">{{ 'CHECKIN_USAGE_ANSWERS_KEPT' | translate }}</p>
+        </div>
+      </section>
 
       <!-- Title + options in one compact card; automatic sending unfolds in place -->
       <section class="form-card cf-setup">
@@ -254,7 +268,7 @@
         <path d="M19 21H5a2 2 0 0 1-2-2V7l4-4h9l4 4v12a2 2 0 0 1-2 2z" stroke-width="2"/>
         <path d="M17 21v-8H7v8M7 3v4h8V3" stroke-width="2"/>
       </svg>
-      {{ (isSaving ? 'SAVING' : isPublished ? 'SAVE_CHANGES' : 'PUBLISH') | translate }}
+      {{ (isSaving ? 'SAVING' : 'SAVE') | translate }}
     </button>
   </div>
 

@@ -1,4 +1,5 @@
 import { WriteActionDirective } from 'app/shared/subscription/write-action.directive';
+import { EmptyStateComponent } from 'app/shared/components/empty-state/empty-state.component';
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { firstValueFrom, Observable, of, switchMap } from 'rxjs';
 import { CommonModule } from '@angular/common';
@@ -11,7 +12,7 @@ import {
 } from '../../service/exercise.service';
 import { AuthService } from '../../config/auth.service';
 import { ScrollLoaderComponent } from '../scroll-loader/scroll-loader.component';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ModalAssignToclientComponent } from '../clients/modal-assign-toclient/modal-assign-toclient.component';
 import { ClientService, Client } from 'app/service/client.service';
 import { WorkoutPlan } from '@shared/models/workout.models';
@@ -29,7 +30,7 @@ import { WorkoutAiDraft, workoutDraftWeeks } from 'app/service/workout-ai.servic
 @Component({
   selector: 'app-program-library',
   standalone: true,
-  imports: [WriteActionDirective,
+  imports: [WriteActionDirective, EmptyStateComponent,
     CommonModule,
     FormsModule,
     FeatherModule,
@@ -129,7 +130,21 @@ export class ProgramLibraryComponent implements OnInit {
     private coachSettingsService: CoachSettingsService,
     private translate: TranslateService,
     private toast: ToastService,
+    private route: ActivatedRoute,
   ) {}
+
+  /** Admin (or super admin): creates, changes and removes the public templates. */
+  isAdmin = false;
+
+  /** « Modèles publics » page (route data), else the coach's own programs. */
+  get publicTemplates(): boolean {
+    return this.activeTab === 'templates';
+  }
+
+  /** A coach only copies a public template: changing or assigning it is for the admin. */
+  get readOnlyTemplates(): boolean {
+    return this.publicTemplates && !this.isAdmin;
+  }
 
   /** Program being duplicated / deleted (one at a time; the list updates without being reloaded). */
   duplicatingId: string | null = null;
@@ -149,6 +164,13 @@ export class ProgramLibraryComponent implements OnInit {
       return;
     }
     console.log('Program Library - User is logged in, loading data');
+    if (this.route.snapshot.data['tab'] === 'templates') {
+      this.activeTab = 'templates';
+      this.programTypeFilter = 'ALL';
+    }
+    void this.authService.extractRoles().then((roles) => {
+      this.isAdmin = (roles || []).some((role) => role === 'ROLE_ADMIN' || role === 'ROLE_SUPER_ADMIN');
+    });
     // Everything loads at once: the programs are filtered on screen, so the file option (from the cached
     // settings, refreshed silently) only filters them again when it turns out different.
     this.applyWorkoutFileSetting();
@@ -410,6 +432,21 @@ export class ProgramLibraryComponent implements OnInit {
           this.applyProgramFilters();
         }
         this.myLibraryCount += 1;
+        if (this.publicTemplates && copy?.id) {
+          // Copied from the public templates: the copy is in « Programmes », opened in one click to adapt it.
+          const copyId = copy.id;
+          this.toast.show({
+            type: 'success',
+            duration: 8000,
+            title: this.translate.instant('TEMPLATE_COPIED'),
+            message: this.translate.instant('TEMPLATE_COPIED_HINT'),
+            actions: [{
+              label: this.translate.instant('TEMPLATE_OPEN_COPY'),
+              run: () => void this.router.navigateByUrl('workout/edit-workout/' + copyId, { state: { workoutPlan: copy } }),
+            }],
+          });
+          return;
+        }
         this.toast.success(this.translate.instant('PROGRAM_DUPLICATED'));
       },
       error: (error) => {

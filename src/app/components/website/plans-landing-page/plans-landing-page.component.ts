@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { Router, RouterLink } from '@angular/router';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { SubscriptionPlanDto } from '../../../models/subscription-onboarding.model';
 import { SubscriptionOnboardingService } from '../../../service/subscription-onboarding.service';
 import { LandingPlan, PlanCardComponent } from './plan-card/plan-card.component';
@@ -20,12 +21,13 @@ interface PlanStep {
 @Component({
   selector: 'app-plans-landing-page',
   standalone: true,
-  imports: [CommonModule, MatIcon, RouterLink, PlanCardComponent],
+  imports: [CommonModule, MatIcon, RouterLink, PlanCardComponent, TranslateModule],
   templateUrl: './plans-landing-page.component.html',
   styleUrl: './plans-landing-page.component.scss'
 })
 export class PlansLandingPageComponent implements OnInit {
-  selectedPlanName = 'Select a plan';
+  /** A translation key until the plans are there, then the name of a plan. */
+  selectedPlanName = 'PLANS_PAGE_SELECT_A_PLAN';
   plans: LandingPlan[] = [];
   isLoading = true;
   loadError: string | null = null;
@@ -33,39 +35,40 @@ export class PlansLandingPageComponent implements OnInit {
   highlights: PlanHighlight[] = [
     {
       icon: 'insights',
-      title: 'Clear plan comparison',
-      description: 'Compare pricing, billing frequency, limits, and free trials in one clean view.'
+      title: 'PLANS_PAGE_HL1_TITLE',
+      description: 'PLANS_PAGE_HL1_TEXT'
     },
     {
       icon: 'dynamic_form',
-      title: 'Live subscription catalog',
-      description: 'Every offer shown here is loaded directly from the YoCoach subscription catalog.'
+      title: 'PLANS_PAGE_HL2_TITLE',
+      description: 'PLANS_PAGE_HL2_TEXT'
     },
     {
       icon: 'verified_user',
-      title: 'Safe onboarding',
-      description: 'Your account, customer profile, and subscription are created together.'
+      title: 'PLANS_PAGE_HL3_TITLE',
+      description: 'PLANS_PAGE_HL3_TEXT'
     }
   ];
 
   steps: PlanStep[] = [
     {
-      title: 'Pick a plan',
-      description: 'Compare each offer and choose the right starting point.'
+      title: 'PLANS_PAGE_STEP1_TITLE',
+      description: 'PLANS_PAGE_STEP1_TEXT'
     },
     {
-      title: 'Create your account',
-      description: 'Register once with the selected plan already attached.'
+      title: 'PLANS_PAGE_STEP2_TITLE',
+      description: 'PLANS_PAGE_STEP2_TEXT'
     },
     {
-      title: 'Start coaching',
-      description: 'Your customer profile and subscription are prepared automatically.'
+      title: 'PLANS_PAGE_STEP3_TITLE',
+      description: 'PLANS_PAGE_STEP3_TEXT'
     }
   ];
 
   constructor(
     private onboardingService: SubscriptionOnboardingService,
-    private router: Router
+    private router: Router,
+    private translate: TranslateService
   ) {}
 
   ngOnInit(): void {
@@ -86,12 +89,12 @@ export class PlansLandingPageComponent implements OnInit {
     this.onboardingService.getPlans().subscribe({
       next: (plans) => {
         this.plans = plans.map((plan, index) => this.toLandingPlan(plan, index));
-        this.selectedPlanName = this.plans[0]?.name ?? 'No plans available';
+        this.selectedPlanName = this.plans[0]?.name ?? 'PLANS_PAGE_NO_PLANS';
         this.isLoading = false;
       },
       error: () => {
         this.plans = [];
-        this.loadError = 'We could not load the plans. Please try again.';
+        this.loadError = 'PLANS_PAGE_LOAD_ERROR';
         this.isLoading = false;
       }
     });
@@ -106,42 +109,43 @@ export class PlansLandingPageComponent implements OnInit {
     const free = plan.free ?? plan.price === 0;
     const hasTrial = !free && (plan.freeTrialDays ?? 0) > 0;
     const unitRange = this.getUnitRange(plan);
+    const tr = (key: string, params?: object) => this.translate.instant(key, params);
     const features = [
       plan.description,
-      hasTrial ? `${plan.freeTrialDays}-day free trial` : null,
-      unitRange ? `Supports ${unitRange}` : null,
-      plan.extraFeePerUnit != null ? `${plan.extraFeePerUnit} DT per additional unit` : null
+      hasTrial ? tr('PLANS_PAGE_TRIAL_DAYS', { days: plan.freeTrialDays }) : null,
+      unitRange ? tr('PLANS_PAGE_SUPPORTS', { range: unitRange }) : null,
+      plan.extraFeePerUnit != null ? tr('PLANS_PAGE_EXTRA_FEE', { fee: plan.extraFeePerUnit }) : null
     ].filter((feature): feature is string => !!feature);
 
     return {
       id: plan.id,
       name: plan.name,
-      subtitle: free ? 'No time limit, no card' : plan.billingCycle === 'YEARLY' ? 'Billed yearly' : 'Billed monthly',
-      price: free ? 'Free' : `${new Intl.NumberFormat('fr-TN', { maximumFractionDigits: 2 }).format(plan.price)} DT`,
-      period: free ? '' : plan.billingCycle === 'YEARLY' ? '/ year' : '/ month',
-      description: plan.description || 'A YoCoach subscription plan built for coaching businesses.',
-      badge: hasTrial ? `${plan.freeTrialDays} days free` : undefined,
+      subtitle: tr(free ? 'PLANS_PAGE_FREE_SUBTITLE' : plan.billingCycle === 'YEARLY' ? 'PLANS_PAGE_BILLED_YEARLY' : 'PLANS_PAGE_BILLED_MONTHLY'),
+      price: free ? tr('PLANS_PAGE_FREE') : `${new Intl.NumberFormat('fr-TN', { maximumFractionDigits: 2 }).format(plan.price)} DT`,
+      period: free ? '' : tr(plan.billingCycle === 'YEARLY' ? 'PLANS_PAGE_PER_YEAR' : 'PLANS_PAGE_PER_MONTH'),
+      description: plan.description || tr('PLANS_PAGE_DEFAULT_DESCRIPTION'),
+      badge: hasTrial ? tr('PLANS_PAGE_DAYS_FREE', { days: plan.freeTrialDays }) : undefined,
       icon: this.getPlanIcon(index),
-      ctaLabel: free ? 'Start for free' : hasTrial ? 'Start free trial' : `Choose ${plan.name}`,
+      ctaLabel: free ? tr('PLANS_PAGE_START_FREE') : hasTrial ? tr('PLANS_PAGE_START_TRIAL') : tr('PLANS_PAGE_CHOOSE', { name: plan.name }),
       highlighted: hasTrial,
       info: [
-        { label: 'Billing', value: free ? 'None' : plan.billingCycle === 'YEARLY' ? 'Yearly' : 'Monthly' },
-        { label: 'Plan code', value: plan.planCode }
+        { label: tr('PLANS_PAGE_BILLING'), value: tr(free ? 'PLANS_PAGE_NONE' : plan.billingCycle === 'YEARLY' ? 'PLANS_PAGE_YEARLY' : 'PLANS_PAGE_MONTHLY') },
+        { label: tr('PLANS_PAGE_PLAN_CODE'), value: plan.planCode }
       ],
-      features: features.length ? features : ['YoCoach platform access'],
+      features: features.length ? features : [tr('PLANS_PAGE_PLATFORM_ACCESS')],
       source: plan
     };
   }
 
   private getUnitRange(plan: SubscriptionPlanDto): string | null {
     if (plan.fromUnits != null && plan.toUnits != null) {
-      return `${plan.fromUnits}-${plan.toUnits} units`;
+      return this.translate.instant('PLANS_PAGE_UNITS_RANGE', { from: plan.fromUnits, to: plan.toUnits });
     }
     if (plan.toUnits != null) {
-      return `up to ${plan.toUnits} units`;
+      return this.translate.instant('PLANS_PAGE_UNITS_UP_TO', { to: plan.toUnits });
     }
     if (plan.fromUnits != null) {
-      return `${plan.fromUnits}+ units`;
+      return this.translate.instant('PLANS_PAGE_UNITS_FROM', { from: plan.fromUnits });
     }
     return null;
   }

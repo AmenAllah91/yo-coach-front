@@ -12,6 +12,33 @@ import {
   TypeWorkoutPlan,
 } from '@shared/models/workout.models';
 import { Exercise, ExerciseSet, WorkoutSetType } from '@shared/models/exercice.models';
+import {
+  GroupType,
+  Measure,
+  SUPERSET_MAX,
+  canMoveGroup,
+  changeMeasure,
+  flattenSets,
+  groupBounds,
+  groupCount,
+  groupMembers,
+  groupRest,
+  groupTypeOf,
+  isGroupEnd,
+  isGroupStart,
+  isUniform,
+  isWarmupExercise,
+  measureOf,
+  memberLabel,
+  moveGroup,
+  setGroupCount,
+  setGroupRest,
+  setValue,
+  syncGroup,
+  ungroup,
+  warmupCount,
+  writeSetValue,
+} from '@shared/models/exercise-groups';
 
 @Injectable({ providedIn: 'root' })
 export class WorkoutPlanFacade {
@@ -44,6 +71,13 @@ export class WorkoutPlanFacade {
 
   showExerciseSelector = false;
   hoveringExerciseId: string | null = null;
+
+  /** Superset ou circuit qui reçoit les exercices choisis dans la bibliothèque (null = la séance). */
+  addTargetGroup: { id: string; type: GroupType } | null = null;
+  /** La bibliothèque remplit le bloc « Échauffement » en haut de la séance. */
+  addTargetWarmup = false;
+  /** Exercices de groupe dont le coach a ouvert « Régler série par série ». */
+  private setDetailOpen = new Set<string>();
 
   searchQuery = '';
   muscleFilter = '';
@@ -91,8 +125,21 @@ export class WorkoutPlanFacade {
     return this.coachSettingsService.getWeightUnit();
   }
 
-  private defaultWeightForSet(isCardio: boolean): number | null {
-    return isCardio || !this.shouldShowWeightField() ? null : 0;
+  /** Pas de poids tant que le coach n'en écrit pas un (jamais « 0 » chez le client). */
+  private defaultWeightForSet(_isCardio: boolean): number | null {
+    return null;
+  }
+
+  /** Texte du champ poids : vide sans poids, « 62.5 » sinon. */
+  weightText(weight: number | null | undefined): string {
+    return weight != null && Number(weight) > 0 ? String(weight) : '';
+  }
+
+  /** « 62,5 » ou « 62.5 » tapé par le coach ; vide = pas de poids. */
+  private parseWeight(raw: unknown): number | null {
+    if (raw === '' || raw == null) return null;
+    const n = Number(String(raw).replace(',', '.').trim());
+    return Number.isFinite(n) && n > 0 ? n : null;
   }
 
   private stripWeightsWhenDisabled(days: WorkoutDay[]): WorkoutDay[] {
@@ -156,6 +203,9 @@ export class WorkoutPlanFacade {
     this.showPlanDescription = false;
     this.showRestNotes = false;
     this.showExerciseSelector = false;
+    this.addTargetGroup = null;
+    this.addTargetWarmup = false;
+    this.setDetailOpen.clear();
     this.hoveringExerciseId = null;
 
     this.searchQuery = '';
@@ -583,6 +633,8 @@ export class WorkoutPlanFacade {
   }
 
   openExerciseSelector() {
+    this.addTargetGroup = null;
+    this.addTargetWarmup = false;
     this.showExerciseSelector = true;
     if (!this.exercisesLoaded && !this.loading) this.loadExercisesFromAPI();
   }
@@ -594,6 +646,8 @@ export class WorkoutPlanFacade {
 
   closeExerciseSelector() {
     this.showExerciseSelector = false;
+    this.addTargetGroup = null;
+    this.addTargetWarmup = false;
   }
 
   trackByDay(index: number, d: WorkoutDay) {
@@ -822,19 +876,375 @@ export class WorkoutPlanFacade {
   handleSelectExercise(ex: Exercise) {
     const session = this.currentSession;
 
-    if (!session || this.isExerciseAdded(ex)) return;
+    const target = this.addTargetGroup;
+
+    // Le même exercice peut revenir dans la séance (ex. squat lourd au début, léger à la fin) ;
+    // seulement pas deux fois dans le même superset / circuit.
+    if (!session || (target && this.isExerciseAdded(ex))) return;
 
     const copy = this.normalizeExerciseForSession(ex);
 
-    session.exercises.push(copy);
+    if (target) {
+      this.insertIntoGroup(session.exercises, copy, target);
+    } else if (this.addTargetWarmup) {
+      // Une seule série légère, rangée à la fin du bloc « Échauffement ».
+      copy.sets = (copy.sets || []).slice(0, 1).map((s) => ({ ...s, type: 'WARM_UP' as WorkoutSetType }));
+      session.exercises.splice(warmupCount(session.exercises), 0, copy);
+    } else {
+      session.exercises.push(copy);
+    }
     this.recomputeSession(session);
   }
 
+  /**
+   * Glisser depuis la bibliothèque : l'exercice tombe à la place `index`.
+   * Jamais au milieu d'un superset / circuit, jamais au-dessus de l'échauffement : on recule à la place permise.
+   */
+  insertExerciseAt(ex: Exercise, index: number): Exercise | null {
+    const session = this.currentSession;
+    if (!session) return null;
+    const list = session.exercises;
+    let at = Math.max(warmupCount(list), Math.min(Math.round(index), list.length));
+    if (at < list.length && list[at].supersetGroupId) at = groupBounds(list, at).start;
+    const copy = this.normalizeExerciseForSession(ex);
+    list.splice(at, 0, copy);
+    this.recomputeSession(session);
+    return copy;
+  }
+
+  // ---------- Échauffement (voir shared/models/exercise-groups.ts) ----------
+
+  /** « Ajouter un échauffement » : la bibliothèque s'ouvre et range les exercices choisis en haut de la séance. */
+  startWarmup() {
+    this.addTargetGroup = null;
+    this.addTargetWarmup = true;
+    this.showExerciseSelector = true;
+    if (!this.exercisesLoaded && !this.loading) this.loadExercisesFromAPI();
+  }
+
+  /** Nombre d'exercices du bloc « Échauffement » en haut de la séance. */
+  get warmupCount(): number {
+    return warmupCount(this.exList);
+  }
+
+  // ---------- Superset et circuit (voir shared/models/exercise-groups.ts) ----------
+
+  /** « ou créer un groupe : Superset · Circuit » : la bibliothèque s'ouvre et remplit le nouveau groupe. */
+  startGroup(type: GroupType) {
+    this.addTargetWarmup = false;
+    this.addTargetGroup = { id: this.getNewSupersetGroupId(), type };
+    this.showExerciseSelector = true;
+    if (!this.exercisesLoaded && !this.loading) this.loadExercisesFromAPI();
+  }
+
+  /** « Ajouter un exercice au circuit / au superset » sous le dernier exercice du groupe. */
+  addToGroup(index: number) {
+    const ex = this.exList[index];
+    if (!ex?.supersetGroupId) return;
+    this.addTargetWarmup = false;
+    this.addTargetGroup = { id: ex.supersetGroupId, type: groupTypeOf(ex) };
+    this.showExerciseSelector = true;
+    if (!this.exercisesLoaded && !this.loading) this.loadExercisesFromAPI();
+  }
+
+  /** Le groupe choisi n'a encore aucun exercice : on affiche sa carte d'attente. */
+  get pendingGroup(): { id: string; type: GroupType } | null {
+    const t = this.addTargetGroup;
+    if (!t || !this.showExerciseSelector) return null;
+    return this.exList.some((e) => e.supersetGroupId === t.id) ? null : t;
+  }
+
+  /** Type du groupe qui termine la séance, ou null si le dernier exercice est seul. */
+  get trailingGroupType(): GroupType | null {
+    const last = this.exList[this.exList.length - 1];
+    return last?.supersetGroupId ? groupTypeOf(last) : null;
+  }
+
+  isAddingToGroup(index: number): boolean {
+    const id = this.exList[index]?.supersetGroupId;
+    return !!id && this.showExerciseSelector && this.addTargetGroup?.id === id;
+  }
+
+  private insertIntoGroup(list: Exercise[], ex: Exercise, target: { id: string; type: GroupType }) {
+    const last = list.map((e) => e.supersetGroupId).lastIndexOf(target.id);
+    const members = last >= 0 ? groupMembers(list, last) : [];
+    const count = members.length ? groupCount(members) : 3;
+    const cardio = ex.type === 'CARDIO';
+
+    ex.supersetGroupId = target.id;
+    ex.groupType = target.type;
+    ex.groupRestSec = members.length ? groupRest(members) : target.type === 'CIRCUIT' ? 60 : 90;
+    ex.measure = cardio ? 'TIME' : null;
+    ex.sets = Array.from({ length: count }, (_, i) => ({
+      setNumber: i + 1,
+      type: 'REGULAR' as WorkoutSetType,
+      reps: cardio ? '' : target.type === 'CIRCUIT' ? '15' : '10',
+      durationSec: cardio ? 30 : null,
+      weight: cardio ? null : this.defaultWeightForSet(false),
+      restMin: 0,
+      restSec: 0,
+    }));
+
+    if (last >= 0) list.splice(last + 1, 0, ex);
+    else list.push(ex);
+  }
+
+  /**
+   * Le petit lien « + Superset » : seulement entre deux exercices simples. À côté d'un superset ou d'un circuit,
+   * on passe par « Ajouter un exercice au superset / au circuit » du groupe.
+   */
+  canLinkAt(i: number): boolean {
+    const a = this.exList[i];
+    const b = this.exList[i + 1];
+    return !!a && !!b && !a.supersetGroupId && !b.supersetGroupId;
+  }
+
+  isGroupStartAt(i: number): boolean {
+    return isGroupStart(this.exList, i);
+  }
+
+  isGroupEndAt(i: number): boolean {
+    return isGroupEnd(this.exList, i);
+  }
+
+  groupTypeAt(i: number): GroupType {
+    return groupTypeOf(this.exList[i]);
+  }
+
+  groupCountAt(i: number): number {
+    return groupCount(groupMembers(this.exList, i));
+  }
+
+  groupRestAt(i: number): number {
+    return groupRest(groupMembers(this.exList, i));
+  }
+
+  groupSizeAt(i: number): number {
+    return groupMembers(this.exList, i).length;
+  }
+
+  memberLabelAt(i: number): string {
+    return memberLabel(this.exList, i);
+  }
+
+  /** Un superset de plus de 3 exercices : on propose de passer en circuit. */
+  suggestCircuitAt(i: number): boolean {
+    return this.groupTypeAt(i) === 'SUPERSET' && this.groupSizeAt(i) > SUPERSET_MAX;
+  }
+
+  changeGroupCount(i: number, delta: number) {
+    const members = groupMembers(this.exList, i);
+    if (!members.length) return;
+    setGroupCount(members, groupCount(members) + delta);
+    if (this.currentSession) this.recomputeSession(this.currentSession);
+  }
+
+  changeGroupRest(i: number, seconds: unknown) {
+    setGroupRest(groupMembers(this.exList, i), Number(seconds));
+  }
+
+  convertGroup(i: number, type: GroupType) {
+    groupMembers(this.exList, i).forEach((m) => (m.groupType = type));
+  }
+
+  duplicateGroup(i: number) {
+    const list = this.exList;
+    const { end } = groupBounds(list, i);
+    const id = this.getNewSupersetGroupId();
+    const copies = groupMembers(list, i).map((m) => ({
+      ...JSON.parse(JSON.stringify(m)),
+      id: crypto.randomUUID(),
+      supersetGroupId: id,
+    }));
+    list.splice(end + 1, 0, ...copies);
+    if (this.currentSession) this.recomputeSession(this.currentSession);
+  }
+
+  /** Flèches ↑ ↓ de la barre du groupe : tout le groupe passe au-dessus / en dessous du voisin. */
+  canMoveGroupAt(i: number, direction: -1 | 1): boolean {
+    return canMoveGroup(this.exList, i, direction);
+  }
+
+  moveGroupAt(i: number, direction: -1 | 1) {
+    moveGroup(this.exList, i, direction);
+  }
+
+  ungroupAt(i: number) {
+    ungroup(groupMembers(this.exList, i));
+  }
+
+  /** Une seule ligne « Toutes les séries » tant que les séries sont identiques et que le coach n'a pas ouvert le détail. */
+  isSetDetail(ex: Exercise): boolean {
+    return (!!ex.id && this.setDetailOpen.has(ex.id)) || !isUniform(ex);
+  }
+
+  openSetDetail(ex: Exercise) {
+    if (ex.id) this.setDetailOpen.add(ex.id);
+  }
+
+  // ---------- Exercice seul : une ligne « 3 séries · 12 reps · 60 kg · 90 s » tant que les séries sont pareilles ----------
+
+  /** Le chiffre d'une série : minutes (cardio), secondes (au temps) ou répétitions. */
+  singleValue(ex: Exercise, s: ExerciseSet | undefined): number | null {
+    if (!s) return null;
+    if (ex.type === 'CARDIO') return s.duration ?? null;
+    return setValue(ex, s);
+  }
+
+  /** Repos d'une série en secondes (enregistré en minutes + secondes). */
+  restSeconds(s: ExerciseSet | undefined): number {
+    return (Number(s?.restMin) || 0) * 60 + (Number(s?.restSec) || 0);
+  }
+
+  /** Le détail série par série : ouvert par le coach, ou des séries différentes (poids, reps, repos, type). */
+  isSingleDetail(ex: Exercise): boolean {
+    if (ex.id && this.setDetailOpen.has(ex.id)) return true;
+    const sets = ex.sets || [];
+    const first = sets[0];
+    return sets.some((s) =>
+      this.singleValue(ex, s) !== this.singleValue(ex, first) ||
+      (s.weight ?? null) !== (first?.weight ?? null) ||
+      this.restSeconds(s) !== this.restSeconds(first) ||
+      (s.type || 'REGULAR') !== (first?.type || 'REGULAR'));
+  }
+
+  /** « Toutes les séries » : la même valeur dans chaque série. */
+  singleChange(ex: Exercise, field: 'value' | 'weight' | 'rest', raw: unknown) {
+    (ex.sets || []).forEach((_, si) => this.setFieldChange(ex, si, field, raw));
+  }
+
+  /** Une série (ligne du détail). `rest` : secondes, rangées en minutes + secondes. */
+  setFieldChange(ex: Exercise, si: number, field: 'value' | 'weight' | 'rest', raw: unknown) {
+    const id = ex.id || '';
+    if (field === 'weight') {
+      this.handleSetChange(id, si, 'weight', raw as string);
+    } else if (field === 'rest') {
+      const n = raw === '' || raw == null ? 0 : Number(raw);
+      const total = Number.isFinite(n) ? Math.max(0, Math.round(n)) : 0;
+      this.handleSetChange(id, si, 'restMin', Math.floor(total / 60));
+      this.handleSetChange(id, si, 'restSec', total % 60);
+    } else {
+      const field2 = ex.type === 'CARDIO' ? 'duration' : measureOf(ex) === 'TIME' ? 'durationSec' : 'reps';
+      this.handleSetChange(id, si, field2, raw as string);
+    }
+  }
+
+  /** − / + du nombre de séries : la nouvelle série recopie la dernière. */
+  changeSetCount(ex: Exercise, delta: number) {
+    const sets = ex.sets || (ex.sets = []);
+    if (delta < 0) {
+      if (sets.length > 1) sets.pop();
+    } else {
+      const last = sets[sets.length - 1];
+      sets.push(last ? { ...last, setNumber: sets.length + 1 } : this.buildAdditionalSet(ex.type === 'CARDIO', 0));
+    }
+    if (this.currentSession) this.recomputeSession(this.currentSession);
+  }
+
+  /** « Même valeur partout » : la 1re série recopiée sur les autres, puis la ligne unique revient. */
+  flattenSingleSets(ex: Exercise) {
+    const first = ex.sets?.[0];
+    if (!first) return;
+    ex.sets!.forEach((s, si) => {
+      if (si === 0) return;
+      s.reps = first.reps;
+      s.duration = first.duration;
+      s.durationSec = first.durationSec;
+      s.weight = first.weight ?? null;
+      s.restMin = first.restMin;
+      s.restSec = first.restSec;
+      s.type = first.type;
+    });
+    if (ex.id) this.setDetailOpen.delete(ex.id);
+    if (this.currentSession) this.recomputeSession(this.currentSession);
+  }
+
+  /**
+   * ↓ « Recopier vers le bas » : les séries sous `si` prennent ses reps (ou temps), son poids et son repos.
+   * Le type (échauffement, drop set…) reste celui de chaque série. Le détail reste ouvert.
+   */
+  copySetDown(ex: Exercise, si: number) {
+    const source = ex.sets?.[si];
+    if (!source) return;
+    ex.sets!.forEach((s, k) => {
+      if (k <= si) return;
+      s.reps = source.reps;
+      s.duration = source.duration;
+      s.durationSec = source.durationSec;
+      s.weight = source.weight ?? null;
+      s.restMin = source.restMin;
+      s.restSec = source.restSec;
+    });
+    this.openSetDetail(ex);
+    if (this.currentSession) this.recomputeSession(this.currentSession);
+  }
+
+  /** « Vider la séance » (menu ⋮ du jour). */
+  clearSelectedSession() {
+    const session = this.currentSession;
+    if (!session) return;
+    session.exercises = [];
+    this.recomputeSession(session);
+  }
+
+  flattenGroupSets(ex: Exercise) {
+    flattenSets(ex);
+    if (ex.id) this.setDetailOpen.delete(ex.id);
+  }
+
+  measureOf(ex: Exercise): Measure {
+    return measureOf(ex);
+  }
+
+  changeExerciseMeasure(ex: Exercise, measure: Measure) {
+    changeMeasure(ex, measure);
+    if (this.currentSession) this.recomputeSession(this.currentSession);
+  }
+
+  groupSetValue(ex: Exercise, si: number): number | null {
+    return setValue(ex, ex.sets?.[si]);
+  }
+
+  /** Change une série (`si`), ou toutes (`si` = -1, ligne « Toutes les séries »). */
+  groupSetChange(ex: Exercise, si: number, field: 'value' | 'weight', raw: unknown) {
+    const sets = si < 0 ? ex.sets || [] : ex.sets?.[si] ? [ex.sets[si]] : [];
+    const n = raw === '' || raw == null ? null : Number(raw);
+    const value = n == null || !Number.isFinite(n) ? null : Math.max(0, n);
+    sets.forEach((s) => {
+      if (field === 'weight') {
+        if (this.shouldShowWeightField()) s.weight = this.parseWeight(raw);
+      } else {
+        writeSetValue(ex, s, value);
+      }
+    });
+    if (this.currentSession) this.recomputeSession(this.currentSession);
+  }
+
+  /** Groupes chargés : même type, même repos et même nombre de séries partout (sans retirer de série). */
+  private syncSessionGroups<T extends { exercises?: Exercise[] }>(session: T): T {
+    const list = session.exercises || [];
+    list.forEach((_, i) => {
+      if (isGroupStart(list, i)) syncGroup(groupMembers(list, i));
+    });
+    return session;
+  }
+
+  /** Bloqué : déjà dans le superset / circuit qui reçoit l'ajout. Ailleurs, le doublon est permis. */
   isExerciseAdded(exercise: Exercise): boolean {
+    const target = this.addTargetGroup;
+    if (!target) return false;
+    return this.inPool(exercise, this.exList.filter((e) => e.supersetGroupId === target.id));
+  }
+
+  /** Déjà quelque part dans la séance : la bibliothèque le signale, sans bloquer. */
+  isExerciseInSession(exercise: Exercise): boolean {
+    return this.inPool(exercise, this.exList);
+  }
+
+  private inPool(exercise: Exercise, pool: Exercise[]): boolean {
     const candidateId = this.getExerciseIdentity(exercise);
     const candidateName = this.clean(exercise?.name).toLowerCase();
-
-    return this.exList.some((added) => {
+    return pool.some((added) => {
       const addedId = this.getExerciseIdentity(added);
       if (candidateId && addedId && candidateId === addedId) return true;
 
@@ -895,19 +1305,11 @@ export class WorkoutPlanFacade {
     const ex = list[idx];
     const groupId = ex.supersetGroupId;
 
-    if (groupId) {
-      list.forEach((e) => {
-        if (e !== ex && e.supersetGroupId === groupId) {
-          e.supersetGroupId = null;
-
-          if (!e.sets || e.sets.length === 0) {
-            e.sets = this.buildInitialSets(e.type === 'CARDIO');
-          }
-        }
-      });
-    }
-
     list.splice(idx, 1);
+    this.setDetailOpen.delete(ex.id || '');
+
+    // Le reste du groupe garde ses exercices ; un superset réduit à un seul exercice redevient un exercice simple.
+    if (groupId) this.clearInvalidSingleExerciseGroup(groupId);
     this.recomputeSession(session);
   }
 
@@ -929,7 +1331,11 @@ export class WorkoutPlanFacade {
 
     const isCardio = ex.type === 'CARDIO';
 
-    ex.sets.push(this.buildAdditionalSet(isCardio, ex.sets.length));
+    // Un exercice d'échauffement reste un échauffement quand on lui ajoute une série.
+    const warmup = isWarmupExercise(ex);
+    const added = this.buildAdditionalSet(isCardio, ex.sets.length);
+    if (warmup) added.type = 'WARM_UP';
+    ex.sets.push(added);
 
     this.recomputeSession(session);
   }
@@ -977,9 +1383,13 @@ export class WorkoutPlanFacade {
       const normalized = nonNegativeNumber(value);
       set.duration = normalized == null ? 0 : normalized;
     }
+    if (field === 'durationSec') {
+      const normalized = nonNegativeNumber(value);
+      set.durationSec = normalized == null ? null : Math.round(normalized);
+    }
     if (field === 'weight') {
       if (!this.shouldShowWeightField()) return;
-      set.weight = nonNegativeNumber(value);
+      set.weight = this.parseWeight(value);
     }
     if (field === 'restMin') set.restMin = nonNegativeNumber(value) ?? 0;
     if (field === 'restSec') set.restSec = nonNegativeNumber(value) ?? 0;
@@ -1046,8 +1456,9 @@ export class WorkoutPlanFacade {
 
     const group = this.getSupersetRun(groupId);
 
-    if (group.length < 2) {
-      group.forEach((exercise) => (exercise.supersetGroupId = null));
+    // Un circuit peut n'avoir qu'un exercice (Tabata) ; un superset non.
+    if (group.length === 1 && groupTypeOf(group[0]) === 'SUPERSET') {
+      ungroup(group);
     }
   }
 
@@ -1095,6 +1506,9 @@ export class WorkoutPlanFacade {
     const groupId = a.supersetGroupId || b.supersetGroupId || this.getNewSupersetGroupId();
     const aGroup = a.supersetGroupId;
     const bGroup = b.supersetGroupId;
+    const grouped = [a, b].find((e) => !!e.supersetGroupId);
+    const type: GroupType = [a, b].some((e) => e.supersetGroupId && groupTypeOf(e) === 'CIRCUIT') ? 'CIRCUIT' : 'SUPERSET';
+    const rest = grouped ? groupRest(groupMembers(list, list.indexOf(grouped))) : null;
 
     list.forEach((exercise) => {
       if (
@@ -1107,6 +1521,12 @@ export class WorkoutPlanFacade {
       }
     });
 
+    const members = groupMembers(list, i);
+    members.forEach((m) => {
+      m.groupType = type;
+      if (rest != null) m.groupRestSec = rest;
+    });
+    syncGroup(members, type);
     this.recomputeSession(session);
   }
 
@@ -1152,7 +1572,7 @@ export class WorkoutPlanFacade {
               },
             ];
 
-      const normalizedSessions = sessions.map((s) => ({
+      const normalizedSessions = sessions.map((s) => this.syncSessionGroups({
         ...s,
 
         exercises: (s.exercises || []).map((e) => {
@@ -1172,8 +1592,9 @@ export class WorkoutPlanFacade {
 
             sets: (e.sets || []).map((st, si) => ({
               ...st,
-              reps: st.reps != null ? String(st.reps) : '8',
-              weight: this.shouldShowWeightField() ? (st.weight ?? 0) : null,
+              reps: st.reps != null ? String(st.reps) : measureOf(e) === 'TIME' ? '' : '8',
+              // 0 = pas de poids (comme côté client) : le champ reste vide.
+              weight: this.shouldShowWeightField() && Number(st.weight) > 0 ? st.weight : null,
               restMin: st.restMin ?? 0,
               restSec: st.restSec ?? 0,
               setNumber: st.setNumber ?? si + 1,

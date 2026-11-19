@@ -4,6 +4,8 @@ export interface ExerciseSet {
   reps?: string;
   weight?: number | null;
   duration?: number;
+  /** Secondes, quand l'exercice est mesuré au temps (measure = 'TIME'). */
+  durationSec?: number | null;
   restMin?: number;
   restSec?: number;
   setNumber?: number;
@@ -37,6 +39,12 @@ export interface Exercise {
   duration?: number;
 
   supersetGroupId?: string | null;
+  /** 'SUPERSET' | 'CIRCUIT' quand supersetGroupId est rempli (null = superset). Voir exercise-groups.ts. */
+  groupType?: string | null;
+  /** Repos du groupe en secondes : après le superset, ou entre les tours du circuit. */
+  groupRestSec?: number | null;
+  /** 'REPS' (défaut) ou 'TIME' : la valeur des séries est alors durationSec. */
+  measure?: string | null;
   sets?: ExerciseSet[];
 
   image?: string;

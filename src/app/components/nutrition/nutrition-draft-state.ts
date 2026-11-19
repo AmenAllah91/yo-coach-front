@@ -2,7 +2,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { NutritionService } from 'app/service/nutrition.service';
 import { MacroTrackingMode, Meal, MealDay, MealPlan } from '@shared/models/MealPlan';
 import { nutritionDayState, nutritionMealState } from '@shared/models/nutrition-publication';
-import { ProgramDayState, firstNutritionIssue, nutritionDayStatus, nutritionSummary, programDaysError } from '@shared/models/program-days';
+import { ProgramDayState, firstNutritionIssue, nutritionDayStatus, nutritionSummary, programDaysError, refusedDaysMessage } from '@shared/models/program-days';
 import { isLockedError, isPlanLocked, todayIso } from '@shared/models/program-schedule';
 import { ConfirmOptions } from '@shared/components/confirm-dialog/confirm-dialog.service';
 import { SavedContent } from '@config/guard/unsaved-changes.guard';
@@ -249,7 +249,10 @@ export class NutritionDraftState {
           this.openEmptyDays(refused.days, plan.mealDays || [], retry);
           return;
         }
-        this.error = refused?.error || err?.error?.message || 'Unable to save the nutrition plan.';
+        // Always what to fix and where (the day numbers at least), never a bare « Day 1 has an error ».
+        this.error = refused
+          ? refusedDaysMessage(refused, (key, params) => this.tr(key, refused.error, params), 'PROGRAM_SERVER_INVALID_DAYS_NUTRITION')
+          : err?.error?.message || 'Unable to save the nutrition plan.';
       },
     });
   }

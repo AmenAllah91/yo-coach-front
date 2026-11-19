@@ -11,8 +11,8 @@
   <div class="client-workspace__main">
 <section *ngIf="!profileLoading" class="main-content" [class.progress-summary-collapsed]="!showClientStats">
   <aside *ngIf="clientArchived" role="status" class="archived-client-notice">
-    This client is archived. Reactivate the client to continue coaching.
-    <button type="button" (click)="reactivateClient()">Reactivate client</button>
+    {{ 'ARCHIVED_CLIENT_NOTICE' | translate }}
+    <button type="button" (click)="reactivateClient()">{{ 'REACTIVATE_CLIENT' | translate }}</button>
   </aside>
   <!-- Who the client is and where they are (status, current program, this week); the rest of their profile is in
        the « Profil du client » panel (avatar, name or « Profil »). -->
@@ -110,9 +110,16 @@
             <span class="hero-fact hero-fact--muted"><i-feather name="activity"></i-feather>{{ heroFr ? 'Aucun programme en cours' : 'No current program' }}</span>
           </ng-template>
         </div>
+        <!-- The coach's labels on this client (private, the client list filters on them). -->
+        <app-client-tags class="client-hero__tags" *ngIf="clientId" [clientId]="clientId"></app-client-tags>
       </div>
 
       <div class="client-hero__actions">
+        <button class="hero-btn hero-btn--icon" type="button" [class.is-active]="activeTab === 'calendar'"
+          [title]="'CALENDAR' | translate" [attr.aria-label]="'CALENDAR' | translate"
+          [attr.aria-pressed]="activeTab === 'calendar'" (click)="setTab('calendar')">
+          <i-feather name="calendar"></i-feather>
+        </button>
         <button class="hero-btn" type="button" (click)="openProfilePanel()">
           <i-feather name="user"></i-feather><span>{{ heroFr ? 'Profil' : 'Profile' }}</span>
         </button>
@@ -141,6 +148,7 @@
     (message)="profilePanelOpen = false; openChatPanel()"
   ></app-client-profile-panel>
 
+  <!-- Progress summary (weight + objective): web only, hidden on small screens where the page is already full. -->
   <div class="progress-summary" *ngIf="showClientStats">
   <div class="client-stats-grid">
     <div class="client-stat-card">
@@ -207,12 +215,12 @@
   </section>
   </div>
 
-  <!-- Profile navigation: 5 main tabs on one row (with the summary button), and under "Overview" a second row
-       of sub-tabs. Same sections as before, only grouped; the chat opens from "Send a message". -->
+  <!-- Profile navigation: 6 main tabs on one row. Only "Progress" has sub-tabs (measurements, pictures, exercises).
+       The chat opens from "Send message", the calendar from the icon in the header. -->
   <div class="profile-nav">
     <div class="profile-tabs-bar">
       <nav class="profile-tabs">
-        <button type="button" class="tab-link" [class.active]="isOverviewTab" (click)="openOverview()">
+        <button type="button" class="tab-link" [class.active]="activeTab === 'dashboard'" (click)="setTab('dashboard')">
           {{ 'PROFILE_OVERVIEW_TAB' | translate }}
         </button>
         <button type="button" class="tab-link" [class.active]="activeTab === 'workouts'" (click)="setTab('workouts')">
@@ -221,16 +229,17 @@
         <button type="button" class="tab-link" [class.active]="activeTab === 'nutrition'" (click)="setTab('nutrition')">
           {{ 'NUTRITION' | translate }}
         </button>
+        <button type="button" class="tab-link" [class.active]="isProgressTab" (click)="openProgress()">
+          {{ 'PROFILE_PROGRESS_TAB' | translate }}
+        </button>
+        <button type="button" class="tab-link" [class.active]="activeTab === 'checkins'" (click)="setTab('checkins')">
+          {{ 'CHECK_INS' | translate }}
+        </button>
         <button type="button" class="tab-link tasks-tab" [class.active]="activeTab === 'tasks'" (click)="setTab('tasks')">
           {{ 'TASKS' | translate }}
         </button>
-        <button type="button" class="tab-link calendar-tab" [class.active]="activeTab === 'calendar'" (click)="setTab('calendar')">
-          {{ 'CALENDAR' | translate }}
-        </button>
-        <button type="button" class="tab-link chat-tab" [class.active]="activeTab === 'chat'" (click)="setTab('chat')">
-          {{ 'CHAT' | translate }}
-        </button>
       </nav>
+      <!-- Web only: hidden on small screens (see .stats-toggle-btn in the scss). -->
       <button
         class="stats-toggle-btn"
         type="button"
@@ -242,18 +251,16 @@
       </button>
     </div>
 
-    <nav class="profile-subtabs" *ngIf="isOverviewTab" [attr.aria-label]="'PROFILE_OVERVIEW_TAB' | translate">
-      <button type="button" class="subtab-link" [class.active]="activeTab === 'dashboard'" (click)="setTab('dashboard')">
-        {{ 'DASHBOARD' | translate }}
-      </button>
+    <nav class="profile-subtabs" *ngIf="isProgressTab" [attr.aria-label]="'PROFILE_PROGRESS_TAB' | translate">
       <button type="button" class="subtab-link" [class.active]="activeTab === 'measurements'" (click)="setTab('measurements')">
         {{ 'MEASUREMENTS' | translate }}
       </button>
       <button type="button" class="subtab-link" [class.active]="activeTab === 'pictures'" (click)="setTab('pictures')">
         {{ 'PROGRESS_PICTURES' | translate }}
       </button>
-      <button type="button" class="subtab-link" [class.active]="activeTab === 'checkins'" (click)="setTab('checkins')">
-        {{ 'CHECK_INS' | translate }}
+      <!-- Progression par exercice : à côté des mesures et des photos (le corps), ici la force. -->
+      <button type="button" class="subtab-link" [class.active]="activeTab === 'progress'" (click)="setTab('progress')">
+        {{ 'PROFILE_PROGRESS_EXERCISES' | translate }}
       </button>
     </nav>
   </div>
@@ -263,152 +270,77 @@
       class="tab-pane dashboard-pane"
       [class.active]="activeTab === 'dashboard'"
     >
-      <div class="dashboard-main-grid">
-        <div class="card dashboard-card today-card" [class.empty-dashboard-card]="!hasTodaysWorkout">
-          <div class="dashboard-card-header">
-            <div class="header-left">
-              <div class="header-icon header-icon-blue">
-                <i class="fas fa-dumbbell"></i>
-              </div>
-              <div>
-                <div class="header-title">{{ 'TODAYS_WORKOUT' | translate }}</div>
-                <div class="header-subtitle" *ngIf="hasTodaysWorkout">
-                  {{ todaysWorkout?.programName }} - {{ 'WEEK' | translate }}
-                  {{ todaysWorkout?.currentWeek }}/{{ todaysWorkout?.totalWeeks }}
-                </div>
-                <div class="header-subtitle" *ngIf="!hasTodaysWorkout">
-                  {{ 'NO_SESSION_SCHEDULED_TODAY' | translate }}
-                </div>
-              </div>
-            </div>
-            <button
-              class="link-button"
-              *ngIf="hasTodaysWorkout"
-              type="button"
-              (click)="setTab('workouts')"
-            >
-              {{ 'VIEW_FULL' | translate }}
-            </button>
-          </div>
+      <!-- Overview: today (workout + nutrition, compact) and the recent activities on the left; the weight and the
+           last progress pictures in a column on the right (under « Aujourd'hui » on smaller screens). -->
+      <div class="dashboard-overview">
+        <app-client-today
+          class="dashboard-overview__today"
+          [fr]="heroFr"
+          [workout]="hasTodaysWorkout ? todaysWorkout : null"
+          [workoutStatus]="todayWorkoutStatus"
+          [hasWorkoutPlan]="assignedWorkoutPrograms.length > 0"
+          [nutrition]="activeNutritionPlan"
+          [nutritionStatus]="todayNutritionStatus"
+          [hasNutritionPlan]="assignedNutritionPrograms.length > 0"
+          (openWorkout)="openTodayWorkout()"
+          (assignWorkout)="openAssignProgramModal('WORKOUT')"
+          (createWorkout)="openClientWorkoutCreateModal()"
+          (openNutrition)="openTodayNutrition()"
+          (assignNutrition)="openAssignProgramModal('NUTRITION')"
+          (createNutrition)="assignType = 'NUTRITION'; showChooseModal = true"
+        ></app-client-today>
 
-          <div class="dashboard-card-body" *ngIf="hasTodaysWorkout; else noTodayWorkout">
-            <h4 class="workout-day-title">{{ todaysWorkout?.name }}</h4>
-            <div
-              class="exercise-row"
-              *ngFor="let exercise of todaysWorkout?.exercises; let i = index"
-            >
-              <div class="exercise-letter">{{ getLetter(i) }}</div>
-              <div class="exercise-info">
-                <div class="exercise-name">{{ exercise.name }}</div>
-                <div class="exercise-meta">
-                  {{ exercise.sets }} • {{ 'REST' | translate }}: {{ exercise.rest }}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <ng-template #noTodayWorkout>
-            <div class="dashboard-empty-state dashboard-empty-blue">
-              <div class="dashboard-empty-illustration">
-                <i class="fas fa-calendar-day"></i>
-                <i class="fas fa-dumbbell"></i>
-              </div>
-              <div class="dashboard-empty-title">{{ 'CLIENT_NO_WORKOUT_TODAY' | translate }}</div>
-              <div class="dashboard-empty-subtitle">
-                {{ 'ASSIGN_WORKOUT_OR_CHECK_CALENDAR' | translate }}
-              </div>
-              <div class="dashboard-empty-actions">
-                <button class="empty-primary-btn" type="button" (click)="openAssignProgramModal('WORKOUT')">
-                  <i class="fas fa-plus"></i>
-                  {{ 'ASSIGN_SIMPLE_PLAN' | translate }}
-                </button>
-                <button class="empty-outline-btn" type="button" (click)="openClientWorkoutCreateModal()">
-                  <i class="fas fa-file-circle-plus"></i>
-                  {{ 'CREATE_PLAN' | translate }}
-                </button>
-              </div>
-            </div>
-          </ng-template>
+        <!-- Right column: weight and pictures, then the coach's private notes. -->
+        <div class="dashboard-overview__side dashboard-overview__side-stack" *ngIf="clientId">
+        <app-client-progress-glance
+          *ngIf="clientId"
+          [clientId]="clientId"
+          [fr]="heroFr"
+          [weights]="bodyweightMeasurements"
+          [targetWeight]="clientTargetWeight"
+          (openMeasurements)="setTab('measurements')"
+          (openPictures)="setTab('pictures')"
+          (comparePictures)="openPicturesComparison()"
+        ></app-client-progress-glance>
+        <app-client-notes [clientId]="clientId"></app-client-notes>
         </div>
 
-        <div class="card dashboard-card nutrition-card" [class.empty-dashboard-card]="!hasActiveNutritionPlan">
-          <div class="dashboard-card-header">
-            <div class="header-left">
-              <div class="header-icon header-icon-green">
-                <i class="fas fa-apple-alt"></i>
-              </div>
-              <div>
-                <div class="header-title">{{ 'NUTRITION_PLAN' | translate }}</div>
-                <div class="header-subtitle" *ngIf="hasActiveNutritionPlan">{{ activeNutritionPlan?.name }}</div>
-                <div class="header-subtitle" *ngIf="!hasActiveNutritionPlan">{{ 'NO_ACTIVE_PLAN_ASSIGNED' | translate }}</div>
-              </div>
-            </div>
-            <button
-              class="link-button link-button-green"
-              *ngIf="hasActiveNutritionPlan"
-              type="button"
-              (click)="setTab('nutrition')"
-            >
-              {{ 'VIEW_PLAN' | translate }}
-            </button>
-          </div>
+        <!-- « Compare »: the same comparison window as the Pictures tab, opened here (the coach stays on the overview). -->
+        <app-progress-pictures
+          *ngIf="showPicturesComparison && clientId"
+          [clientId]="clientId"
+          [compareOnly]="true"
+          [allowAddPicture]="false"
+          (comparisonClosed)="showPicturesComparison = false"
+          (openAll)="openAllPictures()"
+        ></app-progress-pictures>
 
-          <div class="dashboard-card-body" *ngIf="hasActiveNutritionPlan; else noNutritionPlan">
-            <div class="macro-donut-row" *ngIf="nutritionMacroShares as shares">
-              <div class="macro-donut" [style.background]="shares.gradient" role="img"
-                   [attr.aria-label]="('DAILY_TARGET' | translate) + ': ' + (activeNutritionPlan?.dailyCalories || 0) + ' ' + ('CALORIES_PER_DAY' | translate)">
-                <div class="macro-donut__center">
-                  <strong>{{ activeNutritionPlan?.dailyCalories || 0 }}</strong>
-                  <span>{{ 'CALORIES_PER_DAY' | translate }}</span>
-                </div>
-              </div>
-              <ul class="macro-legend">
-                <li *ngFor="let macro of shares.items" class="macro-legend__item">
-                  <span class="macro-legend__dot" [style.background]="macro.color"></span>
-                  <span class="macro-legend__name">{{ macro.label | translate }}</span>
-                  <span class="macro-legend__grams">{{ macro.grams }} {{ 'GRAMS' | translate }}</span>
-                  <span class="macro-legend__pct" [style.color]="macro.color">{{ macro.percent }}%</span>
-                </li>
-              </ul>
-            </div>
-            <div class="nutrition-status">
-              <i class="fas fa-chart-line"></i>
-              <span>{{ 'MEALS_COUNT' | translate:{ count: activeNutritionPlan?.mealCount || 0 } }}</span>
-            </div>
-          </div>
-
-          <ng-template #noNutritionPlan>
-            <div class="dashboard-empty-state dashboard-empty-green">
-              <div class="dashboard-empty-illustration">
-                <i class="fas fa-apple-alt"></i>
-                <i class="fas fa-glass-water"></i>
-              </div>
-              <div class="dashboard-empty-title">{{ 'CLIENT_NO_ACTIVE_NUTRITION_PLAN' | translate }}</div>
-              <div class="dashboard-empty-subtitle">
-                {{ 'CREATE_ASSIGN_NUTRITION_HINT' | translate }}
-              </div>
-              <div class="dashboard-empty-actions">
-                <button class="empty-primary-btn empty-primary-green" type="button" (click)="openAssignProgramModal('NUTRITION')">
-                  <i class="fas fa-plus"></i>
-                  {{ 'ASSIGN_SIMPLE_PLAN' | translate }}
-                </button>
-                <button class="empty-outline-btn empty-outline-green" type="button" (click)="assignType = 'NUTRITION'; showChooseModal = true">
-                  <i class="fas fa-file-circle-plus"></i>
-                  {{ 'CREATE_PLAN' | translate }}
-                </button>
-              </div>
-            </div>
-          </ng-template>
+        <!-- What the client did (same feed as the coach dashboard, this client only)... -->
+        <!-- Same bottom as the right column: the list scrolls inside the card, « Charger plus » at its end. -->
+        <div class="dashboard-overview__feed" *ngIf="clientId">
+          <app-recent-activities class="profile-feed" [clientId]="clientId" [fill]="true" [lang]="heroFr ? 'fr' : 'en'"></app-recent-activities>
         </div>
       </div>
 
-      <section class="workout-activity">
+      <!-- ...then what was planned against what was done: one block, workouts or nutrition. -->
+      <header class="program-tracking">
+        <span class="program-tracking__title">
+          <strong>{{ 'PROGRAM_TRACKING' | translate }}</strong>
+          <small>{{ 'PROGRAM_TRACKING_HINT' | translate }}</small>
+        </span>
+        <div class="program-tracking__tabs" role="tablist" [attr.aria-label]="'PROGRAM_TRACKING' | translate">
+          <button type="button" role="tab" [class.is-active]="trackingTab === 'workouts'" [attr.aria-selected]="trackingTab === 'workouts'" (click)="trackingTab = 'workouts'">
+            <i class="fas fa-dumbbell"></i> {{ 'PROGRAM_TRACKING_WORKOUTS' | translate }}
+          </button>
+          <button type="button" role="tab" [class.is-active]="trackingTab === 'nutrition'" [attr.aria-selected]="trackingTab === 'nutrition'" (click)="trackingTab = 'nutrition'">
+            <i class="fas fa-apple-alt"></i> {{ 'PROGRAM_TRACKING_NUTRITION' | translate }}
+          </button>
+        </div>
+      </header>
+
+      <section class="workout-activity" *ngIf="trackingTab === 'workouts'">
         <header class="workout-activity__header">
-          <span class="workout-activity__icon"><i class="fas fa-wave-square"></i></span>
-          <span>
-            <strong>{{ 'WORKOUT_ACTIVITY' | translate }}</strong>
-            <small>{{ 'LATEST_SESSIONS_AT_GLANCE' | translate }}</small>
-          </span>
+          <span class="workout-activity__title"><small>{{ 'LATEST_SESSIONS_AT_GLANCE' | translate }}</small></span>
           <!-- The last 7 days at a glance; a flag opens « Toute l'activité » on those workouts. -->
           <span class="activity-week" *ngIf="workoutWeekSummary as week">
             <small>{{ 'ACTIVITY_LAST_7_DAYS' | translate }}</small>
@@ -480,13 +412,9 @@
         </button>
       </section>
 
-      <section class="nutrition-activity">
+      <section class="nutrition-activity" *ngIf="trackingTab === 'nutrition'">
         <header class="nutrition-activity__header">
-          <span class="nutrition-activity__icon"><i class="fas fa-apple-alt"></i></span>
-          <span>
-            <strong>{{ 'NUTRITION_ACTIVITY' | translate }}</strong>
-            <small>{{ 'LATEST_NUTRITION_DAYS_AT_GLANCE' | translate }}</small>
-          </span>
+          <span class="nutrition-activity__title"><small>{{ 'LATEST_NUTRITION_DAYS_AT_GLANCE' | translate }}</small></span>
           <span class="activity-week" *ngIf="nutritionWeekSummary as week">
             <small>{{ 'ACTIVITY_LAST_7_DAYS' | translate }}</small>
             <strong *ngIf="week.total; else noNutritionDay">{{ 'ACTIVITY_NUTRITION_DAYS_LOGGED' | translate:{ logged: week.logged, total: week.total } }}</strong>
@@ -951,6 +879,10 @@
       ></app-progress-pictures>
     </div>
 
+    <div class="tab-pane exercise-progress-pane" *ngIf="isTabOpened('progress')" [class.active]="activeTab === 'progress'">
+      <app-exercise-progress [clientId]="clientId"></app-exercise-progress>
+    </div>
+
     <div class="tab-pane tasks-pane" *ngIf="isTabOpened('tasks')" [class.active]="activeTab === 'tasks'">
       <app-client-tasks-tab [archived]="clientArchived" [clientId]="clientId" [clientName]="client?.firstName || fullName"></app-client-tasks-tab>
     </div>
@@ -960,6 +892,7 @@
         [embeddedClientId]="clientId"
         [embeddedCoachId]="userid"
         [embeddedClientName]="fullName"
+        [embeddedClientPhoto]="profilePhotoUrl"
         [hideClientFilter]="true"
         [focus]="calendarFocus"
         (openFile)="openCalendarFile($event)"

@@ -8,6 +8,9 @@
           <h1 class="yc-display">Nutrition</h1>
           <p class="yc-root-subtitle">{{ t('Your meal plan, day by day', 'Votre plan alimentaire, jour après jour') }}</p>
         </div>
+        <button type="button" class="yc-icon-btn" [attr.aria-label]="t('History', 'Historique')" [title]="t('History', 'Historique')" (click)="openHistory()">
+          <i-feather name="clock"></i-feather>
+        </button>
       </header>
 
       <button *ngIf="filePrograms.length" type="button" class="yc-card files-entry" (click)="view = 'files'">
@@ -19,36 +22,120 @@
         <i-feather class="chevron" name="chevron-right"></i-feather>
       </button>
 
-      <div class="yc-segmented" role="tablist">
-        <button type="button" role="tab" [class.active]="upcoming" [attr.aria-selected]="upcoming" (click)="setTab(true)">{{ t('Upcoming', 'À venir') }}</button>
-        <button type="button" role="tab" [class.active]="!upcoming" [attr.aria-selected]="!upcoming" (click)="setTab(false)">{{ t('Past', 'Passé') }}</button>
-      </div>
-
-      <nav class="yc-month-nav month-nav">
-        <button type="button" [disabled]="!canGoPrevious" (click)="shiftMonth(-1)"><i-feather name="chevron-left"></i-feather>{{ t('Previous', 'Précédent') }}</button>
-        <span>{{ monthLabel }}</span>
-        <button type="button" [disabled]="!canGoNext" (click)="shiftMonth(1)">{{ t('Next', 'Suivant') }}<i-feather name="chevron-right"></i-feather></button>
-      </nav>
+      <app-week-strip [weekStart]="weekStart" [selected]="selectedDate" [marks]="weekMarks" [fr]="fr"
+                      (shift)="shiftWeek($event)" (pick)="selectDate($event)" (today)="goToday()"></app-week-strip>
 
       <div *ngIf="loading" class="yc-loading"><span class="yc-spinner"></span></div>
       <p *ngIf="!loading && error" class="yc-subtitle center-text">{{ error }}</p>
 
       <ng-container *ngIf="!loading && !error">
-        <div *ngIf="!visibleItems.length && !preparingNext" class="list-empty">
-          <span class="yc-icon-tile" style="--tile-color: #1E9E63; --tile-size: 64px"><i-feather name="utensils"></i-feather></span>
-          <h3>{{ t('No nutrition plans found', 'Aucun plan nutrition trouvé') }}</h3>
-          <p class="yc-subtitle">
-            {{ upcoming ? t('No upcoming nutrition days this month', 'Aucun jour nutrition à venir ce mois-ci') : t('No past nutrition days this month', 'Aucun jour nutrition passé ce mois-ci') }}
-          </p>
-        </div>
+        <ng-container *ngIf="weekRows as rows">
+          <div *ngIf="weekIsEmpty(rows) && !preparingNextWeek" class="list-empty">
+            <span class="yc-icon-tile" style="--tile-color: #1E9E63; --tile-size: 64px"><i-feather name="utensils"></i-feather></span>
+            <h3>{{ t('No nutrition plans found', 'Aucun plan nutrition trouvé') }}</h3>
+            <p class="yc-subtitle">{{ t('No nutrition day this week', 'Aucun jour nutrition cette semaine') }}</p>
+          </div>
 
-        <article *ngFor="let item of visibleItems; trackBy: trackByDay" class="yc-card day-card" [class.yc-card--today]="highlighted(item)" (click)="openDay(item)">
-          <div class="day-card__top">
-            <div class="date-tile" [class.date-tile--on]="highlighted(item)">
-              <small>{{ weekdayShort(item.date) }}</small>
-              <strong>{{ dayNumber(item.date) }}</strong>
-              <small>{{ monthShort(item.date) }}</small>
+          <ng-container *ngIf="!weekIsEmpty(rows)">
+            <!-- The day picked in the strip (today at first): shown in full, with its meals. -->
+            <ng-container *ngIf="focusRow(rows) as focus">
+              <p class="wk-label" [attr.data-day]="focus.key">{{ focusLabel(focus) }}</p>
+              <p *ngIf="!focus.items.length" class="yc-card wk-none">{{ t('Nothing planned this day', 'Rien de prévu ce jour-là') }}</p>
+
+              <article *ngFor="let item of focus.items; trackBy: trackByDay" class="yc-card wk-focus" [class.wk-focus--today]="focus.today"
+                       (click)="openDay(item)">
+                <div class="wk-focus__head">
+                  <div class="wk-focus__titles">
+                    <h3>{{ listTitle(item) }}</h3>
+                    <p>{{ planLine(item) }}</p>
+                  </div>
+                  <span *ngIf="showsFocusChip(item)" class="yc-chip" [style.--chip-color]="listStatus(item).color">
+                    <i-feather *ngIf="listStatus(item).icon" [name]="listStatus(item).icon!"></i-feather>{{ listStatus(item).label }}
+                  </span>
+                  <i-feather class="chevron" name="chevron-right"></i-feather>
+                </div>
+
+                <p class="wk-focus__meta">
+                  <span><i-feather name="utensils"></i-feather>{{ mealsCount(meals(item).length) }}</span>
+                  <span><strong>{{ formatNumber(target(item).calories) }} kcal</strong></span>
+                  <span>P {{ target(item).protein }} · C {{ target(item).carbs }} · F {{ target(item).fat }}</span>
+                </p>
+
+                <ng-container *ngIf="previewMeals(item).length">
+                  <div class="wk-focus__list">
+                    <div *ngFor="let meal of previewMeals(item); let i = index" class="wk-ex">
+                      <span *ngIf="mealLead(item.day, meal) as lead; else mealNumber" class="meal-row__lead" [class.filled]="lead.filled" [style.--lead-color]="lead.color">
+                        <i-feather [name]="lead.icon"></i-feather>
+                      </span>
+                      <ng-template #mealNumber><span class="meal-row__number">{{ i + 1 }}</span></ng-template>
+                      <span class="wk-ex__name">{{ capitalize(meal.name) }}</span>
+                      <span *ngIf="mealTimeLabel(meal) as time" class="meal-time"><i-feather name="clock"></i-feather>{{ time }}</span>
+                      <span class="wk-ex__volume">{{ mealCalories(meal) }} kcal</span>
+                    </div>
+                  </div>
+                  <button *ngIf="meals(item).length > 4" type="button" class="wk-more" (click)="$event.stopPropagation(); openDay(item)">
+                    {{ t('+' + (meals(item).length - 4) + ' more meals', '+' + (meals(item).length - 4) + ' autres repas') }}
+                  </button>
+                </ng-container>
+
+                <button *ngIf="highlighted(item)" type="button" class="yc-btn yc-btn--brand wk-start" (click)="$event.stopPropagation(); openDay(item)">
+                  {{ t("Open today's plan", 'Ouvrir le plan du jour') }}<i-feather name="chevron-right"></i-feather>
+                </button>
+              </article>
+            </ng-container>
+
+            <!-- The other days of the week: one short line each, no meals. -->
+            <ng-container *ngIf="otherRows(rows) as others">
+              <ng-container *ngIf="others.length">
+                <p class="wk-label">{{ t('This week', 'Cette semaine') }}</p>
+                <div class="wk-list">
+                  <ng-container *ngFor="let row of others; trackBy: trackByRow">
+                    <button *ngFor="let item of row.items; trackBy: trackByDay" type="button" class="yc-card wk-row" (click)="openDay(item)">
+                      <span class="wk-row__date" [class.is-today]="row.today">
+                        <small>{{ weekdayLabel(row.date) }}</small>
+                        <strong>{{ row.date.getDate() }}</strong>
+                      </span>
+                      <span class="wk-row__copy">
+                        <strong>{{ listTitle(item) }}</strong>
+                        <span>{{ shortMeta(item) }}</span>
+                      </span>
+                      <span *ngIf="listStatus(item) as chip" class="yc-chip" [style.--chip-color]="chip.color">
+                        <i-feather *ngIf="chip.icon" [name]="chip.icon!"></i-feather>{{ chip.label }}
+                      </span>
+                    </button>
+                  </ng-container>
+                </div>
+              </ng-container>
+            </ng-container>
+          </ng-container>
+
+          <!-- The next days are not filled yet (backlog-programmes.md R6) -->
+          <div *ngIf="preparingNextWeek" class="yc-card preparing-next" role="status">
+            <span class="yc-icon-tile" style="--tile-size: 44px"><i-feather name="edit-3"></i-feather></span>
+            <div>
+              <strong>{{ t('Your coach is preparing what comes next', 'Votre coach prépare la suite') }}</strong>
+              <p class="yc-subtitle">{{ t('The next days will appear here as soon as they are ready.', 'Les prochains jours apparaîtront ici dès qu’ils seront prêts.') }}</p>
             </div>
+          </div>
+        </ng-container>
+      </ng-container>
+    </ng-container>
+
+    <!-- ===================== HISTORY (mobile HistoryTimeline) ===================== -->
+    <ng-container *ngIf="view === 'history'">
+      <header class="yc-page-header">
+        <button type="button" class="yc-back" [attr.aria-label]="t('Back', 'Retour')" (click)="view = 'list'"><i-feather name="arrow-left"></i-feather></button>
+        <div class="yc-page-header__copy">
+          <h1 class="yc-page-header__title">{{ t('History', 'Historique') }}</h1>
+          <p class="yc-page-header__subtitle">{{ t('Your meals, day by day', 'Vos repas, jour par jour') }}</p>
+        </div>
+      </header>
+
+      <ng-container *ngIf="historyByDay as byDay">
+        <app-history-timeline [firstDay]="historyFirstDay(byDay)" [startDay]="historyDay" [marks]="historyMarks(byDay)" [fr]="fr" [dayTemplate]="historyDayTpl"></app-history-timeline>
+
+        <ng-template #historyDayTpl let-key="key">
+          <article *ngFor="let item of byDay[key] || []; trackBy: trackByDay" class="yc-card day-card day-card--flat" (click)="openDayFromHistory(item)">
             <div class="day-card__copy">
               <div class="day-card__title-row">
                 <h3>{{ listTitle(item) }}</h3>
@@ -63,36 +150,8 @@
                 <span>P {{ target(item).protein }} · C {{ target(item).carbs }} · F {{ target(item).fat }}</span>
               </p>
             </div>
-          </div>
-
-          <ng-container *ngIf="previewMeals(item).length">
-            <hr class="yc-divider day-card__divider" />
-            <div *ngFor="let meal of previewMeals(item); let i = index" class="meal-row">
-              <span *ngIf="mealLead(item.day, meal) as lead; else mealNumber" class="meal-row__lead" [class.filled]="lead.filled" [style.--lead-color]="lead.color">
-                <i-feather [name]="lead.icon"></i-feather>
-              </span>
-              <ng-template #mealNumber><span class="meal-row__number">{{ i + 1 }}</span></ng-template>
-              <span class="meal-row__name">{{ capitalize(meal.name) }}</span>
-              <span *ngIf="mealTimeLabel(meal) as time" class="meal-time"><i-feather name="clock"></i-feather>{{ time }}</span>
-              <span class="meal-row__kcal">{{ mealCalories(meal) }} kcal</span>
-            </div>
-            <p *ngIf="meals(item).length > 4" class="more-link">
-              {{ t('+' + (meals(item).length - 4) + ' more', '+' + (meals(item).length - 4) + ' de plus') }}
-            </p>
-          </ng-container>
-          <button *ngIf="highlighted(item)" type="button" class="yc-btn yc-btn--brand open-btn" (click)="$event.stopPropagation(); openDay(item)">
-            {{ t("Open today's plan", 'Ouvrir le plan du jour') }}<i-feather name="chevron-right"></i-feather>
-          </button>
-        </article>
-
-        <!-- The next days are not filled yet (backlog-programmes.md R6) -->
-        <div *ngIf="preparingNext" class="yc-card preparing-next" role="status">
-          <span class="yc-icon-tile" style="--tile-size: 44px"><i-feather name="edit-3"></i-feather></span>
-          <div>
-            <strong>{{ t('Your coach is preparing what comes next', 'Votre coach prépare la suite') }}</strong>
-            <p class="yc-subtitle">{{ t('The next days will appear here as soon as they are ready.', 'Les prochains jours apparaîtront ici dès qu\'ils seront prêts.') }}</p>
-          </div>
-        </div>
+          </article>
+        </ng-template>
       </ng-container>
     </ng-container>
 

@@ -23,10 +23,11 @@ interface MonthGroup { key: string; label: string; pictures: Picture[]; }
  * month with the weight change since the start, "Compare" (pick 2, side by side), the picture detail with edit /
  * delete for the client's own pictures, and the add sheet (one photo per requested pose, weight, note, date).
  */
+import { ProgressTabsComponent } from '../shared/progress-tabs.component';
 @Component({
   selector: 'app-client-progress',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule],
+  imports: [CommonModule, FormsModule, FeatherModule, ProgressTabsComponent],
   templateUrl: './client-progress.component.html',
   styleUrl: './client-progress.component.scss',
 })

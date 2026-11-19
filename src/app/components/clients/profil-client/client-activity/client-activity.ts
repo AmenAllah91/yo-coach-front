@@ -1,5 +1,6 @@
 import { TranslateService } from '@ngx-translate/core';
 import { totalMacros } from '@shared/models/nutrition-math';
+import { isWarmupSetType } from '@shared/models/exercise-groups';
 
 /**
  * Workout and nutrition days as the coach follows them (profile dashboard, coach dashboard): built from the
@@ -34,6 +35,8 @@ export interface WorkoutActivity {
   missedSets: number;
   pendingSets: number;
   totalSets: number;
+  /** Le client a fini la séance sans faire aucune série d'échauffement (elles ne comptent pas dans les totaux). */
+  warmupSkipped?: boolean;
   overallNote: string;
   missedReason: string;
   exercises: any[];
@@ -150,10 +153,13 @@ export function buildWorkoutActivities(plans: any[]): WorkoutActivity[] {
       let missedSets = 0;
       let pendingSets = 0;
       let totalSets = 0;
+      // Les séries d'échauffement ne comptent pas dans les totaux de séries (sauf si la séance n'a que ça).
+      let warmupSets = 0;
+      let warmupDone = 0;
+      const onlyWarmup = exercises.every((exercise: any) => (exercise?.sets || []).every((set: any) => isWarmupSetType(set?.type)));
       exercises.forEach((exercise: any, exerciseIndex: number) => {
         const log = findExerciseLog(logs, exercise, exerciseIndex);
         const plannedSets = exercise?.sets || [];
-        totalSets += plannedSets.length;
         let exerciseDone = 0;
         let exerciseMissed = 0;
         plannedSets.forEach((set: any, setIndex: number) => {
@@ -161,15 +167,19 @@ export function buildWorkoutActivities(plans: any[]): WorkoutActivity[] {
             Number(item?.setNumber) === Number(set?.setNumber || setIndex + 1)
           );
           const setStatus = String(actual?.status || '').toUpperCase();
-          if (setStatus === 'MISSED' || actual?.missed === true) {
-            missedSets++;
-            exerciseMissed++;
-          } else if (setStatus === 'COMPLETED' || setStatus === 'DONE' || actual?.completed === true || (actual && setStatus !== 'PENDING')) {
-            completedSets++;
-            exerciseDone++;
-          } else {
-            pendingSets++;
+          const missed = setStatus === 'MISSED' || actual?.missed === true;
+          const done = !missed && (setStatus === 'COMPLETED' || setStatus === 'DONE' || actual?.completed === true || (!!actual && setStatus !== 'PENDING'));
+          if (missed) exerciseMissed++;
+          if (done) exerciseDone++;
+          if (!onlyWarmup && isWarmupSetType(set?.type)) {
+            warmupSets++;
+            if (done) warmupDone++;
+            return;
           }
+          totalSets++;
+          if (missed) missedSets++;
+          else if (done) completedSets++;
+          else pendingSets++;
         });
         if (log?.skipped) return;
         if (log?.completed === true || exerciseDone > 0) completedCount++;
@@ -237,6 +247,8 @@ export function buildWorkoutActivities(plans: any[]): WorkoutActivity[] {
         missedSets,
         pendingSets,
         totalSets,
+        warmupSkipped: warmupSets > 0 && warmupDone === 0 && logs.length > 0
+          && (status === 'COMPLETED' || status === 'COMPLETED_AFTER_WORKOUT'),
         overallNote: day?.overallWorkoutNote || '',
         missedReason: day?.missedReason || day?.statusReason || day?.overallWorkoutNote || '',
         exercises,
@@ -251,6 +263,11 @@ export function buildWorkoutActivities(plans: any[]): WorkoutActivity[] {
 }
 
 /** Every nutrition day of the plans up to today, the latest first. */
+function hasText(value: unknown): boolean {
+  const text = String(value ?? '').trim();
+  return !!text && text !== 'null';
+}
+
 export function buildNutritionActivities(plans: any[]): NutritionActivity[] {
   const today = startOfDay(new Date()).getTime();
   const activities: NutritionActivity[] = [];
@@ -293,6 +310,8 @@ export function buildNutritionActivities(plans: any[]): NutritionActivity[] {
       // A past day whose meals are all reported is done, even if the client did not close it.
       else if (scheduledDate.getTime() < today && meals.length > 0 && loggedMeals >= meals.length) status = 'COMPLETED';
       else if (rawStatus === 'IN_PROGRESS' || loggedMeals > 0) status = 'IN_PROGRESS';
+      // A photo or a note alone (no "as planned / modified / skipped" yet) is still something the client sent.
+      else if (mealLogs.some((log: any) => hasText(log?.photoPath) || hasText(log?.photoUrl) || hasText(log?.note))) status = 'IN_PROGRESS';
       // Today is not over: nothing reported yet is « en cours », not « non renseigné ».
       else if (scheduledDate.getTime() === today) status = 'IN_PROGRESS';
       else status = 'NOT_LOGGED';
@@ -330,7 +349,7 @@ export function buildNutritionActivities(plans: any[]): NutritionActivity[] {
         return urls.map((url: string) => ({
           url,
           label: log?.mealName || meals[mealIndex >= 0 ? mealIndex : logIndex]?.name || `Meal ${logIndex + 1}`,
-          time: log?.loggedAt || log?.createdAt || '',
+          time: log?.photoAt || log?.loggedAt || log?.createdAt || '',
           mealId: log?.mealId,
         }));
       });

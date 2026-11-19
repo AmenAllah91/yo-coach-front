@@ -1,5 +1,5 @@
 import { ClientActivity } from '../../../models/coach-dashboard.model';
-import { activityLink, activitySentence, initials, relativeTime, toDateInput } from './dashboard-format';
+import { activityDetail, activityLink, activitySentence, initials, relativeTime, toDateInput } from './dashboard-format';
 
 function activity(partial: Partial<ClientActivity>): ClientActivity {
   return {
@@ -29,6 +29,16 @@ describe('dashboard-format', () => {
     expect(activitySentence(activity({ type: 'MEASUREMENTS_ADDED', category: 'PROGRESS', count: 3, weight: 72.4 })))
       .toEqual({ key: 'CDASH.ACT.WEIGHT_AND_MORE', params: { weight: 72.4, count: 2 } });
     expect(activitySentence(activity({ type: 'PROGRESS_PHOTOS_ADDED', category: 'PROGRESS', count: 2 })).key).toBe('CDASH.ACT.PHOTOS_MANY');
+  });
+
+  it('names the meal of a single meal photo, and lists the meals when there are several', () => {
+    const one = activity({ type: 'MEAL_PHOTO_ADDED', category: 'NUTRITION', count: 1, kinds: ['Dinner'], title: 'Cut', refId: 'd1' });
+    expect(activitySentence(one)).toEqual({ key: 'CDASH.ACT.MEAL_PHOTO_ONE', params: { meal: 'Dinner' } });
+    expect(activityDetail(one)).toBeNull();
+    const many = activity({ type: 'MEAL_PHOTO_ADDED', category: 'NUTRITION', count: 2, kinds: ['Dinner', 'Breakfast'], refId: 'd1' });
+    expect(activitySentence(many)).toEqual({ key: 'CDASH.ACT.MEAL_PHOTOS_MANY', params: { count: 2 } });
+    expect(activityDetail(many)).toEqual({ key: 'CDASH.DETAIL.MEALS', params: { meals: 'Dinner, Breakfast' } });
+    expect(activityLink(one).queryParams).toEqual({ tab: 'dashboard', nutritionDayId: 'd1' });
   });
 
   it('opens the existing pages', () => {

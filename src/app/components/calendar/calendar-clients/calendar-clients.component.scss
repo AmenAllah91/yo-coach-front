@@ -53,6 +53,30 @@
   background-color: light-dark(#e5e7eb, #2c3035);
 }
 
+/* « Aujourd'hui » next to the arrows; grey when today is already on the screen. */
+.today-button {
+  margin-left: 4px;
+  padding: 5px 12px;
+  border: 1px solid light-dark(#d9dee5, #34393f);
+  border-radius: 999px;
+  background: light-dark(#ffffff, #1d2125);
+  color: light-dark(#0f6f93, #6abce3);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+
+  &:hover:not(:disabled) {
+    border-color: #44b4df;
+    background: light-dark(#e8f6fb, #1b333a);
+  }
+
+  &:disabled {
+    color: light-dark(#94a3b8, #6b7280);
+    cursor: default;
+  }
+}
+
 .header-right {
   display: flex;
   align-items: center;
@@ -2132,6 +2156,278 @@
   white-space: nowrap;
 }
 
+/*
+ * The client's note on a card: their small photo and a chat bubble (the corner by the photo is sharp, as in a
+ * conversation). It pops in, and lifts a little with the card under the mouse.
+ */
+.wr-note {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  margin-top: 6px;
+  animation: note-in 0.3s ease-out both;
+}
+
+.wr-note__bubble {
+  min-width: 0;
+  padding: 5px 8px;
+  border: 1px solid light-dark(#d6eef8, #24414c);
+  border-radius: 10px 10px 10px 3px;
+  background: light-dark(#f2fafd, #172a31);
+  color: light-dark(#0f3a4d, #d6eef8);
+  font-size: 0.92em;
+  font-weight: 500;
+  line-height: 1.3;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+  b {
+    font-weight: 700;
+  }
+}
+
+.wr-card:hover .wr-note__bubble {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(15, 148, 189, 0.16);
+}
+
+/* The client's photo, round; their initials on the brand color without one. */
+.note-avatar {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #44b4df;
+  box-shadow: 0 0 0 1.5px light-dark(#ffffff, #1d2125);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.note-avatar--md {
+  width: 30px;
+  height: 30px;
+  font-size: 11px;
+}
+
+/* A note in the day panel: the same message, larger. */
+.note-msg {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  max-width: 560px;
+  animation: note-in 0.3s ease-out both;
+}
+
+.note-msg--sm {
+  margin-top: 4px;
+}
+
+.note-msg__bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 5px 9px;
+  border: 1px solid light-dark(#d6eef8, #24414c);
+  border-radius: 12px 12px 12px 3px;
+  background: light-dark(#f2fafd, #172a31);
+  color: light-dark(#0f3a4d, #d6eef8);
+  font-size: 12px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.note-msg--md .note-msg__bubble {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.note-msg__head {
+  color: light-dark(#1f87b3, #6abce3);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.dp-message {
+  margin-top: 10px;
+}
+
+/* « Répondre » next to a note: always there on the large note, on hover for an exercise's (always on touch). */
+.note-msg__reply {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: none;
+  color: #1f87b3;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+
+  .material-icons {
+    font-size: 16px;
+  }
+
+  &:hover,
+  &:focus-visible {
+    border-color: light-dark(#d6eef8, #24414c);
+    background: light-dark(#f2fafd, #172a31);
+  }
+}
+
+/* On an exercise's note (a narrow column): the icon alone, so the bubble keeps its width. */
+.note-msg--sm .note-msg__reply {
+  padding: 2px;
+  font-size: 11px;
+  opacity: 0;
+}
+
+.note-msg--sm .note-msg__reply-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.note-msg__bubble {
+  flex: 0 1 auto;
+}
+
+.note-msg--sm .note-msg__bubble {
+  min-width: 64px;
+}
+
+.note-msg--sm:hover .note-msg__reply,
+.note-msg--sm .note-msg__reply:focus-visible {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .note-msg--sm .note-msg__reply {
+    opacity: 1;
+  }
+}
+
+/* A recent note not opened yet: a blue dot on the day (and on the bubble), with a soft pulse. */
+.new-note-dot {
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-left: 4px;
+  border-radius: 50%;
+  background: #44b4df;
+  vertical-align: middle;
+  animation: new-note-pulse 2s ease-out infinite;
+}
+
+.wr-note.is-new .wr-note__bubble {
+  position: relative;
+  border-color: #44b4df;
+}
+
+.wr-note.is-new .wr-note__bubble::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #44b4df;
+  box-shadow: 0 0 0 2px light-dark(#ffffff, #1d2125);
+}
+
+@keyframes new-note-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(68, 180, 223, 0.55); }
+  70% { box-shadow: 0 0 0 6px rgba(68, 180, 223, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(68, 180, 223, 0); }
+}
+
+/* The rows empty all week, in one quiet line under the grid. */
+.wr-empty-rows {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 8px 12px;
+  border-top: 1px solid light-dark(#eef2f7, #2b3035);
+  color: light-dark(#64748b, #a5abb4);
+  font-size: 12px;
+
+  > .material-icons {
+    font-size: 16px;
+  }
+
+  .dp-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+
+    .material-icons {
+      font-size: 15px;
+    }
+  }
+}
+
+@keyframes note-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wr-note,
+  .note-msg {
+    animation: none;
+  }
+
+  .wr-note__bubble,
+  .note-msg__reply {
+    transition: none;
+  }
+
+  .new-note-dot {
+    animation: none;
+  }
+}
+
+.wr-card__notes-list {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow-wrap: anywhere;
+}
+
+.wr-card__note + .wr-card__note::before {
+  content: ' · ';
+}
+
 .wr-card__status {
   display: inline-flex;
   align-items: center;
@@ -2409,16 +2705,93 @@
   gap: 8px;
 }
 
+/* The same round badge as the day's card (A, C1, C2…). */
 .dp-exercise__label {
+  position: relative;
+  z-index: 1;
   flex: 0 0 auto;
-  min-width: 26px;
-  padding: 1px 5px;
-  border-radius: 5px;
-  background: light-dark(#eef7fc, #13191d);
-  color: light-dark(#1f87b3, #59b8e6);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: light-dark(#e8f6fb, #1b333a);
+  color: light-dark(#0f6f93, #6abce3);
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.dp-exercise__label.is-linked {
+  background: #0f94bd;
+  color: #fff;
+}
+
+.dp-exercise__body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding-top: 3px;
+}
+
+.dp-exercise__name {
+  font-weight: 600;
+}
+
+/*
+ * A superset / circuit in the day panel, as in the day's card: its kind above it, its badges joined by a line and no
+ * separator inside the group, so it reads as one block.
+ */
+.dp-grid__group {
+  padding: 10px 4px 2px;
+}
+
+.dp-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  color: #0f94bd;
   font-size: 11px;
   font-weight: 800;
-  text-align: center;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+
+  .material-icons {
+    font-size: 15px;
+  }
+}
+
+.dp-group__hint {
+  margin-left: 4px;
+  color: light-dark(#64748b, #a5abb4);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.dp-grid__row.is-linked {
+  position: relative;
+}
+
+.dp-grid__row.is-linked::before {
+  content: '';
+  position: absolute;
+  left: 15px; // centre of the 24 px badge, after the row's 4 px padding
+  width: 2px;
+  border-radius: 2px;
+  background: #0f94bd;
+}
+
+.dp-grid__row.is-link-start::before { top: 19px; bottom: 0; }
+.dp-grid__row.is-link-middle::before { top: 0; bottom: 0; }
+.dp-grid__row.is-link-end::before { top: 0; height: 19px; }
+
+.dp-grid__row.is-link-start,
+.dp-grid__row.is-link-middle {
+  border-bottom-color: transparent;
 }
 
 .dp-done {
@@ -2555,6 +2928,82 @@
   font-size: 12px;
 }
 
+/* « ? »: the help (drag hint, legend), round. */
+.help-button {
+  justify-content: center;
+  width: 32px;
+  padding: 5px 0;
+
+  .material-icons {
+    margin: 0;
+    font-size: 18px;
+  }
+}
+
+/*
+ * The day of the week on the right side (large screen): fixed under the app's header, the week moves left to stay
+ * whole next to it. Its title stays at the top while its content scrolls.
+ */
+@media (min-width: 1200px) {
+  .calendar-wrapper.has-side-panel {
+    padding-right: calc(min(480px, 38vw) + 22px);
+  }
+
+  .day-side.is-side {
+    position: fixed;
+    top: 64px;
+    right: 0;
+    bottom: 0;
+    z-index: 1000; // under the chat panel (1100): « Répondre » opens above it
+    width: min(480px, 38vw);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-left: 1px solid light-dark(#e5e7eb, #34393f);
+    background: light-dark(#ffffff, #1d2125);
+    box-shadow: -12px 0 32px rgba(15, 23, 42, 0.1);
+    animation: side-in 0.22s ease-out both;
+
+    .day-panel {
+      min-height: 100%;
+      margin: 0;
+      border: 0;
+      border-radius: 0;
+    }
+
+    .day-panel__head {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      margin: -16px -18px 6px;
+      padding: 16px 18px 10px;
+      border-bottom: 1px solid light-dark(#eef2f7, #2b3035);
+      background: light-dark(#ffffff, #1d2125);
+    }
+
+    .dp-grid__head,
+    .dp-grid__row {
+      gap: 8px;
+    }
+  }
+}
+
+@keyframes side-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .day-side.is-side {
+    animation: none;
+  }
+}
+
 .dp-button.is-on {
   border-color: #44b4df;
   background: light-dark(#e8f6fb, #1b333a);
@@ -2576,12 +3025,75 @@
   text-align: left;
 }
 
+/* The exercise's letter in a round badge (A, B1, B2…). */
+.wr-line {
+  position: relative;
+  flex-wrap: wrap; // only the « Superset » caption takes a row of its own
+}
+
+.wr-line .wr-line__body {
+  flex: 1 1 0;
+}
+
 .wr-line__label {
+  position: relative;
+  z-index: 1;
   flex: 0 0 auto;
-  min-width: 20px;
-  color: light-dark(#0f94bd, #47b8e2);
-  font-size: 11px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: light-dark(#e8f6fb, #1b333a);
+  color: light-dark(#0f6f93, #6abce3);
+  font-size: 10px;
   font-weight: 800;
+  line-height: 1;
+}
+
+/* Linked exercises (superset, circuit): filled badges joined by a vertical line, no separator between them. */
+.wr-line.is-linked .wr-line__label {
+  background: #0f94bd;
+  color: #fff;
+}
+
+.wr-line.is-linked::before {
+  content: '';
+  position: absolute;
+  left: 10px; // centre of the 22 px badge
+  width: 2px;
+  background: #0f94bd;
+  border-radius: 2px;
+}
+
+/* The badge (opaque, above the line) hides its part: the line runs from the first badge (under the « Superset » caption)
+   through the 4 px gap between lines down into the last badge. */
+.wr-line.is-link-start::before { top: 30px; bottom: 0; }
+.wr-line.is-link-middle::before { top: -4px; bottom: 0; }
+.wr-line.is-link-end::before { top: -4px; height: 16px; }
+
+.wr-line.is-link-middle,
+.wr-line.is-link-end {
+  border-top-color: transparent;
+}
+
+/* Above the group's first exercise: « Superset » or « Circuit ». */
+.wr-line__group {
+  flex: 0 0 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #0f94bd;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.wr-line__group .material-icons {
+  font-size: 12px;
 }
 
 .wr-line__body {

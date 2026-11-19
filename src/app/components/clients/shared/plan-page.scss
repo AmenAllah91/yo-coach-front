@@ -143,6 +143,125 @@
   }
 }
 
+// Week list (under the week strip): one line per day, date on the left, what is planned on the right.
+.week-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 0;
+  scroll-margin: 12px;
+
+  & + & {
+    border-top: 1px solid var(--yc-hairline);
+  }
+
+  &__date {
+    flex: none;
+    width: 46px;
+    padding: 8px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    border: 0;
+    border-radius: 12px;
+    background: none;
+    color: var(--yc-text-primary);
+    cursor: pointer;
+
+    small {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      color: var(--yc-text-secondary);
+    }
+
+    strong {
+      font-size: 18px;
+      line-height: 1.15;
+      font-weight: 700;
+    }
+  }
+
+  &--today &__date {
+    color: var(--yc-primary);
+
+    small {
+      color: var(--yc-primary);
+    }
+  }
+
+  &--selected &__date {
+    background: color-mix(in srgb, var(--yc-primary) 10%, transparent);
+  }
+
+  &__body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .day-card {
+      margin-bottom: 0;
+      padding: 12px 14px;
+    }
+  }
+
+  &__none {
+    margin: 0 !important;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 0 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--yc-text-hint);
+  }
+
+  &__rest {
+    width: 100%;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 12px;
+    background: light-dark(#f4f6f9, #15191d);
+    color: var(--yc-text-primary);
+    font-size: 13.5px;
+    text-align: left;
+    cursor: pointer;
+
+    i-feather {
+      flex: none;
+      width: 15px;
+      height: 15px;
+      color: light-dark(#7455d9, #ac9eff);
+    }
+
+    strong {
+      font-weight: 600;
+    }
+
+    span {
+      flex: 1;
+      min-width: 0;
+      color: var(--yc-text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+}
+
+// A day card inside the week list or the history timeline: no bottom gap (the list spaces them).
+.day-card--flat {
+  margin-bottom: 0;
+  padding: 12px 14px;
+}
+
 .date-tile {
   flex: none;
   width: 52px;

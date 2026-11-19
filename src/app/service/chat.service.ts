@@ -97,8 +97,20 @@ export class ChatService {
     this.selectedConversationSubject.next(conversation);
   }
 
-  openPanelWithClient(clientId: string): void {
-    if (clientId) this.panelClientSubject.next(clientId);
+  /** Text prepared for the panel's conversation (a client's note quoted from the calendar), taken once. */
+  private panelDraft: string | null = null;
+
+  openPanelWithClient(clientId: string, draft?: string): void {
+    if (!clientId) return;
+    // Kept as is (not trimmed): a quote ends with an empty line where the coach writes.
+    this.panelDraft = draft && draft.trim() ? draft : null;
+    this.panelClientSubject.next(clientId);
+  }
+
+  takePanelDraft(): string | null {
+    const draft = this.panelDraft;
+    this.panelDraft = null;
+    return draft;
   }
 
   requestConversationRefresh(conversationId?: string): void {

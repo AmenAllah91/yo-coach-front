@@ -12,6 +12,12 @@ export interface CheckinFormItem {
   raw: Form;
 }
 
+/** Today in Tunis time (yyyy-mm-dd): toISOString() is UTC, the day before just after midnight. */
+function tunisToday(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Tunis', year: 'numeric', month: '2-digit', day: '2-digit' })
+    .format(new Date());
+}
+
 @Component({
   selector: 'app-form-selection-modal',
   standalone: true,
@@ -136,7 +142,7 @@ export class FormSelectionModalComponent implements OnChanges {
     this.scheduleEnabled = false;
     this.endDateValue = '';
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = tunisToday();
     this.dueDateValue = today;
   }
 
@@ -164,7 +170,7 @@ export class FormSelectionModalComponent implements OnChanges {
       if (this.scheduleEnabled && this.dueDateValue) {
         dueDate = this.dueDateValue;
       } else {
-        dueDate = new Date().toISOString().split('T')[0];
+        dueDate = tunisToday();
       }
     }
 

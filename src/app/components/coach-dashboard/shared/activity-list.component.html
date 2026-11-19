@@ -12,7 +12,10 @@
         <span class="text">
           <span class="sentence"><strong>{{ row.activity.clientName }}</strong> {{ row.sentence.key | translate: row.sentence.params }}</span>
           <span class="detail" *ngIf="row.detail">{{ row.detail.key | translate: row.detail.params }}</span>
+          <span class="note" *ngIf="row.activity.note">{{ row.activity.note }}</span>
         </span>
+        <img class="thumb" *ngIf="row.activity.photoUrl && !brokenPhotos.has(row.activity.id)" [src]="row.activity.photoUrl"
+             [alt]="'CDASH.MEAL_PHOTO_ALT' | translate" loading="lazy" (error)="brokenPhotos.add(row.activity.id)" />
       </a>
       <span class="side">
         <time *ngIf="row.time" [attr.datetime]="row.activity.occurredAt">{{ row.time }}</time>

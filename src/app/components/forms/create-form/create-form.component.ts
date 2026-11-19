@@ -7,11 +7,13 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { debounceTime, filter, finalize, takeUntil, catchError } from 'rxjs/operators';
 import { BehaviorSubject, Subject, of } from 'rxjs';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { ToastrService } from 'ngx-toastr';
 
 import {
   FormDetails,
   FormsApiService,
   FormSchedule,
+  FormUsage,
   QuestionBE,
   QuestionTypeBE,
   ShowConditionBE
@@ -90,6 +92,10 @@ export class CreateFormComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private location = inject(Location);
   private translate = inject(TranslateService);
+  private toastr = inject(ToastrService);
+
+  /** Who this saved check-in reaches now: the banner tells the coach who gets the change, and when. */
+  usage: FormUsage | null = null;
 
   private destroy$ = new Subject<void>();
   private autoSaveSubject = new BehaviorSubject<void>(undefined);
@@ -203,12 +209,16 @@ export class CreateFormComponent implements OnInit, OnDestroy {
     });
   }
 
-  get isPublished(): boolean {
-    return this.savedStatus === 'PUBLISHED';
+  /**
+   * Saved by the coach once (old drafts too): ready to send, so changes wait for the Save button (a client opening it
+   * must not see half an edit). A new check-in is kept by the autosave as "to finish" until the coach saves it.
+   */
+  get isSaved(): boolean {
+    return this.savedStatus === 'PUBLISHED' || this.savedStatus === 'DRAFT';
   }
 
   ngOnDestroy(): void {
-    if (this.hasUnsavedChanges && !this.isSaving && !this.isAutoSaving && !this.isPublished) {
+    if (this.hasUnsavedChanges && !this.isSaving && !this.isAutoSaving && !this.isSaved) {
       this.autoSave();
     }
 
@@ -255,10 +265,10 @@ export class CreateFormComponent implements OnInit, OnDestroy {
   }
 
   private autoSave(): void {
-    if (this.isSaving || this.isAutoSaving || this.isPublished) return;
+    if (this.isSaving || this.isAutoSaving || this.isSaved) return;
 
-    // A draft stays a draft; only a form never published nor saved is "unsaved".
-    const payload = this.buildPayload(this.savedStatus === 'DRAFT' ? 'DRAFT' : 'UNSAVED');
+    // Only a check-in never saved is autosaved: it stays "to finish" (UNSAVED) until the coach clicks Save.
+    const payload = this.buildPayload('UNSAVED');
 
     this.isAutoSaving = true;
     this.hasUnsavedChanges = false;
@@ -313,7 +323,7 @@ export class CreateFormComponent implements OnInit, OnDestroy {
   }
 
   back(): void {
-    if (this.isPublished) {
+    if (this.isSaved) {
       if (this.hasUnsavedChanges && !confirm(this.translate.instant('CHECKIN_LEAVE_WITHOUT_SAVING'))) return;
       this.hasUnsavedChanges = false;
       this.router.navigate(['/forms'], { queryParams: { tab: 'active' } });
@@ -327,7 +337,7 @@ export class CreateFormComponent implements OnInit, OnDestroy {
     }
 
     this.router.navigate(['/forms'], {
-      queryParams: { tab: this.savedStatus === 'DRAFT' ? 'active' : 'unsaved' }
+      queryParams: { tab: 'active' }
     });
   }
 
@@ -751,6 +761,7 @@ export class CreateFormComponent implements OnInit, OnDestroy {
     this.description = form.description ?? '';
     this.showInSignup = !!form.showInSignup;
     this.savedStatus = (form.status as SaveStatus | 'DRAFT' | undefined) ?? null;
+    this.loadUsage();
 
     this.questions = (form.questions ?? [])
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
@@ -930,6 +941,40 @@ export class CreateFormComponent implements OnInit, OnDestroy {
     return payload;
   }
 
+  private loadUsage(): void {
+    if (!this.isSaved || !this.formId) return;
+    this.api.getUsage(this.formId)
+      .pipe(takeUntil(this.destroy$), catchError(() => of(null)))
+      .subscribe(usage => (this.usage = usage));
+  }
+
+  get reachesClients(): boolean {
+    return (this.usage?.clients ?? 0) > 0;
+  }
+
+  /** e.g. "lun. 24 nov., 09:00" in the coach's language and time zone. */
+  usageDate(iso: string | null | undefined): string {
+    if (!iso) return '';
+    const lang = this.translate.currentLang || this.translate.getDefaultLang() || 'fr';
+    return new Intl.DateTimeFormat(lang, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+      .format(new Date(iso));
+  }
+
+  /** The singular or plural key: ngx-translate has no plural rules. */
+  plural(key: string, count: number, params: Record<string, unknown> = {}): string {
+    return this.translate.instant(`${key}_${count === 1 ? 'ONE' : 'MANY'}`, { count, ...params });
+  }
+
+  /** After saving a check-in in use: who gets this version, and when. */
+  private announceSavedVersion(usage: FormUsage | null): void {
+    if (!usage) return;
+    if (usage.scheduledClients > 0 && usage.nextSendAt) {
+      this.toastr.success(this.plural('CHECKIN_SAVED_NEXT', usage.scheduledClients, { date: this.usageDate(usage.nextSendAt) }));
+    } else if (usage.openCheckins > 0) {
+      this.toastr.success(this.plural('CHECKIN_SAVED_OPEN', usage.openCheckins));
+    }
+  }
+
   saveForm(): void {
     this.hasPublishAttempted = true;
     this.refreshValidationIssues();
@@ -940,6 +985,8 @@ export class CreateFormComponent implements OnInit, OnDestroy {
     }
 
     const payload = this.buildPayload('PUBLISHED');
+    // Only an edit of a check-in already in use is announced (a new one reaches nobody yet).
+    const usageBefore = this.isSaved ? this.usage : null;
 
     this.isSaving = true;
     this.hasUnsavedChanges = false;
@@ -956,6 +1003,7 @@ export class CreateFormComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (created: any) => {
           const createdId = created?.id ?? created?.formId ?? this.formId ?? null;
+          this.announceSavedVersion(usageBefore);
 
           if (returnTo === 'client-profile' && clientId && createdId) {
             this.router.navigate(['/clients/profil-client/', clientId], {

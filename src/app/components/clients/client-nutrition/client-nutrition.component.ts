@@ -15,6 +15,8 @@ import { DocumentService } from 'app/service/document.service';
 import { ClientThemeService } from 'app/core/service/client-theme.service';
 import { CompletionCelebrationComponent } from '../shared/completion-celebration.component';
 import { CelebrationView, nutritionCelebration } from '../shared/celebration';
+import { WeekMark, WeekStripComponent, addDays, mondayOf } from '../shared/week-strip.component';
+import { HistoryTimelineComponent } from '../shared/history-timeline.component';
 import {
   NutritionTotals, capitalizeFirst, clientVisibleMeals, consumedTotals, dateKey, foodMacros, isMealReported,
   mealMacros, mealReportStatus, planDate, programWeek, targetTotals,
@@ -25,6 +27,8 @@ const CLIENT_EDIT_DAYS = 7;
 
 type MealStatus = 'AS_PLANNED' | 'MODIFIED' | 'SKIPPED';
 interface DayItem { plan: any; day: any; date: Date; }
+/** One day of the week shown: its date and what is planned on it (nothing = empty line). */
+interface WeekRow { key: string; date: Date; today: boolean; selected: boolean; items: DayItem[]; }
 interface FileProgram { plan: any; type: 'PDF' | 'EXCEL'; isCurrent: boolean; }
 interface ReplacementOption { item: FoodReplacementGroupItem; name: string; calories: number; protein: number; carbs: number; fat: number; }
 
@@ -36,7 +40,7 @@ interface ReplacementOption { item: FoodReplacementGroupItem; name: string; calo
 @Component({
   selector: 'app-client-nutrition',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule, CompletionCelebrationComponent],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule, CompletionCelebrationComponent, WeekStripComponent, HistoryTimelineComponent],
   templateUrl: './client-nutrition.component.html',
   styleUrl: './client-nutrition.component.scss',
 })
@@ -44,11 +48,14 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
   @Input() previewClientId = '';
   @Input() previewMode = false;
 
-  view: 'list' | 'files' | 'file' | 'day' = 'list';
+  view: 'list' | 'history' | 'files' | 'file' | 'day' = 'list';
   loading = true;
   error = '';
   upcoming = true;
   month = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  /** Week shown in the list (its Monday) and the day opened in it. Display only. */
+  weekStart = mondayOf(new Date());
+  selectedDate = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
   plans: any[] = [];
   filesEnabled = false;
   toast: { message: string; tone: 'success' | 'error' | 'info' } | null = null;
@@ -199,7 +206,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
         if (this.isFileProgram(plan)) { this.view = 'files'; return; }
         const first = plan.mealDays?.[0];
         const focus = planDate(plan.startDate) || (first ? this.dayDate(plan, first) : null);
-        if (focus) this.month = new Date(focus.getFullYear(), focus.getMonth(), 1);
+        if (focus) { this.month = new Date(focus.getFullYear(), focus.getMonth(), 1); this.showWeekOf(focus); }
         const day = this.initialDayId ? (plan.mealDays || []).find((d: any) => d.id === this.initialDayId) : first;
         if (day) this.openDay({ plan, day, date: this.dayDate(plan, day) || this.today });
         return;
@@ -306,6 +313,142 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
   shiftMonth(delta: number): void {
     if (delta < 0 ? !this.canGoPrevious : !this.canGoNext) return;
     this.month = new Date(this.month.getFullYear(), this.month.getMonth() + delta, 1);
+  }
+
+  // -------------------------------------------------------------------------
+  // Week view: the same days and statuses, shown one week at a time (display only)
+  // -------------------------------------------------------------------------
+  /** Monday to Sunday of the week shown, each with its planned days. */
+  get weekRows(): WeekRow[] {
+    const items = this.dayItems;
+    const today = this.today.getTime();
+    const selected = dateKey(this.selectedDate);
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = addDays(this.weekStart, index);
+      const key = dateKey(date);
+      return { key, date, today: date.getTime() === today, selected: key === selected, items: items.filter(item => dateKey(item.date) === key) };
+    });
+  }
+
+  weekIsEmpty(rows: WeekRow[]): boolean { return rows.every(row => !row.items.length); }
+
+  /** Mark under each day of the strip: ✓ completed, a dot for a planned day (orange when a past day was not finished). */
+  get weekMarks(): Record<string, WeekMark> {
+    const marks: Record<string, WeekMark> = {};
+    const rank: WeekMark[] = ['late', 'planned', 'off', 'done'];
+    const today = this.today.getTime();
+    for (const row of this.weekRows) {
+      for (const item of row.items) {
+        const status = this.dayStatus(item);
+        const mark: WeekMark = status === 'COMPLETED' ? 'done' : status === 'OFF_PLAN' ? 'off' : item.date.getTime() < today ? 'late' : 'planned';
+        if (!marks[row.key] || rank.indexOf(mark) < rank.indexOf(marks[row.key])) marks[row.key] = mark;
+      }
+    }
+    return marks;
+  }
+
+  /** Same rule as preparingNext, for the week shown instead of the month. */
+  get preparingNextWeek(): boolean {
+    const today = this.today.getTime();
+    const weekStart = this.weekStart.getTime();
+    const weekEnd = addDays(this.weekStart, 6).getTime();
+    return this.plans.some(plan => {
+      if (this.isFileProgram(plan)) return false;
+      const end = planDate(plan?.endDate);
+      if (!end || end.getTime() < today) return false;
+      const days = (plan.mealDays || []).map((day: any) => this.dayDate(plan, day)?.getTime()).filter((time: any) => Number.isFinite(time));
+      const after = days.length ? Math.max(...days) + 86_400_000 : (planDate(plan?.startDate)?.getTime() ?? today);
+      const from = Math.max(after, today);
+      return from <= end.getTime() && from <= weekEnd && end.getTime() >= weekStart;
+    });
+  }
+
+  shiftWeek(delta: number): void { this.showWeekOf(addDays(this.weekStart, delta * 7), false); }
+  goToday(): void { this.showWeekOf(this.today); }
+
+  /** Shows the week of `date`. The day opened in it: `date` itself, or today / the first planned day when browsing. */
+  private showWeekOf(date: Date, select = true): void {
+    this.weekStart = mondayOf(date);
+    if (select) { this.selectedDate = date; return; }
+    const rows = this.weekRows;
+    this.selectedDate = (rows.find(row => row.today) ?? rows.find(row => row.items.length) ?? rows[0]).date;
+  }
+
+  /** A day of the strip (or of the list) is picked: it opens in the list and comes into view. */
+  selectDate(date: Date): void {
+    this.selectedDate = date;
+    const key = dateKey(date);
+    setTimeout(() => document.querySelector(`.cn [data-day="${key}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 0);
+  }
+
+  weekdayLabel(date: Date): string { return new Intl.DateTimeFormat(this.locale, { weekday: 'short' }).format(date).toUpperCase(); }
+  trackByRow = (_: number, row: WeekRow) => row.key;
+
+  /** The day shown in full under the strip (today at first, or the day picked in the strip). */
+  focusRow(rows: WeekRow[]): WeekRow { return rows.find(row => row.selected) ?? rows.find(row => row.today) ?? rows[0]; }
+  /** The other days of the week that have something planned: one short line each. */
+  otherRows(rows: WeekRow[]): WeekRow[] { return rows.filter(row => !row.selected && row.items.length); }
+
+  /** « Today · Tue, Nov 17 » / « Aujourd’hui · mar. 17 nov. », or the date alone for another day. */
+  focusLabel(row: WeekRow): string {
+    const date = new Intl.DateTimeFormat(this.locale, { weekday: 'short', day: 'numeric', month: 'short' }).format(row.date);
+    return row.today ? `${this.t('Today', 'Aujourd’hui')} · ${date}` : capitalizeFirst(date);
+  }
+
+  /** « 4 meals · 2,100 kcal » for the short lines. */
+  shortMeta(item: DayItem): string {
+    return `${this.mealsCount(this.meals(item).length)} · ${this.formatNumber(this.target(item).calories)} kcal`;
+  }
+
+  /** The focus card shows no chip for a simply planned day (the date above already says it). */
+  showsFocusChip(item: DayItem): boolean {
+    const status = this.dayStatus(item);
+    return item.date.getTime() < this.today.getTime() || ['COMPLETED', 'OFF_PLAN', 'IN_PROGRESS'].includes(status);
+  }
+
+
+  // -------------------------------------------------------------------------
+  // History: the days up to today on a timeline, under the week strip (display only)
+  // -------------------------------------------------------------------------
+  /** Day the client last opened from the history: the timeline comes back on it. */
+  historyDay: Date | null = null;
+  private dayOpenedFrom: 'list' | 'history' = 'list';
+
+  openHistory(): void { this.historyDay = null; this.view = 'history'; window.scrollTo({ top: 0 }); }
+
+  /** Today and before, by day ("2026-11-16"): what is planned later stays on the main page. */
+  get historyByDay(): Record<string, DayItem[]> {
+    const today = this.today.getTime();
+    const byDay: Record<string, DayItem[]> = {};
+    for (const item of this.dayItems) {
+      if (item.date.getTime() <= today) (byDay[dateKey(item.date)] ||= []).push(item);
+    }
+    return byDay;
+  }
+
+  historyFirstDay(byDay: Record<string, DayItem[]>): Date {
+    const first = Object.keys(byDay).sort()[0];
+    return (first ? planDate(first) : null) ?? this.today;
+  }
+
+  openDayFromHistory(item: DayItem): void {
+    this.dayOpenedFrom = 'history';
+    this.historyDay = item.date;
+    this.openDay(item);
+  }
+
+  historyMarks(byDay: Record<string, DayItem[]>): Record<string, WeekMark> {
+    const marks: Record<string, WeekMark> = {};
+    const rank: WeekMark[] = ['late', 'planned', 'off', 'done'];
+    const today = this.today.getTime();
+    for (const [key, items] of Object.entries(byDay)) {
+      for (const item of items) {
+        const status = this.dayStatus(item);
+        const mark: WeekMark = status === 'COMPLETED' ? 'done' : status === 'OFF_PLAN' ? 'off' : item.date.getTime() < today ? 'late' : 'planned';
+        if (!marks[key] || rank.indexOf(mark) < rank.indexOf(marks[key])) marks[key] = mark;
+      }
+    }
+    return marks;
   }
 
   isToday(item: DayItem): boolean { return item.date.getTime() === this.today.getTime(); }
@@ -550,7 +693,8 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     if (this.feedbackTimer) { clearTimeout(this.feedbackTimer); this.feedbackTimer = null; this.sendFeedback(); }
     this.item = null;
     this.editing = false;
-    this.view = 'list';
+    this.view = this.dayOpenedFrom;
+    this.dayOpenedFrom = 'list';
     document.body.classList.remove('client-workout-detail-open');
     this.load();
   }

@@ -23,37 +23,6 @@
   background: light-dark(#f7f9fb, #171a1e) !important;
 }
 
-.np-pagehead {
-  display: flex !important;
-  align-items: center !important;
-  gap: 12px !important;
-  position: sticky !important;
-  z-index: 30;
-  top: 0;
-  height: 58px !important;
-  margin: 0 !important;
-  padding: 0 28px !important;
-  border-bottom: 1px solid light-dark(#dce3ea, #353a40) !important;
-  background: light-dark(rgba(255, 255, 255, .97), rgba(29, 33, 37, 0.97)) !important;
-}
-
-.np-pagehead .np-back {
-  padding: 0 !important;
-  border: 0 !important;
-  background: light-dark(#eef2f6, #14171b) !important;
-  cursor: pointer;
-}
-
-.np-pagehead .np-back:hover { background: light-dark(#dfe8f0, #263441) !important; }
-.np-pagehead .np-back:active { background: light-dark(#d3dee8, #2e373f) !important; }
-
-.np-pagehead .np-h5 {
-  margin: 0 !important;
-  color: light-dark(#3f5268, #c1c8d1) !important;
-  font-size: 15px !important;
-  font-weight: 600 !important;
-}
-
 .np-main > .np-card,
 .np-main > .np-card.np-card--settings:first-of-type {
   width: min(780px, calc(100% - 48px)) !important;
@@ -134,10 +103,6 @@
 .builder-rail .wk-day-editor__head {
   min-height: 80px !important;
   padding: 18px 27px !important;
-}
-
-.builder-rail .wk-workout-name {
-  padding: 0 27px 18px !important;
 }
 
 .np-aside,
@@ -221,40 +186,8 @@
   font-weight: 400 !important;
 }
 
-.wk-restmark,
-.wk-restmark.is-active {
-  min-height: 36px !important;
-  padding: 0 15px !important;
-  border: 1px solid light-dark(#d6dee7, #353b43) !important;
-  border-radius: 8px !important;
-  color: light-dark(#405267, #c1c8d1) !important;
-  background: light-dark(#fff, #1d2125) !important;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, .05) !important;
-  font-size: 12px !important;
-  font-weight: 400 !important;
-}
-
 .wkex__heading {
   font-size: 16px !important;
-  font-weight: 600 !important;
-}
-
-.np-sticky {
-  position: fixed !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  left: 308px !important;
-  min-height: 76px !important;
-  padding: 10px 24px !important;
-  border-top: 1px solid light-dark(#dce3ea, #353a40) !important;
-  background: light-dark(rgba(255, 255, 255, .96), rgba(29, 33, 37, 0.96)) !important;
-}
-
-.np-sticky .np-btn--save {
-  width: min(840px, 100%) !important;
-  min-height: 52px !important;
-  margin: 0 auto !important;
-  font-size: 15px !important;
   font-weight: 600 !important;
 }
 
@@ -265,9 +198,6 @@
     max-width: 1040px !important;
   }
 
-  .np-sticky .np-btn--save {
-    width: min(1040px, 100%) !important;
-  }
 }
 
 @media (max-width: 900px) {
@@ -289,9 +219,6 @@
     margin: 0 -16px !important;
   }
 
-  .np-sticky {
-    left: 0 !important;
-  }
 }
 
 /* ===== Layout ===== */
@@ -299,10 +226,6 @@
 .np-shell{display:flex;min-height:100vh;width:100%;max-width:none;margin:0}
 .np-aside{width:256px;background:var(--np-white);border-right:1px solid var(--np-border)}
 .np-main{flex:1;display:flex;flex-direction:column;min-width:0}
-
-/* Page head */
-.np-pagehead{display:flex;align-items:center;gap:12px;padding:24px 24px 0 24px}
-.np-back{color:light-dark(#6b7280, #a7abb4);text-decoration:none}
 
 /* Card container */
 .np-card{background:var(--np-white);border:1px solid var(--np-border);border-radius:12px;box-shadow:var(--np-card-shadow);padding:16px;margin:16px 24px}
@@ -329,12 +252,7 @@
 .np-btn--dash{border-style:dashed}
 .np-btn--brandsoft{background:var(--np-brand-10);color:var(--np-brand);border:1px solid rgba(68,180,223,.35)}
 .np-btn--brandsoft:hover{background:var(--np-brand-20)}
-.np-btn--branddash{background:var(--np-brand-10);color:var(--np-brand);border:1px dashed rgba(68,180,223,.5)}
-.np-btn--save{background:#000;color:#fff}
-.np-btn--save:hover{background:var(--np-brand)}
 
-.np-iconbtn{width:32px;height:32px;border-radius:999px;border:1px solid var(--np-border);background:light-dark(#fff, #1d2125);display:inline-flex;align-items:center;justify-content:center}
-.np-mini{width:28px;height:28px;border-radius:999px;border:1px solid var(--np-border);background:light-dark(#fff, #1d2125);display:inline-flex;align-items:center;justify-content:center;margin-left:8px}
 .np-ico{width:18px;height:18px;color:light-dark(#6b7280, #a7abb4)}
 
 /* Labels & inputs */
@@ -350,29 +268,6 @@
 /* Section separators */
 .np-sep{height:1px;background:var(--np-border);margin:8px 0 16px}
 
-/* Day head row */
-.np-dayhead{display:flex;align-items:center;gap:8px;margin-bottom:16px}
-.np-brand{color:var(--np-brand)}
-.np-subtle{color:light-dark(#6b7280, #a7abb4);margin:8px 0 12px}
-
-/* Meal card */
-.np-meal{border:1px solid var(--np-border);border-radius:12px;overflow:hidden;background:light-dark(#fff, #1d2125);box-shadow:var(--np-card-shadow);margin:0 0 16px 0}
-.np-meal__head{display:flex;flex-direction:column;gap:12px;padding:16px;border-bottom:1px solid var(--np-border);background:light-dark(#f9fafb, #171b1f)}
-.np-meal__left{display:flex;align-items:center}
-.np-meal__right{display:flex;align-items:center;gap:12px;justify-content:space-between}
-@media (min-width:768px){.np-meal__head{flex-direction:row;align-items:center;justify-content:space-between}}
-.np-badges{display:grid;grid-template-columns:repeat(4,auto);gap:8px}
-.np-badge{background:light-dark(#fff, #1d2125);border:1px solid var(--np-border);border-radius:8px;padding:8px 12px;text-align:center;min-width:96px}
-.np-badge__label{font-size:11px;color:light-dark(#6b7280, #a7abb4)}
-.np-badge__val{font-weight:700}
-.np-meal__body{padding:24px}
-
-/* Empty state */
-.np-emptystate{border:1px solid var(--np-border);background:light-dark(#f9fafb, #171b1f);border-radius:10px;text-align:center;padding:48px;margin-bottom:24px}
-.np-emptystate__title{color:light-dark(#6b7280, #a7abb4);margin-bottom:8px}
-.np-emptystate__hint{color:light-dark(#9ca3af, #8c9199);font-size:14px}
-.np-center{text-align:center}
-
 /* Grid buttons */
 .np-grid-2{display:grid;grid-template-columns:1fr;gap:16px;margin-top:8px}
 @media (min-width:900px){.np-grid-2{grid-template-columns:1fr 1fr}}
@@ -382,11 +277,6 @@
 .np-rowbtn{width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:8px;border:none;background:transparent;color:light-dark(#374151, #d1d6df);cursor:pointer}
 .np-rowbtn:hover{background:light-dark(#f3f4f6, #15181c)}
 
-/* Sticky save */
-.np-sticky{position:sticky;bottom:0;left:0;right:0;padding:16px;background:light-dark(#fff, #1d2125);border-top:1px solid var(--np-border);box-shadow:0 -6px 18px rgba(0,0,0,.06)}
-
-/* Headings */
-.np-h5{font-size:22px;font-weight:800;margin:0}
 .np-h6{font-size:16px;font-weight:800;margin:0}
 
 /* ===== Responsiveness ===== */
@@ -395,9 +285,7 @@
   .np-shell{flex-direction:column}
   .np-aside{width:100%;border-right:none;border-bottom:1px solid var(--np-border)}
   .np-card{margin:12px}
-  .np-pagehead{padding:16px 12px 0}
-  .np-badges{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .np-badge{min-width:0}
+
 }
 
 /* Large desktop: keep proportions close to screenshot */
@@ -465,43 +353,6 @@
 /* Séparateur sous "Add Plan Description" comme la capture */
 .np-sep{ background:var(--np-border); }
 
-/* Titre "Main Meal" bleu et header gris pâle */
-.np-meal{
-  border:1px solid var(--np-border);
-  border-radius:10px;
-}
-.np-meal__head{
-  background:light-dark(#f8fbfd, #171b1f);                 /* gris-bleuté très léger */
-  border-bottom:1px solid var(--np-border);
-}
-.np-meal__left .np-h6{ color:var(--np-brand); }
-
-/* Pastilles macros (CALORIES/PROTEIN/CARBS/FAT) en "pill" */
-.np-badge{
-  background:light-dark(#fff, #1d2125);
-  border:1px solid var(--np-border-strong);
-  border-radius:8px;
-  padding:8px 10px;
-  min-width:84px;
-}
-.np-badge__label{
-  font-size:11px;
-  letter-spacing:.02em;
-  color:light-dark(#8a94a6, #92979f);
-  margin-bottom:2px;
-  text-transform:uppercase;
-}
-.np-badge__val{ font-weight:700; color:light-dark(#1f2937, #e3e9f3); }
-
-/* Bloc vide (empty state) : gris très clair + bord arrondi fin */
-.np-emptystate{
-  background:light-dark(#f8fafc, #171a1f);
-  border:1px solid var(--np-border);
-  border-radius:10px;
-}
-.np-emptystate__title{ color:light-dark(#6b7280, #a7abb4); }
-.np-emptystate__hint{ color:light-dark(#98a2b3, #8c919a); }
-
 /* Bouton "Add Food" bleu très doux */
 .np-btn--brandsoft{
   background:var(--np-brand-08);
@@ -510,41 +361,9 @@
 }
 .np-btn--brandsoft:hover{ background:var(--np-brand-12); }
 
-/* Bandes en pointillés bleus pour "Add Another Meal / From Template" */
-.np-btn--branddash{
-  border-color:rgba(68,180,223,.45) !important;
-  background:rgba(68,180,223,.06);
-  color:var(--np-brand);
-}
-.np-btn--branddash:hover{ background:rgba(68,180,223,.12); }
-
-/* Conteneur repas (cadres intérieurs très fins) */
-.np-meal__body{
-  background:light-dark(#fff, #1d2125);
-}
-.np-meal__body > .np-center + .np-center{ border-top:1px solid var(--np-border); }
-
-/* Barre "Save Plan" noire, arrondie aux bords comme la capture */
-.np-sticky{
-  border-top:1px solid var(--np-border);
-  background:light-dark(#fff, #1d2125);
-  box-shadow:0 -4px 12px rgba(16,24,40,.06);
-}
-.np-btn--save{
-  height:44px;
-  border-radius:8px;
-  background:#000;
-  color:#fff;
-}
-.np-btn--save:hover{ background:#111; }
-
 /* Petites icônes (kebab / trash) plus discrètes */
 .np-ico{ color:light-dark(#94a3b8, #8c919a); }
-.np-iconbtn{ border:1px solid var(--np-border-strong); background:light-dark(#fff, #1d2125); }
-.np-iconbtn:hover{ background:light-dark(#f3f6fb, #15191d); }
 
-/* Titres / couleurs comme la capture */
-.np-h5{ font-size:22px; font-weight:800; color:light-dark(#0f172a, #e8ecf6); }
 .np-h6{ font-size:16px; font-weight:800; color:light-dark(#0f172a, #e8ecf6); }
 
 /* Grille des deux gros boutons : bordures bleues en pointillés sur toute la largeur */
@@ -557,35 +376,6 @@
   justify-content: center;
 }
 
-.np-btn--branddash{
-  background: light-dark(#EAF7FD, #1c323b);                           /* bleu très clair */
-  border: 1px dashed light-dark(#9BD7EE, #0f4f63);                     /* bord pointillé bien visible */
-  color: light-dark(#1EA2D2, #3bb5e6);                                  /* texte bleu */
-  border-radius: 8px;
-  padding: 14px 16px;
-  transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
-}
-
-.np-btn--branddash .np-ico{                       /* icône “+” bleu + taille */
-  width: 20px;
-  height: 20px;
-  color: light-dark(#1EA2D2, #3bb5e6);
-}
-
-.np-btn--branddash:hover{
-  background: light-dark(#DDF1FB, #103545);                            /* un poil plus soutenu au hover */
-  border-color: #6CC3E3;
-}
-
-.np-btn--branddash:active{
-  background: light-dark(#D3ECF8, #03384a);
-}
-
-.np-btn--branddash:focus-visible{
-  outline: 0;
-  box-shadow: 0 0 0 3px rgba(68,180,223,.22);     /* halo d’accessibilité */
-  border-color: #6CC3E3;
-}
 .np-btn--brandsoft{
   background: light-dark(#EAF7FD, #1c323b);
   border: 1px solid light-dark(#CFEAF7, #2e3b41);
@@ -630,16 +420,6 @@
   border-color:light-dark(#9BD7EE, #0f4f63);         /* liseré bleu */
   color:light-dark(#1EA2D2, #3bb5e6);                /* texte bleu */
 }
-
-/* Icône poubelle à droite des Days (sans pastille) */
-.np-aside .np-iconbtn{
-  width:auto; height:auto;
-  padding:0;
-  border:none;
-  background:transparent;
-  color:light-dark(#9AA9B8, #889097);                /* gris bleuté comme la cap */
-}
-.np-aside .np-iconbtn:hover{ color:light-dark(#6f8aa0, #959da4); }
 
 /* Bouton "Add Day" : bloc plein largeur, bord dashed bleu, fond très clair */
 .np-aside .np-btn--dash,
@@ -719,126 +499,6 @@
   margin:16px 0;
 }
 
-/* Titre "Day 1" + petit crayon */
-.np-dayhead{ margin:12px 0 8px; gap:6px; }
-.np-dayhead .np-h6{
-  font-size:20px;                 /* taille comme la capture */
-  font-weight:800;
-  margin:0;
-}
-.np-dayhead .np-mini{
-  width:18px; height:18px;        /* tout petit crayon */
-  margin-left:6px;
-  border:none;                    /* pas de pastille */
-  background:transparent;
-  padding:0;
-}
-.np-dayhead .np-mini .np-ico{ color:light-dark(#8aa0b2, #8c949b); }
-
-/* Sous-titre "Meals" aligné */
-.np-subtle{
-  margin:12px 0 10px;
-  color:light-dark(#0f172a, #e8ecf6);
-  font-weight:700;
-}
-/* ===== MEALS SECTION EXACT LOOK ===== */
-
-/* Carte "Meal" : bord fin, angles doux, légère ombre */
-.np-meal{
-  border:1px solid light-dark(#e6e9ee, #34383e);
-  border-radius:10px;
-  box-shadow:0 1px 2px rgba(16,24,40,.03);
-  overflow:hidden;
-}
-
-/* Header de la carte : fond gris très clair + ligne de séparation */
-.np-meal__head{
-  background:light-dark(#f7fafd, #171a1f);                 /* léger bleu-gris comme la capture */
-  border-bottom:1px solid light-dark(#e6e9ee, #34383e);
-  padding:14px 16px;
-}
-
-/* Titre "Main Meal" bleu + petit crayon gris à côté */
-.np-meal__left .np-h6{
-  color:light-dark(#1EA2D2, #3bb5e6);
-  font-weight:800;
-}
-.np-meal__left .np-mini{
-  width:18px;height:18px;
-  margin-left:6px;
-  border:none;background:transparent;
-}
-.np-meal__left .np-mini .np-ico{ color:light-dark(#8aa0b2, #8c949b); }
-
-/* Badges macros à droite (CALORIES/PROTEIN/CARBS/FAT) */
-.np-badges{ gap:10px; }
-.np-badge{
-  min-width:88px;
-  border:1px solid light-dark(#e6e9ee, #34383e);
-  border-radius:8px;
-  background:light-dark(#fff, #1d2125);
-  padding:8px 10px;
-  text-align:center;
-}
-.np-badge__label{
-  text-transform:uppercase;
-  font-size:11px;
-  color:light-dark(#8a94a6, #92979f);
-  letter-spacing:.02em;
-  margin-bottom:2px;
-}
-.np-badge__val{
-  font-weight:800;
-  color:light-dark(#111827, #e8ecf6);
-}
-
-/* Kebab / icon button discret */
-.np-iconbtn{
-  width:32px;height:32px;
-  border:1px solid light-dark(#e6e9ee, #34383e);
-  background:light-dark(#fff, #1d2125);
-}
-.np-iconbtn .np-ico{ color:light-dark(#94a3b8, #8c919a); }
-
-/* Corps de la carte */
-.np-meal__body{ padding:20px; }
-
-/* Bloc "empty state" : fond très clair + bord arrondi fin */
-.np-emptystate{
-  background:light-dark(#f8fafc, #171a1f);
-  border:1px solid light-dark(#e6e9ee, #34383e);
-  border-radius:10px;
-  padding:40px 16px;
-  text-align:center;
-  margin-bottom:20px;
-}
-.np-emptystate__title{ color:light-dark(#6b7280, #a7abb4); }
-.np-emptystate__hint{ color:light-dark(#98a2b3, #8c919a); }
-
-/* Bouton "Add Food" (soft filled bleu, avec +) */
-.np-center .np-btn--brandsoft{
-  display:inline-flex;
-  align-items:center;
-  height:44px;
-  padding:0 18px;
-  border-radius:8px;
-  background:light-dark(#EAF7FD, #1c323b);
-  border:1px solid light-dark(#CFEAF7, #2e3b41);
-  color:light-dark(#1EA2D2, #3bb5e6);
-  font-weight:700;
-  box-shadow:0 1px 0 rgba(16,24,40,.02);
-}
-.np-center .np-btn--brandsoft:hover{ background:light-dark(#DDF1FB, #103545); }
-
-/* Le + dans un petit disque clair */
-.np-center .np-btn--brandsoft .np-ico{
-  width:18px;height:18px;
-  color:light-dark(#1EA2D2, #3bb5e6);
-  background:light-dark(#D7EEF9, #073748);
-  border-radius:999px;
-  padding:2px;
-}
-
 /* Gros boutons en bas (déjà stylés, on ajuste juste la hauteur/centrage) */
 .np-grid-2 .np-btn{
   height:54px;               /* même gabarit que la capture */
@@ -889,12 +549,6 @@
   padding-left: 16px;              /* donne l’espace vu sur la capture */
 }
 
-/* Si tu veux un trait horizontal très léger sous la barre de page à droite */
-.np-pagehead{
-  border-bottom: 1px solid light-dark(#eef2f6, #32363c);
-  padding-bottom: 12px;
-  margin-bottom: 12px;
-}
 /* Séparateur vertical à droite de la sidebar */
 .np-main{
   border-left: 1px solid light-dark(#dfe5ee, #353940);   /* le trait de séparation */
@@ -919,11 +573,6 @@
   margin-bottom: 8px;
 }
 
-/* Titre de section 'Day X' reste plus “fort” que les labels */
-.np-dayhead .np-h6{
-  font-size: 20px;        /* plus grand que 14px des labels */
-  font-weight: 800;
-}
 /* 1) La carte prend toute la largeur disponible du main */
 @media (min-width: 1200px){
   .np-card{ max-width: none; }
@@ -1103,54 +752,6 @@
 /* simple switch (optionnel) */
 .switch{position:relative;display:inline-block;width:44px;height:24px}
 .switch input{opacity:0;width:0;height:0}
-.slider{position:absolute;cursor:pointer;inset:0;background:light-dark(#e5e7eb, #2c3035);transition:.2s;border-radius:24px}
-.slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;top:3px;background:light-dark(white, #1d2125);transition:.2s;border-radius:50%}
-input:checked + .slider{background:#44b4df}
-input:checked + .slider:before{transform:translateX(20px)}
-.slider.round{border-radius:24px}
-/* ===== Rest Day wrapper (cadre gris clair, bordure pointillée) ===== */
-.wk-rest{
-  padding: 16px;
-  background: light-dark(#f9fafb, #171b1f); /* gray-50 */
-  border: 2px dashed light-dark(#d1d5db, #3a3d42); /* gray-300 */
-  border-radius: 10px;
-}
-
-.wk-rest__row{ display:flex; align-items:center; justify-content:space-between; }
-.wk-rest__left{ display:flex; align-items:center; gap:12px; }
-
-.wk-icon{
-  width: 40px; height: 40px;
-  border-radius: 10px;
-  display:flex; align-items:center; justify-content:center;
-  background: rgba(68,180,223,.10); /* brand/10 par défaut */
-}
-.wk-icon--on{ background: light-dark(#e5e7eb, #2c3035); } /* gray-200 quand activé */
-.wk-icon__svg{ width: 24px; height: 24px; color: #44b4df; }
-.wk-icon--on .wk-icon__svg{ color:light-dark(#4b5563, #bfc5cd); } /* gray-600 */
-
-.wk-rest__title{ margin:0; font-weight:600; color:light-dark(#111827, #e8ecf6); }   /* gray-900 */
-.wk-rest__subtitle{ margin:0; font-size:13px; color:light-dark(#6b7280, #a7abb4); } /* gray-500 */
-
-/* ===== Switch ===== */
-.wk-switch{
-  position: relative;
-  width: 48px; height: 28px;
-  border: 0; border-radius: 999px;
-  background: light-dark(#d1d5db, #36393e);           /* gray-300 off */
-  cursor: pointer;
-  transition: background .15s ease, box-shadow .15s ease;
-  outline: none;
-}
-.wk-switch.is-on{ background:#44b4df; } /* on */
-.wk-switch:focus{ box-shadow: 0 0 0 3px rgba(68,180,223,.35); }
-.wk-switch__knob{
-  position:absolute; top:50%; left:4px;
-  width: 20px; height: 20px; transform: translateY(-50%);
-  background:light-dark(#fff, #1d2125); border-radius:999px; transition: transform .15s ease;
-  box-shadow: 0 1px 2px rgba(0,0,0,.08);
-}
-.wk-switch.is-on .wk-switch__knob{ transform: translate(20px,-50%); }
 
 /* ===== Rest-day empty state box ===== */
 .wk-restbox{
@@ -1165,7 +766,7 @@ input:checked + .slider:before{transform:translateX(20px)}
   width:80px; height:80px; margin: 0 auto 12px;
   border-radius:999px; background:light-dark(#e5e7eb, #2c3035); display:flex; align-items:center; justify-content:center;
 }
-.wk-restbox__svg{ width: 40px; height: 40px; color:light-dark(#6b7280, #a7abb4); }
+
 .wk-restbox__title{ margin: 6px 0 4px; font-size:20px; font-weight:800; color:light-dark(#374151, #d1d6df); }
 .wk-restbox__text{ margin: 0 auto 8px; color:light-dark(#4b5563, #bfc5cd); max-width: 640px; }
 
@@ -1187,24 +788,8 @@ input:checked + .slider:before{transform:translateX(20px)}
   border-color:#44b4df; box-shadow:0 0 0 3px rgba(68,180,223,.18);
 }
 
-/* Add notes button */
-.wk-addnotes{
-  margin-top: 14px;
-  display:inline-flex; align-items:center;
-  gap:6px; color:#44b4df; background:transparent; border:0; cursor:pointer;
-  font-weight:600;
-}
-.wk-addnotes:hover{ text-decoration: underline; }
-.wk-plus{ display:inline-block; transform: translateY(-1px); }
 /* ===== heading ===== */
 .wkex__heading{ font-weight:600; font-size:18px; margin:0 0 16px; }
-
-/* ===== empty ===== */
-.wkex-empty{
-  text-align:center; padding:40px;
-  border:1px dashed light-dark(#d1d5db, #3a3d42); border-radius:10px; margin-bottom:16px; background:light-dark(#fff, #1d2125);
-}
-.wkex-empty__text{ color:light-dark(#6b7280, #a7abb4); margin:0; }
 
 /* ===== list spacing ===== */
 .wkex__stack{ display:flex; flex-direction:column; gap:16px; }
@@ -1221,7 +806,6 @@ input:checked + .slider:before{transform:translateX(20px)}
 }
 .wkex-card__drag{ display:flex; align-items:center; cursor:grab; color:light-dark(#9ca3af, #8c9199); padding:2px 0; }
 .wkex-card__drag:active{ cursor:grabbing; }
-.wkex-card__drag.is-disabled{ cursor:default; opacity:0.3; }
 .wkex-card__media{ width:48px; height:48px; border-radius:8px; background:light-dark(#e5e7eb, #2c3035); flex:0 0 auto; }
 .wkex-card__titlewrap{ min-width:0; width:100%; }
 .wkex-card__title{
@@ -1300,11 +884,6 @@ input:checked + .slider:before{transform:translateX(20px)}
   .wkex-action{ width:30px; height:30px; }
 }
 
-/* ===== notes ===== */
-.wkex-addnote{
-  margin-top:6px; color:#44b4df; background:transparent; border:0; cursor:pointer;
-  display:inline-flex; align-items:center; gap:6px; font-weight:600;
-}
 .wkex-plus{ display:inline-block; transform:translateY(-1px); }
 .wkex-noteview{ margin-top:8px; font-size:14px; color:light-dark(#4b5563, #bfc5cd); background:light-dark(#f3f4f6, #15181c); padding:8px; border-radius:8px; }
 
@@ -1337,21 +916,8 @@ input:checked + .slider:before{transform:translateX(20px)}
 }
 .wkex-input:focus{ border-color:#44b4df; box-shadow:0 0 0 2px rgba(68,180,223,.18); }
 
-/* rest mini inputs */
-.wkex-restbox{
-  display:flex; align-items:center; height:25px; min-height:25px; border:1px solid light-dark(#b9cde3, #38495c); border-radius:5px; overflow:hidden; background:light-dark(#fff, #1d2125); flex:1; min-width:0; box-sizing:border-box;
-}
-.wkex-restbox__label{ flex:0 0 auto; padding-left:8px; font-size:9px; line-height:11px; color:light-dark(#6b7280, #a7abb4); white-space:nowrap; }
-.wkex-restbox__input{ height:23px; padding:3px 5px; border:0; outline:none; font-size:11px; flex:1; min-width:0; background:transparent; box-sizing:border-box; }
 .wkex-sets__cell--action .wkex-action{ width:20px; height:20px; padding:0; }
 .wkex-sets__cell--action .wkex-action__icon{ width:11px; height:11px; }
-
-/* buttons */
-.wkex-addset{
-  margin-top:6px; width:100%; padding:10px 12px;
-  border:1px solid #44b4df; color:#44b4df; background:light-dark(#fff, #1d2125); border-radius:8px; cursor:pointer;
-}
-.wkex-addset:hover{ background:rgba(68,180,223,.08); }
 
 .wkex-addexercise{
   width:100%; padding:12px; border-radius:10px; margin-top:12px;
@@ -1423,17 +989,6 @@ input:checked + .slider:before{transform:translateX(20px)}
 .wkselect:focus{ border-color:#44b4df; box-shadow:0 0 0 3px rgba(68,180,223,.18); }
 .wkselect__chev{ position:absolute; right:10px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:light-dark(#9aa3b2, #8c9199); pointer-events:none; }
 
-/* Add new exercise strip */
-.wkdrawer__addnew{
-  border:1px solid rgba(68,180,223,.25);
-  background: rgba(68,180,223,.10);
-  border-radius:8px; padding:8px; display:flex; align-items:center; justify-content:center; margin-bottom:12px;
-}
-.wkbtn-link{
-  border:0; background:transparent; color:#44b4df; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:6px;
-}
-.wk-plus{ transform: translateY(-1px); }
-
 /* List */
 .wkdrawer__list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
 .wkdrawer__item{
@@ -1491,27 +1046,6 @@ input:checked + .slider:before{transform:translateX(20px)}
 /* === la pile d'exos : on la rend "relative" pour positionner le rail === */
 .wkex__stack{ position: relative; }
 
-/* === Cartes en superset : cadre + fond bleu ciel === */
-.wkex-card.is-superset{
-  background: var(--rail-bg);
-  border-color: var(--rail) !important;                 /* cadre bleu */
-  box-shadow: 0 0 0 1.5px var(--rail) inset !important; /* renforce le cadre */
-  position: relative;
-}
-
-/* Petit rail à l'intérieur de CHAQUE carte (aligner X avec la barre) */
-.wkex-card.is-superset::before{
-  content:"";
-  position:absolute;
-  left: 18px;     /* <<< garder la même valeur dans les 3 règles (ici + la barre) */
-  top: 10px;
-  bottom: 10px;
-  width: 3px;
-  border-radius: 2px;
-  background: var(--rail);
-  pointer-events:none;
-}
-
 /* === Barre entre les deux cartes === */
 .wkex-supersetbar{
   position: relative;
@@ -1556,13 +1090,6 @@ input:checked + .slider:before{transform:translateX(20px)}
   border:1px solid var(--rail-ring);
 }
 
-/* (optionnel) focus harmonisé dans cartes superset */
-.wkex-card.is-superset .wkex-input:focus,
-.wkex-card.is-superset .wkex-restbox__input:focus{
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(68,180,223,.18);
-  border-color: #44b4df;
-}
 /* ===================== SUPERCUSTOM SUPERSET STYLE ===================== */
 
 /* Quand deux exercices sont reliés en superset */
@@ -1604,31 +1131,6 @@ input:checked + .slider:before{transform:translateX(20px)}
   border-bottom-left-radius: 10px;
 }
 
-/* Connecteur central entre les deux cartes */
-.superset-connector {
-  display: flex;
-  justify-content: center;
-  margin: 4px 0 12px;
-  position: relative;
-}
-
-.superset-btn {
-  font-size: 12px;
-  font-weight: 600;
-  background: #111827;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 4px 10px;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,.1);
-  transition: all 0.15s ease;
-}
-
-.superset-btn:hover {
-  background: #4ac7ff;
-}
-
 /* Ajuste le badge Superset */
 .wkex-badge {
   background-color: light-dark(#d9f4ff, #003646);
@@ -1640,143 +1142,6 @@ input:checked + .slider:before{transform:translateX(20px)}
   margin-left: 6px;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* Carte globale */
-.program-schedule-card {
-  margin-top: 16px;
-  padding: 16px 18px 18px;
-  border-radius: 10px;
-  border: 1px solid light-dark(#bfdbfe, #324966); /* proche de border-blue-200 */
-  background: linear-gradient(to right, light-dark(#eff6ff, #242f3d), light-dark(#ffffff, #1d2125)); /* from-blue-50 -> white */
-}
-
-/* Titre + icône */
-.program-schedule-title {
-  display: flex;
-  align-items: center;
-  font-weight: 600;
-  color: light-dark(#111827, #e8ecf6);
-  margin: 0 0 16px;
-  font-size: 0.98rem;
-}
-
-.program-schedule-title-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 8px;
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  background-color: light-dark(#dbeafe, #1c3350); /* bleu très clair */
-}
-
-.program-schedule-icon {
-  width: 18px;
-  height: 18px;
-  color: #44b4df; /* ta couleur d'accent */
-}
-
-/* Grille des 2 champs */
-.program-schedule-grid {
-  display: grid;
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-  gap: 16px;
-}
-
-@media (min-width: 768px) {
-  .program-schedule-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-/* Champ individuel */
-.program-schedule-field {
-  display: flex;
-  flex-direction: column;
-}
-
-.program-schedule-label {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: light-dark(#374151, #d1d6df);
-  margin-bottom: 6px;
-}
-
-.program-schedule-label .required {
-  color: light-dark(#dc2626, #ff8275);
-  margin-left: 2px;
-}
-
-/* Wrapper input + icône à gauche */
-.program-schedule-input-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.program-schedule-input-icon {
-  position: absolute;
-  left: 12px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.program-schedule-input-icon-svg {
-  width: 18px;
-  height: 18px;
-  color: light-dark(#9ca3af, #8c9199);
-}
-
-/* Input en lui-même */
-.program-schedule-input {
-  width: 100%;
-  padding: 10px 12px 10px 38px; /* padding-left pour l’icône */
-  border-radius: 8px;
-  border: 1px solid light-dark(#d1d5db, #3a3d42);
-  font-size: 0.875rem;
-  color: light-dark(#111827, #e8ecf6);
-  background-color: light-dark(#ffffff, #1d2125);
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-.program-schedule-input:focus {
-  outline: none;
-  border-color: #44b4df;
-  box-shadow: 0 0 0 1px rgba(68, 180, 223, 0.35);
-}
-
-/* Input désactivé (End date) */
-.program-schedule-input--disabled {
-  background-color: light-dark(#f9fafb, #171b1f);
-  color: light-dark(#6b7280, #a7abb4);
-  cursor: not-allowed;
-  border-color: light-dark(#e5e7eb, #34393f);
-  box-shadow: none;
-}
-
-/* Helper texte sous End Date */
-.program-schedule-helper {
-  margin-top: 4px;
-  font-size: 0.75rem;
-  color: light-dark(#6b7280, #a7abb4);
-}
 .wkex-settype {
   position: relative;
   width: 100%;
@@ -1856,7 +1221,6 @@ input:checked + .slider:before{transform:translateX(20px)}
 .np-day.is-active{background:rgba(68,180,223,.10);border-color:light-dark(#cfeef9, #324c55);}
 .np-day.is-active .np-day__title{color:#44b4df;}
 
-
 /* empile le contenu du bouton sur 2 lignes */
 .np-day{
   display:flex;
@@ -1878,29 +1242,6 @@ input:checked + .slider:before{transform:translateX(20px)}
   line-height:1;
   color:light-dark(#64748b, #a5abb4);
 }
-.np-day__weekday{ color:#44b4df; font-weight:600; }
-.np-day__dot{ margin:0 6px; color:#cbd5e1; }
-.np-day__date{ color:light-dark(#64748b, #a5abb4); }
-.np-datechip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: light-dark(#eaf5ff, #1f3140);
-  color: light-dark(#1570ef, #79adff);
-  padding: 6px 10px;
-  border-radius: 10px;
-  font-weight: 600;
-  line-height: 1;
-}
-
-.np-datechip__ico {
-  width: 16px;
-  height: 16px;
-}
-
-.np-datechip__dot {
-  opacity: 0.6;
-}
 
 .cdk-drag-preview {
   opacity: 0.85;
@@ -1916,37 +1257,7 @@ input:checked + .slider:before{transform:translateX(20px)}
 .cdk-drop-list-dragging .cdk-drag {
   transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
 }
-.np-dayhead{
-  display:flex;
-  align-items:center;
-  gap:.5rem;           /* espacement entre titre, crayon, badge */
-}
 
-.wk-datepill{
-  display:inline-flex;
-  align-items:center;
-  gap:.5rem;
-  padding:.35rem .6rem;
-  border-radius:10px;  /* pastille arrondie comme la capture */
-  background:light-dark(#eef6ff, #23303d);  /* bleu très pâle */
-  color:#44b4df;  line-height:1;
-  white-space:nowrap;
-}
-
-.wk-datepill__ico{
-  width:18px;
-  height:18px;
-  stroke:currentColor; /* icône prend la couleur du texte */
-}
-
-.wk-datepill__weekday{
-  font-weight:600;     /* “Saturday” plus marqué */
-}
-
-.wk-datepill__date{
-      /* date un peu moins marquée mais bleue aussi */
-color: light-dark(#757272, #a8abae);
-}
 .wkex-card__media {
   width: 72px;
   height: 72px;
@@ -1973,22 +1284,6 @@ color: light-dark(#757272, #a8abae);
   place-items: center;
   color: light-dark(#0ea5e9, #29b1f6);
   background: light-dark(#eaf8ff, #1a323c);
-}
-
-.wkex-card__play {
-  position: absolute;
-  right: 6px;
-  bottom: 6px;
-  width: 24px;
-  height: 24px;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.86);
-  color: #ffffff;
-  display: grid;
-  place-items: center;
-  font-size: 10px;
-  line-height: 1;
-  padding-left: 2px;
 }
 
 .wkdrawer__thumb {
@@ -2160,7 +1455,6 @@ color: light-dark(#757272, #a8abae);
   line-height: 1.35;
 }
 
-
 .wkex-sets--no-weight .wkex-sets__head,
 .wkex-sets--no-weight .wkex-sets__row {
   grid-template-columns: 24px minmax(100px, 1fr) minmax(176px, 1.5fr) 20px;
@@ -2235,13 +1529,6 @@ color: light-dark(#757272, #a8abae);
     min-width: 0;
   }
 
-  .np-aside .np-iconbtn {
-    width: 34px;
-    height: 44px;
-    flex: 0 0 34px;
-    display: inline-flex;
-  }
-
   .np-aside .np-btn--dash,
   .np-aside .np-btn--ghost {
     min-width: 116px;
@@ -2268,17 +1555,6 @@ color: light-dark(#757272, #a8abae);
     width: 100%;
   }
 
-  .np-pagehead {
-    padding: 16px 16px 12px;
-    margin: 0;
-    gap: 10px;
-  }
-
-  .np-h5 {
-    font-size: 19px;
-    line-height: 1.25;
-  }
-
   .np-card,
   .np-main > .np-card:first-of-type {
     margin: 0;
@@ -2294,7 +1570,6 @@ color: light-dark(#757272, #a8abae);
 
   .np-input,
   .wkex-input,
-  .wkex-restbox__input,
   .wkinput,
   .wkselect {
     min-height: 44px;
@@ -2310,33 +1585,8 @@ color: light-dark(#757272, #a8abae);
     margin-left: 0;
   }
 
-  .np-dayhead {
-    flex-wrap: wrap;
-  }
-
-  .wk-rest {
-    padding: 14px;
-  }
-
-  .wk-rest__left {
-    min-width: 0;
-    gap: 10px;
-  }
-
-  .wk-rest__subtitle {
-    line-height: 1.3;
-  }
-
-  .wk-switch {
-    flex: 0 0 48px;
-  }
-
   .wk-restbox {
     padding: 28px 14px;
-  }
-
-  .wkex-empty {
-    padding: 28px 16px;
   }
 
   .wkex-card {
@@ -2439,15 +1689,6 @@ color: light-dark(#757272, #a8abae);
     margin-bottom: -2px;
   }
 
-  .wkex-restbox {
-    min-width: 0;
-  }
-
-  .wkex-restbox__input {
-    width: 100%;
-    padding: 8px;
-  }
-
   .wkex-sets__cell--action {
     grid-column: 1 / -1;
     display: flex;
@@ -2462,19 +1703,10 @@ color: light-dark(#757272, #a8abae);
     width: min(210px, calc(100vw - 64px));
   }
 
-  .wkex-addset,
+  
   .wkex-addexercise {
     min-height: 46px;
     font-weight: 700;
-  }
-
-  .np-sticky {
-    z-index: 20;
-    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
-  }
-
-  .np-btn--save {
-    min-height: 48px;
   }
 
   .np-modal {
@@ -2573,7 +1805,7 @@ color: light-dark(#757272, #a8abae);
   .np-week-card__head-top { display: flex !important; width: 100%; align-items: center !important; gap: 8px !important; }
   .np-week-card__chevron { width: 14px !important; height: 14px !important; color: light-dark(#8aa0b8, #8c939b) !important; }
   .np-week-card__head strong { color: light-dark(#182235, #e5eaf4) !important; font-size: 17px !important; font-weight: 600 !important; line-height: 22px !important; }
-  .np-week-status { margin: 0 !important; padding: 3px 7px; border-radius: 5px; background: light-dark(#eef2f6, #14171b); color: light-dark(#4d6077, #b5bcc5) !important; font-size: 12px !important; line-height: 18px !important; }
+
   .np-week-card__count { margin-left: auto; padding: 0 !important; border: 0 !important; background: transparent !important; color: light-dark(#6d7f99, #9da2ab) !important; font-size: 14px !important; line-height: 20px !important; }
 
   .np-dayrow { min-height: 45px !important; padding: 0 0 0 20px !important; }
@@ -2598,7 +1830,7 @@ color: light-dark(#757272, #a8abae);
   .np-day.is-active .np-day__title { color: light-dark(#35445b, #ced4dd) !important; font-size: 16px !important; font-weight: 600 !important; line-height: 22px !important; }
   .np-day__meta { width: auto !important; margin-left: auto !important; color: light-dark(#72839d, #999ea7) !important; font-size: 14px !important; line-height: 20px !important; text-align: right !important; }
   .np-day.is-active .np-day__meta { color: light-dark(#079bd4, #39b5ef) !important; font-weight: 600 !important; }
-  .np-sticky { left: 448px !important; }
+
 }
 
 @media (max-width: 380px) {
@@ -2821,11 +2053,6 @@ color: light-dark(#757272, #a8abae);
     white-space: nowrap;
   }
 
-  .np-dayrow.cdk-drag-preview .np-iconbtn {
-    overflow: hidden !important;
-    flex: 0 0 auto;
-  }
-
   .np-dayrow.cdk-drag-placeholder {
     opacity: 0.25;
     overflow: hidden !important;
@@ -2870,52 +2097,24 @@ color: light-dark(#757272, #a8abae);
   margin: 16px 0 !important;
 }
 
-.np-pagehead {
-  width: 100%;
-  padding-left: 0;
-  padding-right: 0;
-}
-
-.np-btn--save:hover,
 .np-btn--brandsoft,
-.np-btn--branddash,
 .np-link,
 .np-link .np-ico,
-.wk-datepill,
 .np-day.is-active,
 .np-day.is-active .np-day__title {
   color: #36b8e6;
 }
 
 .np-btn--brandsoft,
-.np-btn--branddash,
 .np-aside .np-btn--dash,
 .np-aside .np-btn--ghost {
   background: light-dark(#e7f8fe, #15333c);
   border-color: light-dark(#9bddf2, #075062) !important;
 }
 
-.np-input:focus,
-.program-schedule-input:focus {
+.np-input:focus {
   border-color: #36b8e6;
   box-shadow: 0 0 0 3px rgba(54, 184, 230, 0.14);
-}
-
-.wkex-video {
-  margin: 10px 0 14px;
-  max-width: 720px;
-  aspect-ratio: 16 / 9;
-  border: 1px solid light-dark(#d9edf7, #2d3a40);
-  border-radius: 12px;
-  overflow: hidden;
-  background: #0f172a;
-}
-
-.wkex-video iframe {
-  width: 100%;
-  height: 100%;
-  border: 0;
-  display: block;
 }
 
 .wkex-action:disabled {
@@ -2942,9 +2141,6 @@ color: light-dark(#757272, #a8abae);
     padding-right: 12px;
   }
 
-  .wkex-video {
-    margin-left: 0;
-  }
 }
 
 /* Final zoom/layout cleanup for workout editor. */
@@ -2968,8 +2164,7 @@ color: light-dark(#757272, #a8abae);
 }
 
 .np-main,
-.np-card,
-.np-sticky {
+.np-card {
   box-sizing: border-box;
 }
 
@@ -3029,14 +2224,6 @@ color: light-dark(#757272, #a8abae);
     font-weight: 700;
   }
 
-  .np-dayrow.is-active .np-iconbtn .np-ico {
-    color: light-dark(#8aa0b2, #8c949b);
-  }
-
-  .np-dayrow.is-active .np-iconbtn:hover .np-ico {
-    color: light-dark(#1ea2d2, #3bb5e6);
-  }
-
   .np-dayrow.cdk-drag-preview {
     padding: 0 12px;
     border-radius: 8px;
@@ -3044,11 +2231,6 @@ color: light-dark(#757272, #a8abae);
     border: 1px solid light-dark(#9bd7ee, #0f4f63);
     box-sizing: border-box;
   }
-}
-
-/* Match the profile-client workout builder layout. */
-.np-pagehead {
-  display: none !important;
 }
 
 .np-shell {
@@ -3114,18 +2296,6 @@ color: light-dark(#757272, #a8abae);
   margin: 20px -20px 18px;
 }
 
-.np-dayhead {
-  align-items: center;
-  padding: 0;
-}
-
-.wk-rest {
-  border: 1px dashed light-dark(#cbd8e6, #353d47) !important;
-  border-radius: 8px !important;
-  background: light-dark(#fff, #1d2125) !important;
-  padding: 16px 18px !important;
-}
-
 .wkex-card {
   border-color: light-dark(#d8e3ef, #323b44) !important;
   border-radius: 8px !important;
@@ -3134,22 +2304,6 @@ color: light-dark(#757272, #a8abae);
 
 .wkex-card__inner {
   padding: 16px !important;
-}
-
-.wkex-addset {
-  border-radius: 6px !important;
-  border-style: dashed !important;
-}
-
-.np-sticky {
-  left: 0;
-  right: 0;
-  padding: 10px 16px;
-  background: light-dark(rgba(255, 255, 255, 0.92), rgba(29, 33, 37, 0.92));
-}
-
-.np-btn--save {
-  border-radius: 6px !important;
 }
 
 @media (max-width: 767px) {
@@ -3329,22 +2483,6 @@ color: light-dark(#757272, #a8abae);
     font-weight: 700 !important;
   }
 
-  .np-iconbtn--add {
-    position: absolute;
-    right: 0;
-    top: 15px;
-    width: 24px !important;
-    height: 24px !important;
-    color: light-dark(#0ea5e9, #29b1f6) !important;
-    background: transparent !important;
-    border: 0 !important;
-    opacity: 1 !important;
-  }
-
-  .np-iconbtn--add .np-ico {
-    width: 15px;
-    height: 15px;
-  }
 }
 
 /* Day editor header like the requested capture. */
@@ -3401,28 +2539,6 @@ color: light-dark(#757272, #a8abae);
   flex: 0 0 auto;
 }
 
-.wk-restmark {
-  height: 30px;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 0 12px;
-  border: 1px solid light-dark(#d7e2ee, #323b44);
-  border-radius: 5px;
-  background: light-dark(#fff, #1d2125);
-  color: light-dark(#0f172a, #e8ecf6);
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.wk-restmark.is-active {
-  color: light-dark(#0ea5e9, #29b1f6);
-  border-color: light-dark(#a8dff4, #184f61);
-  background: light-dark(#eef9fe, #1d3139);
-}
-
-.wk-restmark__icon,
 .wk-kebab__icon {
   width: 14px;
   height: 14px;
@@ -3438,15 +2554,6 @@ color: light-dark(#757272, #a8abae);
   background: transparent;
   color: light-dark(#8fa2b8, #8c929a);
   cursor: pointer;
-}
-
-.wk-workout-name {
-  padding: 14px 16px 0 18px;
-  margin: 0;
-}
-
-.wk-workout-name .np-input {
-  height: 36px;
 }
 
 .wk-day-editor + .wk-restbox {
@@ -3630,10 +2737,6 @@ color: light-dark(#757272, #a8abae);
   padding: 16px 18px 14px 24px !important;
 }
 
-.wk-workout-name {
-  padding: 14px 18px 16px 24px !important;
-}
-
 .wk-day-editor ~ .np-link {
   display: flex !important;
   width: 100%;
@@ -3649,13 +2752,6 @@ color: light-dark(#757272, #a8abae);
 
 .wk-day-editor__title,
 .wkex__heading {
-  letter-spacing: 0 !important;
-}
-
-.wk-restmark {
-  border-radius: 8px !important;
-  font-size: 12px !important;
-  font-weight: 800 !important;
   letter-spacing: 0 !important;
 }
 
@@ -3694,7 +2790,6 @@ color: light-dark(#757272, #a8abae);
 }
 
 .builder-rail .wk-day-editor__head,
-.builder-rail .wk-workout-name,
 .builder-rail > .np-link,
 .builder-rail ng-container > .np-link {
   padding-left: 0 !important;
@@ -3799,17 +2894,7 @@ color: light-dark(#757272, #a8abae);
   padding: 0 0 92px !important;
   background: light-dark(#f7f9fb, #171a1e) !important;
 }
-.np-pagehead {
-  position: sticky !important;
-  z-index: 30;
-  top: 0;
-  height: 58px !important;
-  margin: 0 !important;
-  padding: 0 28px !important;
-  border-bottom: 1px solid light-dark(#dce3ea, #353a40) !important;
-  background: light-dark(rgba(255,255,255,.97), rgba(29, 33, 37, 0.97)) !important;
-}
-.np-pagehead .np-h5 { margin: 0 !important; font-size: 15px !important; font-weight: 500 !important; }
+
 .np-main > .np-card,
 .np-main > .np-card.np-card--settings:first-of-type {
   width: min(780px, calc(100% - 48px)) !important;
@@ -3854,7 +2939,7 @@ color: light-dark(#757272, #a8abae);
   background: light-dark(#fbfdfe, #1c2024) !important;
 }
 .builder-rail .wk-day-editor__head { min-height: 80px !important; padding: 18px 27px !important; }
-.builder-rail .wk-workout-name { padding: 0 27px 18px !important; }
+
 .np-aside, .np-aside button, .wk-day-editor, .wk-day-editor button {
   font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif !important;
 }
@@ -3884,28 +2969,19 @@ color: light-dark(#757272, #a8abae);
 .np-day__meta { display: block !important; width: 100%; margin: 0 !important; color: light-dark(#8b99aa, #8f969e) !important; font-size: 10px !important; font-weight: 400 !important; line-height: 15px !important; text-align: left; }
 .wk-day-editor__title { font-size: 18px !important; font-weight: 500 !important; }
 .wk-day-editor__date { font-size: 13px !important; font-weight: 400 !important; }
-.wk-restmark, .wk-restmark.is-active { min-height: 36px !important; font-size: 12px !important; font-weight: 400 !important; }
+
 .wkex__heading { font-size: 16px !important; font-weight: 500 !important; }
-.np-sticky { left: 308px !important; min-height: 76px !important; padding: 10px 24px !important; }
-.np-sticky .np-btn--save { width: min(840px,100%) !important; min-height: 52px !important; margin: 0 auto !important; font-size: 15px !important; font-weight: 600 !important; }
+
 @media (min-width: 1600px) {
   .np-main > .np-card, .np-main > .np-card.np-card--settings:first-of-type { width: min(1040px,calc(100% - 96px)) !important; max-width: 1040px !important; }
-  .np-sticky .np-btn--save { width: min(1040px,100%) !important; }
+
 }
 @media (max-width: 900px) {
   .np-main > .np-card { width: calc(100% - 24px) !important; margin-top: 12px !important; }
   .np-card--settings { padding: 18px !important; }
   .builder-rail { padding: 0 16px 18px !important; }
   .builder-rail > .wk-day-editor { margin: 0 -16px !important; }
-  .np-sticky { left: 0 !important; }
-}
 
-.np-pagehead {
-  display: flex !important;
-  align-items: center !important;
-  gap: 12px !important;
-  flex: 0 0 58px !important;
-  min-height: 58px !important;
 }
 
 /* Library create/edit keeps the template styling but uses the available
@@ -3926,22 +3002,6 @@ color: light-dark(#757272, #a8abae);
   margin-top: 12px !important;
 }
 
-.np-sticky {
-  display: flex !important;
-  align-items: center !important;
-}
-
-.np-sticky .np-btn--save,
-.np-sticky .np-btn--save:hover {
-  width: min(840px, calc(100% - 32px)) !important;
-  max-width: 840px !important;
-  margin: 0 auto !important;
-  border-radius: 10px !important;
-  background: #101b30 !important;
-  color: #fff !important;
-  box-shadow: 0 3px 7px rgba(15, 23, 42, .15) !important;
-}
-
 @media (max-width: 900px) {
   .np-main > .np-card,
   .np-main > .np-card.np-card--settings:first-of-type {
@@ -3950,10 +3010,6 @@ color: light-dark(#757272, #a8abae);
     margin-left: 12px !important;
   }
 
-  .np-sticky .np-btn--save {
-    width: 100% !important;
-    margin: 0 !important;
-  }
 }
 .np-settings-kicker {
   display: flex;
@@ -3961,23 +3017,6 @@ color: light-dark(#757272, #a8abae);
   gap: 8px;
 
   .np-link { margin-left: auto; }
-}
-
-.np-week-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 18px;
-  padding: 14px 16px;
-  border: 1px solid light-dark(#e6e8ec, #34393e);
-  border-radius: 12px;
-  background: light-dark(#fff, #1d2125);
-
-  > span { color: light-dark(#667085, #a9adb6); }
-  > small { color: light-dark(#667085, #a9adb6); margin-left: auto; }
-  .np-btn--primary { background: #111827; color: #fff; }
-  button:disabled { cursor: not-allowed; opacity: .45; }
 }
 
 @import '../_workout-builder-publication.scss';
@@ -3994,13 +3033,11 @@ color: light-dark(#757272, #a8abae);
   .np-root .np-main > .np-card--settings > .np-field.np-global-duration { margin-left:20px !important; }
   .np-root .np-main > .np-card--settings > .np-field.np-global-duration { position:absolute !important; top:82px !important; right:20px !important; margin-left:0 !important; width:calc(50% - 30px) !important; }
   .np-root .np-main > .np-card--settings > .np-link { margin-top:72px !important; }
-  .np-root .np-main > .wkex-quickchoose { grid-column:2 !important; grid-row:2 !important; position:static !important; width:100% !important; }
-  .np-root .np-main > .np-pagehead { grid-column:1 / -1 !important; grid-row:1 !important; }
+
   .np-root .np-main > .np-card--settings { grid-column:1 !important; grid-row:2 !important; width:100% !important; max-width:none !important; }
   .np-root .np-main > app-workout-week-panel { grid-column:1 !important; grid-row:3 !important; width:100% !important; max-width:none !important; }
 }
 @import '../_workout-structure-reference.scss';
-
 
 /* FINAL reference matching fixes — keep last. */
 @import "../_workout-final-reference.scss";
@@ -4019,8 +3056,7 @@ color: light-dark(#757272, #a8abae);
   margin-right: 0 !important;
   box-sizing: border-box !important;
 }
-.np-root .np-main > .np-card.np-card--day > .builder-rail,
-.np-root .np-main > app-workout-week-panel > .week-panel {
+.np-root .np-main > .np-card.np-card--day > .builder-rail {
   width: 100% !important;
   max-width: none !important;
   margin-left: 0 !important;
@@ -4062,7 +3098,6 @@ color: light-dark(#757272, #a8abae);
 .np-day.is-active .np-ready-check {
   background: light-dark(#fff, #1d2125);
 }
-
 
 /* Exercise drawer pagination: visually aligned with the rest of the builder. */
 .wkdrawer__pagination {
@@ -4332,54 +3367,8 @@ color: light-dark(#757272, #a8abae);
     gap: 0 !important;
   }
 
-  .np-root .np-card--day .wk-restmark,
-  .np-root .np-card--day .wk-restmark.is-active {
-    min-height: 48px !important;
-    height: 48px !important;
-    padding: 0 20px !important;
-    border: 1px solid light-dark(#cbd6e2, #353e47) !important;
-    border-radius: 9px !important;
-    background: light-dark(#fff, #1d2125) !important;
-    color: light-dark(#102038, #e5ebf4) !important;
-    font-size: 14px !important;
-    font-weight: 500 !important;
-    line-height: 20px !important;
-    box-shadow: none !important;
-  }
-
   .np-root .np-card--day .wk-kebab {
     display: none !important;
-  }
-
-  /* Body uses explicit padding instead of relying on parent padding. */
-  .np-root .np-card--day .builder-rail .wk-workout-name {
-    margin: 0 !important;
-    padding: 22px 24px 8px !important;
-    box-sizing: border-box !important;
-  }
-
-  .np-root .np-card--day .builder-rail .wk-workout-name .np-label {
-    display: block !important;
-    margin: 0 0 8px !important;
-    color: light-dark(#15243a, #e4eaf3) !important;
-    font-size: 14px !important;
-    font-weight: 600 !important;
-    line-height: 20px !important;
-  }
-
-  .np-root .np-card--day .builder-rail .wk-workout-name .np-input {
-    width: 100% !important;
-    min-height: 50px !important;
-    height: 50px !important;
-    padding: 10px 14px !important;
-    border: 1px solid light-dark(#cbd6e2, #353e47) !important;
-    border-radius: 9px !important;
-    color: light-dark(#102038, #e5ebf4) !important;
-    background: light-dark(#fff, #1d2125) !important;
-    font-size: 15px !important;
-    font-weight: 400 !important;
-    line-height: 20px !important;
-    box-sizing: border-box !important;
   }
 
   .np-root .np-card--day .builder-rail > .np-link {
@@ -4418,18 +3407,6 @@ color: light-dark(#757272, #a8abae);
     letter-spacing: .035em !important;
   }
 
-  .np-root .np-card--day .wkex-addexercise--empty {
-    width: 100% !important;
-    min-height: 64px !important;
-    height: 64px !important;
-    margin: 0 !important;
-    border: 1px dashed light-dark(#7ecbf0, #144e66) !important;
-    border-radius: 10px !important;
-    background: light-dark(#fbfdff, #1c2024) !important;
-    color: light-dark(#078dcb, #48b5f5) !important;
-    font-size: 15px !important;
-    font-weight: 500 !important;
-  }
 }
 
 /* Page layout (toolbar, columns, exercise panel) — must stay the last import (with the readable rail after it). */
@@ -4441,3 +3418,478 @@ color: light-dark(#757272, #a8abae);
   margin: 0 0 14px; font-size: 13px; background: light-dark(#fff, #1d2125);
   p { margin: 0; } p + p { margin-top: 6px; } }
 .np-ai__warn span[aria-hidden] { color: #d99100; }
+
+/* Superset et circuit : en-tête du groupe, petit tableau des séries, ajout dans le groupe (couleurs de la marque) */
+.wkgrp-head { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; padding: 10px 12px 10px 18px; margin: 4px 0 8px;
+  border: 1px solid var(--rail-ring); border-left: 4px solid #44b4df; border-radius: 0; background: var(--rail-bg); font-size: 13px; }
+.wkgrp-head--pending { margin-top: 8px; }
+.wkgrp-badge { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 12px; padding: 3px 8px; border-radius: 6px;
+  color: light-dark(#1EA2D2, #3bb5e6); background: light-dark(#fff, #1d2125); border: 1px solid var(--rail-ring); }
+.wkgrp-badge__ico { width: 14px; height: 14px; display: inline-flex; }
+.wkgrp-field { display: inline-flex; align-items: center; gap: 6px; margin: 0; }
+.wkgrp-field__label { color: light-dark(#6b7280, #a7abb4); font-size: 13px; }
+.wkgrp-field__value { min-width: 20px; text-align: center; }
+.wkgrp-step { width: 28px; height: 28px; border-radius: 8px; border: 1px solid light-dark(#e5e7eb, #34393f); background: light-dark(#fff, #1d2125);
+  color: inherit; cursor: pointer; line-height: 1; }
+.wkgrp-step:hover { border-color: #44b4df; color: #44b4df; }
+.wkgrp-rest { width: 72px !important; }
+.wkgrp-spacer { flex: 1; }
+.wkgrp-sets { padding: 4px 14px 12px; }
+.wkgrp-sets__grid { display: grid; grid-template-columns: minmax(90px, 140px) 96px 96px; gap: 6px 10px; align-items: center; }
+.wkgrp-sets__grid--no-weight { grid-template-columns: minmax(90px, 140px) 96px; }
+.wkgrp-sets__label { font-size: 13px; color: light-dark(#4b5563, #bfc5cd); }
+.wkgrp-unit { border: 0; background: transparent; color: light-dark(#1EA2D2, #3bb5e6); font-size: 11px; font-weight: 600; padding: 0; cursor: pointer; }
+.wkgrp-links { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 8px; }
+.wkgrp-link { border: 0; background: none; padding: 0; color: light-dark(#1EA2D2, #3bb5e6); font-size: 13px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 4px; }
+.wkgrp-link:hover { text-decoration: underline; }
+.wkgrp-link__ico { width: 14px; height: 14px; display: inline-flex; }
+/* Le pied ferme le groupe : même trait bleu et même fond que l'en-tête, puis un vrai espace avant la suite. */
+.wkgrp-foot { margin: 0 0 28px; padding: 8px 12px 8px 14px; border: 1px solid var(--rail-ring); border-left: 4px solid #44b4df;
+  border-radius: 0 10px 10px 0; background: var(--rail-bg); }
+.wkgrp-head--pending { margin-top: 20px; }
+.np-root .wkex-addexercise--after-group { margin-top: 20px !important; }
+.wkgrp-add { width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px dashed #44b4df; background: light-dark(#fff, #1d2125);
+  color: #44b4df; cursor: pointer; font-size: 13px; }
+.wkgrp-add:hover, .wkgrp-add.is-active { background: rgba(68,180,223,.10); }
+.wkgrp-hint { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-top: 8px; padding: 8px 10px; border-radius: 8px;
+  font-size: 13px; background: var(--rail-bg); border: 1px solid var(--rail-ring); }
+.wkgrp-create { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; }
+.wkgrp-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 8px; font-size: 13px; cursor: pointer;
+  border: 1px solid light-dark(#e5e7eb, #34393f); background: light-dark(#fff, #1d2125); color: inherit; }
+.wkgrp-chip:hover { border-color: #44b4df; color: #44b4df; }
+@media (max-width: 640px) {
+  .wkgrp-sets__grid { grid-template-columns: minmax(70px, 1fr) 80px 80px; }
+  .wkgrp-sets__grid--no-weight { grid-template-columns: minmax(70px, 1fr) 80px; }
+}
+
+/* Cartes d'un superset / circuit : même bleu et même forme que l'en-tête du groupe (trait droit à gauche) */
+.wkgrp-head { border-radius: 0 10px 10px 0; }
+.wkex-card.superset.wkgrp-member,
+.wkex-card.is-second.superset.wkgrp-member {
+  border: 1px solid var(--rail-ring) !important;
+  border-left: 4px solid #44b4df !important;
+  border-radius: 0 10px 10px 0;
+  background-color: light-dark(#fff, #1d2125) !important;
+  box-shadow: none !important;
+}
+.wkex-card.superset.wkgrp-member::before,
+.wkex-card.is-second.superset.wkgrp-member::before { display: none; }
+.wkex-card.wkgrp-member .wkex-badge { background: var(--rail-bg); color: light-dark(#1EA2D2, #3bb5e6); border: 1px solid var(--rail-ring); }
+
+/* « Modifier le programme » : bouton à côté du nom, fenêtre des informations du programme */
+.np-toolbar__edit { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; flex: 0 0 auto;
+  border: 1px solid light-dark(#cbd6e2, #353e47); border-radius: 8px; background: light-dark(#fff, #1d2125);
+  color: light-dark(#0f172a, #e8ecf6); font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.np-toolbar__edit .np-ico { width: 15px; height: 15px; color: #44b4df; }
+.np-toolbar__edit:hover { border-color: #44b4df; color: #44b4df; }
+.np-toolbar__edit:focus-visible { outline: 2px solid #44b4df; outline-offset: 2px; }
+@media (max-width: 640px) { .np-toolbar__editlabel { display: none; } .np-toolbar__edit { width: 36px; padding: 0; justify-content: center; } }
+.np-planedit { align-items: center; z-index: 1100; }
+.np-planedit__panel { width: min(560px, 100%); max-height: calc(100vh - 48px); display: flex; flex-direction: column; }
+.np-planedit__body { overflow-y: auto; display: grid; gap: 14px; padding-bottom: 16px; }
+.np-planedit__body .np-field { margin: 0; }
+.np-planedit__sub { margin: 2px 0 0; font-size: 13px; color: light-dark(#6b7280, #a7abb4); }
+.np-planedit__error { margin: 6px 0 0; font-size: 13px; color: light-dark(#dc2626, #ff7a72); }
+.np-planedit .np-input.is-invalid { border-color: light-dark(#dc2626, #ff7a72); }
+.np-planedit__foot { display: flex; justify-content: flex-end; gap: 10px; }
+.np-planedit__btn { min-height: 40px; padding: 0 18px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
+  border: 1px solid light-dark(#cbd6e2, #353e47); background: light-dark(#fff, #1d2125); color: light-dark(#0f172a, #e8ecf6); }
+.np-planedit__btn--primary { border-color: #44b4df; background: #44b4df; color: #fff; }
+.np-planedit__btn--primary:hover { background: #2ea3d1; }
+.np-planedit__btn:disabled { opacity: .6; cursor: default; }
+
+/* Superset / circuit : un bloc bien séparé du reste. En-tête et pied sur toute la largeur, exercices décalés,
+   et une chaîne à gauche (un maillon par exercice, relié par une ligne pointillée) pour montrer qu'ils sont liés. */
+.wkgrp-head { margin: 28px 0 0; border: 1.5px solid #44b4df; border-radius: 12px; }
+.wkex__stack > .wkgrp-head:first-child { margin-top: 4px; }
+.wkgrp-badge { color: #fff; background: #44b4df; border-color: #44b4df; text-transform: uppercase; letter-spacing: .4px; }
+/* Le pied n'a pas de cadre : le bouton pointillé « + Ajouter un exercice » suffit (sinon double cadre). */
+.wkgrp-foot { margin: 0 0 32px; padding: 0; border: 0; border-radius: 0; background: none; }
+.wkex-card.superset.wkgrp-member,
+.wkex-card.is-second.superset.wkgrp-member {
+  position: relative; overflow: visible; margin-left: 40px;
+  border: 1px solid var(--rail-ring) !important; border-radius: 10px !important;
+}
+.wkex-card.superset.wkgrp-member::before,
+.wkex-card.is-second.superset.wkgrp-member::before {
+  content: ""; display: block; position: absolute; left: -33px; top: 28px; bottom: auto; width: 24px; height: 24px; border-radius: 50%;
+  background: #44b4df center / 13px 13px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71'/%3E%3Cpath d='M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'/%3E%3C/svg%3E");
+}
+.wkex-card.wkgrp-member::after {
+  content: ""; position: absolute; left: -22px; top: 52px; bottom: -44px; border-left: 2px dotted #44b4df; pointer-events: none;
+}
+.wkex-card.wkgrp-member.wkgrp-member--last::after { display: none; }
+@media (max-width: 640px) {
+  .wkex-card.superset.wkgrp-member,
+  .wkex-card.is-second.superset.wkgrp-member { margin-left: 28px; }
+  .wkex-card.superset.wkgrp-member::before,
+  .wkex-card.is-second.superset.wkgrp-member::before { left: -25px; width: 20px; height: 20px; background-size: 11px 11px; }
+  .wkex-card.wkgrp-member::after { left: -16px; top: 48px; }
+}
+
+/* « Dernière fois » : ce que le client a fait sur cet exercice, sous son nom. Un clic ouvre tout l'historique. */
+/* « Dernière fois · 16 nov.  12, 12, 12 rép. » ou « ✓ Fait par le client · 17 nov.  12, 12, 12 rép.  comme prévu ».
+   Étiquette petite à gauche, chiffres en gras : lisible d'un coup d'œil. */
+.wkex-last { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; max-width: 100%; margin: 6px 0 2px; padding: 6px 10px;
+  border: 1px solid var(--rail-ring); border-radius: 8px; background: var(--rail-bg); color: light-dark(#334155, #cbd3dc);
+  font-size: 13px; line-height: 1.35; text-align: left; cursor: pointer; }
+.wkex-last:hover { border-color: #44b4df; }
+.wkex-last.is-day { border-color: light-dark(#cfe9d9, #2a4434); background: light-dark(#f2faf5, #1a2a21); }
+.wkex-last.is-below { border-color: light-dark(#f3d3a6, #5a4424); background: light-dark(#fdf6ea, #33291a); }
+.wkex-last.is-muted { border-color: var(--rail-ring); background: var(--rail-bg); color: light-dark(#64748b, #a8aeb7); }
+.wkex-last__tag { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: light-dark(#64748b, #a8aeb7); white-space: nowrap; }
+.wkex-last__ico { flex: none; width: 13px; height: 13px; color: #44b4df; }
+.wkex-last.is-day .wkex-last__ico { color: light-dark(#1e8e4e, #5fd08c); }
+.wkex-last.is-below .wkex-last__ico { color: light-dark(#c2780a, #f0b45a); }
+.wkex-last.is-muted .wkex-last__ico { color: light-dark(#94a3b8, #7c8590); }
+.wkex-last__value { font-weight: 700; color: light-dark(#0f172a, #e8ecf6); }
+.wkex-last__plan { font-size: 12px; color: light-dark(#b45309, #f0b45a); }
+.wkex-last__ok { font-size: 12px; color: light-dark(#1e8e4e, #5fd08c); }
+.wkex-last em { padding: 1px 7px; border-radius: 6px; font-style: normal; font-weight: 600; font-size: 11.5px;
+  background: light-dark(#eef2f6, #2a3036); color: light-dark(#475569, #b9c0c8); white-space: nowrap; }
+.wkex-last em.is-hard { background: light-dark(#fdecec, #402829); color: light-dark(#d93a3a, #ff7a72); }
+.wkex-last em.is-easy { background: light-dark(#e9f6ee, #1f3529); color: light-dark(#1e8e4e, #5fd08c); }
+.wkex-history { position: fixed; inset: 0; z-index: 1200; display: flex; align-items: center; justify-content: center; padding: 16px;
+  background: rgba(15, 23, 42, .45); }
+.wkex-history__panel { width: min(640px, 100%); max-height: calc(100vh - 48px); overflow-y: auto; padding: 16px 18px 18px; border-radius: 14px;
+  background: light-dark(#fff, #1d2125); color: light-dark(#0f172a, #e8ecf6); box-shadow: 0 20px 50px rgba(0, 0, 0, .25); }
+.wkex-history__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.wkex-history__head h3 { margin: 0; font-size: 17px; font-weight: 700; }
+.wkex-history__head button { width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: inherit; font-size: 16px; cursor: pointer; }
+.wkex-history__head button:hover { background: light-dark(#f1f5f9, #2a3036); }
+
+/* ===== Bloc « Échauffement » en haut de la séance ===== */
+.wkwarm-top { display: flex; align-items: center; margin: 0 0 12px; }
+.wkwarm-title { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; letter-spacing: .04em;
+  text-transform: uppercase; color: #44b4df; }
+.wkwarm-title--main { margin-top: 8px; color: light-dark(#607087, #a8aeb7); }
+.wkwarm-add { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 9px 12px; border-radius: 8px;
+  border: 1px dashed #44b4df; background: light-dark(#fff, #1d2125); color: #44b4df; cursor: pointer; font-size: 13px; }
+.wkwarm-add:hover, .wkwarm-add.is-active { background: rgba(68,180,223,.10); }
+.wkwarm-add--end { margin-top: 16px; }
+
+/* Superset / circuit : UN SEUL cadre autour du groupe (en-tête + exercices + bouton « Ajouter »).
+   La pile reste plate (pas de conteneur, pour le glisser-déposer) : chaque morceau dessine sa part du cadre,
+   collé au suivant. Les exercices dedans n'ont pas de cadre à eux :
+   juste un trait fin entre eux et leur lettre (A, B…) ou leur numéro bien visible.
+   Couleurs de la marque seulement : bleu clair pour le superset, bleu foncé pour le circuit. */
+.wkgrp-head, .wkgrp-member, .wkgrp-foot {
+  --grp: #44b4df; --grp-bg: light-dark(#f2f9fd, #172329); --grp-line: light-dark(#d5ecf7, #2a3b43);
+}
+.wkgrp-head.is-circuit, .wkgrp-member.is-circuit, .wkgrp-foot.is-circuit {
+  --grp: light-dark(#0c86c8, #3a9fd6); --grp-bg: light-dark(#edf5fa, #15212a); --grp-line: light-dark(#cde2f0, #283a47);
+}
+.wkex__stack { gap: 0; }
+.wkex__stack > * + * { margin-top: 16px; }
+.wkgrp-head {
+  border: 1.5px solid var(--grp); border-radius: 12px; background: var(--grp-bg); padding: 12px 14px;
+}
+.wkex__stack > .wkgrp-head {
+  margin: 28px 0 0; border-bottom: 1px solid var(--grp-line); border-radius: 12px 12px 0 0;
+}
+.wkex__stack > .wkgrp-head:first-child { margin-top: 0; }
+.wkgrp-badge { color: #fff; background: var(--grp); border-color: var(--grp); }
+.wkgrp-step:hover { border-color: var(--grp); color: var(--grp); }
+.wkex__stack > .wkex-card.wkgrp-member,
+.wkex__stack > .wkex-card.superset.wkgrp-member,
+.wkex__stack > .wkex-card.is-second.superset.wkgrp-member {
+  margin: 0; overflow: hidden;
+  border: 0 !important; border-left: 1.5px solid var(--grp) !important; border-right: 1.5px solid var(--grp) !important;
+  border-top: 1px solid var(--grp-line) !important;
+  border-radius: 0 !important; background: var(--grp-bg) !important; box-shadow: none !important;
+}
+.wkex__stack > .wkgrp-head + .wkex-card.wkgrp-member { border-top: 0 !important; }
+.wkex__stack > .wkex-card.wkgrp-member::before,
+.wkex__stack > .wkex-card.wkgrp-member::after { display: none !important; }
+.wkex__stack > .wkex-card.wkgrp-member .wkex-badge {
+  min-width: 20px; padding: 1px 6px; border-radius: 6px; text-align: center; font-weight: 700;
+  background: var(--grp); color: #fff; border: 0;
+}
+.wkex__stack > .wkgrp-foot {
+  margin: 0 0 12px; padding: 4px 14px 14px; border: 1.5px solid var(--grp); border-top: 0;
+  border-radius: 0 0 12px 12px; background: var(--grp-bg);
+}
+.wkgrp-add { border-color: var(--grp); color: var(--grp); }
+.wkgrp-add:hover, .wkgrp-add.is-active { background: light-dark(#fff, #1d2125); }
+@media (max-width: 640px) {
+  .wkex__stack > .wkgrp-head { padding: 10px 12px; }
+  .wkex__stack > .wkgrp-foot { padding: 4px 10px 12px; }
+}
+
+/* Bibliothèque : l'exercice est déjà dans la séance (le « + » reste, le doublon est permis). */
+.wkdrawer__insession { display: inline-flex; align-items: center; gap: 4px; margin-top: 3px; font-size: 11.5px; font-weight: 600;
+  color: light-dark(#1EA2D2, #3bb5e6); }
+.wkdrawer__insession i-feather { width: 12px; height: 12px; display: inline-flex; }
+
+/* Exercice seul, ligne unique : « Séries [− 3 +] · Reps [12] · Poids [60] · Repos (s) [90] ». Champs à leur taille. */
+.wkset1 { margin-top: 12px; }
+.wkset1__row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 16px; }
+.wkset1__field { display: flex; flex-direction: column; gap: 4px; margin: 0; }
+.wkset1__label { display: inline-flex; align-items: center; min-height: 16px; font-size: 11px; font-weight: 600;
+  color: light-dark(#4b5563, #bfc5cd); text-transform: uppercase; letter-spacing: .3px; }
+.wkset1__stepper { display: inline-flex; align-items: center; gap: 4px; height: 32px; }
+.wkset1__stepper .wkgrp-step:disabled { opacity: .4; cursor: default; }
+.wkset1__count { min-width: 22px; text-align: center; font-size: 14px; }
+.np-root .wkset1__input { width: 84px; height: 32px; min-height: 32px; font-size: 13px; }
+
+/* Les anciennes couches (_workout-template-polish, _workout-builder-layout) forcent les champs à 100 % avec !important :
+   la ligne compacte et le détail reprennent la main ici, avec la même marge que l'en-tête de la carte. */
+.np-root.np-layout .wkset1 { margin: 0; padding: 12px 16px 2px; }
+.np-root.np-layout .wkset1__row { align-items: flex-start; }
+.np-root.np-layout .wkset1__label { height: 16px; min-height: 16px; }
+.np-root.np-layout .wkset1__stepper { height: 36px; }
+.np-root.np-layout .wkset1 .wkex-input.wkset1__input {
+  width: 84px !important; height: 36px !important; min-height: 36px !important; padding: 6px 9px !important; font-size: 13px !important;
+}
+.np-root.np-layout .wkset1__label .wkgrp-unit { width: auto !important; max-width: 84px; height: 16px; line-height: 16px; }
+
+/* Détail série par série : colonnes à largeur fixe (plus de champ « poids » de 400 px). Grand écran seulement :
+   en dessous de 900 px, les séries restent en petites cartes. */
+@media (min-width: 901px) {
+  .np-root.np-layout .wkex-sets .wkex-sets__head,
+  .np-root.np-layout .wkex-sets .wkex-sets__row {
+    grid-template-columns: 40px 84px 84px 84px 60px !important; justify-content: start !important; column-gap: 12px !important;
+  }
+  .np-root.np-layout .wkex-sets.wkex-sets--no-weight .wkex-sets__head,
+  .np-root.np-layout .wkex-sets.wkex-sets--no-weight .wkex-sets__row {
+    grid-template-columns: 40px 84px 84px 60px !important;
+  }
+  .np-root.np-layout .wkex-sets .wkex-sets__row .wkex-sets__cell--rest { display: block !important; grid-column: auto !important; }
+}
+@media (max-width: 900px) {
+  .np-root.np-layout .wkex-sets .wkex-sets__row .wkex-sets__cell--rest { display: block !important; }
+}
+
+/* Menu « ⋮ » du jour */
+.wkdaymenu { position: relative; }
+.wkdaymenu__list { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 220px; padding: 6px;
+  border: 1px solid light-dark(#e5e7eb, #34393f); border-radius: 10px; background: light-dark(#fff, #1d2125);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, .14); }
+.wkdaymenu__item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border: 0; border-radius: 8px;
+  background: none; color: light-dark(#0f172a, #e8ecf6); font-size: 13.5px; text-align: left; cursor: pointer; }
+.wkdaymenu__item:hover:not(:disabled) { background: light-dark(#f1f5f9, #262b31); }
+.wkdaymenu__item:disabled { opacity: .45; cursor: default; }
+.wkdaymenu__item--danger { color: light-dark(#dc2626, #ff7a72); }
+.wkdaymenu__ico { width: 15px; height: 15px; display: inline-flex; flex: none; }
+.wkset1__label .wkgrp-unit { text-transform: uppercase; letter-spacing: .3px; }
+
+/* Colonne d'actions du détail : ↓ « Recopier vers le bas » puis la corbeille. */
+.np-root.np-layout .wkex-sets .wkex-sets__cell--action { display: flex !important; align-items: center; gap: 4px; }
+@media (min-width: 901px) { .np-root.np-layout .wkex-sets .wkex-sets__cell--action { justify-content: flex-start !important; } }
+.np-root.np-layout .wkex-sets .wkex-action--copydown { color: light-dark(#1EA2D2, #3bb5e6); }
+.np-root.np-layout .wkex-sets .wkex-action--copydown:hover { background: rgba(68,180,223,.10); }
+
+/* Détail d'un superset / circuit : une petite colonne pour ↓ « Recopier vers le bas ». */
+.wkgrp-sets__grid.wkgrp-sets__grid--detail { grid-template-columns: minmax(90px, 140px) 96px 96px 28px; }
+.wkgrp-sets__grid.wkgrp-sets__grid--detail.wkgrp-sets__grid--no-weight { grid-template-columns: minmax(90px, 140px) 96px 28px; }
+.wkgrp-sets__grid .wkex-action--copydown { width: 28px; height: 28px; padding: 0; border: 0; border-radius: 6px; background: none; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; color: light-dark(#1EA2D2, #3bb5e6); }
+.wkgrp-sets__grid .wkex-action--copydown:hover { background: rgba(68,180,223,.10); }
+.wkgrp-sets__grid .wkex-action--copydown .wkex-action__icon { width: 14px; height: 14px; }
+@media (max-width: 640px) {
+  .wkgrp-sets__grid.wkgrp-sets__grid--detail { grid-template-columns: minmax(70px, 1fr) 80px 80px 28px; }
+  .wkgrp-sets__grid.wkgrp-sets__grid--detail.wkgrp-sets__grid--no-weight { grid-template-columns: minmax(70px, 1fr) 80px 28px; }
+}
+
+/* Nom de la séance dans le titre du jour : « Jour 1 · Leg Day ✎ » (sans cadre, souligné au survol). */
+.wk-day-editor__name { display: inline-flex; align-items: center; gap: 6px; min-width: 0; margin: 0; cursor: text; }
+.wk-day-editor__dot { color: light-dark(#94a3b8, #8c929a); font-weight: 700; }
+.np-root .wk-day-editor__nameinput { min-width: 0; max-width: 100%; padding: 2px 4px; border: 0; border-bottom: 1px dashed transparent;
+  border-radius: 0; background: transparent; color: inherit; font: inherit; font-size: 18px; font-weight: 700; outline: none; }
+.np-root .wk-day-editor__nameinput:hover, .np-root .wk-day-editor__nameinput:focus { border-bottom-color: #44b4df; }
+.np-root .wk-day-editor__name.is-empty .wk-day-editor__nameinput { border-bottom-color: light-dark(#dc2626, #ff7a72); }
+.np-root .wk-day-editor__name.is-empty .wk-day-editor__nameinput::placeholder { color: light-dark(#dc2626, #ff7a72); font-weight: 600; }
+.wk-day-editor__nameico { width: 14px; height: 14px; display: inline-flex; color: light-dark(#94a3b8, #8c929a); }
+
+/* « Tout replier » et carte repliée : une ligne par exercice. */
+.wkex__headrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.wkex__collapseall { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border: 1px solid light-dark(#d8e3ef, #323b44);
+  border-radius: 8px; background: light-dark(#fff, #1d2125); color: light-dark(#334155, #cbd3dc); font-size: 13px; font-weight: 600; cursor: pointer; }
+.wkex__collapseall:hover { border-color: #44b4df; color: #44b4df; }
+.wkex__collapseico { width: 14px; height: 14px; display: inline-flex; }
+.wkex-collapsedline { display: block; margin-top: 2px; padding: 0; border: 0; background: none; text-align: left; cursor: pointer;
+  color: light-dark(#334155, #cbd3dc); font-size: 13px; font-weight: 600; }
+.wkex-collapsedline:hover { color: #44b4df; }
+.np-root .wkex-card.is-collapsed .wkset1,
+.np-root .wkex-card.is-collapsed .wkex-sets,
+.np-root .wkex-card.is-collapsed .wkgrp-sets,
+.np-root .wkex-card.is-collapsed .wkex-last,
+.np-root .wkex-card.is-collapsed .wkex-notes { display: none !important; }
+.np-root .wkex-card.is-collapsed .wkex-card__header { min-height: 0 !important; }
+
+/* « EXERCICES 7 ······ Tout déplier » : une seule ligne, le bouton aligné sur le titre, discret (pastille de la marque). */
+.np-root.np-layout .wkex__headrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; min-height: 28px; }
+.np-root.np-layout .wkex__headrow .wkex__heading { margin: 0 !important; }
+.np-root.np-layout .wkex__collapseall { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border: 0; border-radius: 999px;
+  background: rgba(68, 180, 223, .10); color: light-dark(#1EA2D2, #3bb5e6); font-size: 12.5px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.np-root.np-layout .wkex__collapseall:hover { background: rgba(68, 180, 223, .18); }
+.np-root.np-layout .wkex__collapseall:focus-visible { outline: 2px solid #44b4df; outline-offset: 2px; }
+.np-root.np-layout .wkex__collapseico { width: 13px; height: 13px; }
+
+/* Carte repliée : plus de bande vide sous l'en-tête. */
+.np-root.np-layout .wkex-card.is-collapsed .wkex-card__header { min-height: 0 !important; border-bottom: 0 !important; }
+.np-root.np-layout .wkex-card.is-collapsed .wkex-card__inner { padding-bottom: 0 !important; }
+
+/* Nom de la séance : le champ prend la largeur de son texte (le crayon reste collé au nom). */
+.np-root .wk-day-editor__nameinput { field-sizing: content; min-width: 6ch; }
+.np-root .wk-day-editor__dot { font-size: 20px; line-height: 1; margin: 0 2px; }
+
+/* Espaces de la liste : les anciennes couches mettaient un gap de 12 px (!important) qui coupait le cadre des groupes. */
+.np-root.np-layout .wkex__stack { gap: 0 !important; }
+.np-root.np-layout .wkex__stack > * + * { margin-top: 12px; }
+.np-root.np-layout .wkex__stack > .wkex-card.wkgrp-member { margin-top: 0 !important; }
+.np-root.np-layout .wkex__stack > .wkgrp-foot { margin-top: 0 !important; }
+/* Vue compacte : les lignes se suivent de près pour voir toute la séance sur un écran. */
+.np-root.np-layout .wkex__stack > .wkex-card.is-collapsed + .wkex-card.is-collapsed:not(.wkgrp-member) { margin-top: 6px; }
+
+/* « + Superset » entre deux cartes : petit lien de la marque, pas une pilule noire. */
+.np-root.np-layout .wkex-supersetbar { margin: 0 !important; }
+.np-root.np-layout .wkex__stack > .wkex-supersetbar + .wkex-card { margin-top: 0; }
+.np-root.np-layout .wkex-supersetbtn { padding: 3px 10px; border: 1px dashed light-dark(#a7d8ee, #2f5566); border-radius: 999px;
+  background: light-dark(#fff, #1d2125); color: light-dark(#1EA2D2, #3bb5e6); font-size: 12px; font-weight: 600; }
+.np-root.np-layout .wkex-supersetbtn:hover { border-style: solid; background: rgba(68, 180, 223, .10); }
+
+/* « Tout replier » dans l'en-tête du jour, à côté du menu ⋮. */
+.np-root.np-layout .wk-day-editor__actions { display: flex; align-items: center; gap: 6px; }
+.np-root.np-layout .wk-day-editor__dot { display: inline-block; width: 1px; height: 18px; margin: 0 6px; background: light-dark(#cbd5e1, #3a424b); font-size: 0; }
+/* Un groupe reste bien séparé des exercices seuls autour de lui. */
+.np-root.np-layout .wkex__stack > .wkgrp-head:not(:first-child) { margin-top: 20px; }
+.np-root.np-layout .wkex__stack > .wkgrp-foot { margin-bottom: 8px; }
+
+
+/* ---------- Glisser-déposer : dès qu'on appuie sur ☰, tout passe en lignes (un groupe = une ligne) ---------- */
+.wkdrop-line {
+  height: 4px; margin: 6px 0; border-radius: 4px; background: #44b4df;
+  box-shadow: 0 0 0 3px rgba(68, 180, 223, .18);
+}
+.wkex__stack.is-sorting > * + * { margin-top: 6px; }
+.wkex__stack.is-sorting > .wkgrp-head { margin-top: 6px; }
+.wkex__stack.is-sorting > .wkgrp-head:first-child { margin-top: 0; }
+.wkex__stack > .wkgrp-head.is-alone { border-bottom: 1.5px solid var(--grp); border-radius: 12px; }
+.wkex__stack.is-sorting > .wkex-card.wkgrp-member--last {
+  border-bottom: 1.5px solid var(--grp) !important; border-radius: 0 0 12px 12px !important;
+}
+.wkgrp-sortline { font-size: 13px; font-weight: 600; color: light-dark(#374151, #d1d5db); }
+.wkgrp-drag { margin-right: -4px; }
+.wkex__stack.cdk-drop-list-dragging > .cdk-drag:not(.cdk-drag-placeholder) { transition: transform 200ms cubic-bezier(0, 0, .2, 1); }
+.wkex__stack > .cdk-drag-animating { transition: transform 200ms cubic-bezier(0, 0, .2, 1); }
+/* Ce qui suit le pointeur : une petite ligne, pas toute la carte (on voit où on pose). */
+.wkdrag-preview {
+  display: inline-flex; align-items: center; gap: 8px; max-width: 360px; margin: -20px 0 0 -16px; padding: 10px 14px;
+  border: 1.5px solid #44b4df; border-radius: 10px; background: light-dark(#fff, #1d2125); color: light-dark(#111827, #f3f4f6);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, .22); font-size: 14px; font-weight: 600; line-height: 1.2;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: grabbing;
+}
+.wkdrag-preview.is-circuit { border-color: #0c86c8; }
+.wkdrag-preview__ico { flex: none; display: inline-flex; width: 16px; height: 16px; color: #44b4df; }
+.wkdrag-preview.is-circuit .wkdrag-preview__ico { color: #0c86c8; }
+.wkdrag-preview__badge { flex: none; min-width: 20px; padding: 1px 6px; border-radius: 6px; background: #44b4df; color: #fff; text-align: center; font-size: 12px; }
+/* Astuce (une seule fois). */
+.wkdrag-tip {
+  display: flex; align-items: center; gap: 8px; margin: 0 0 12px; padding: 8px 10px 8px 12px; border-radius: 10px;
+  border: 1px solid light-dark(#d5ecf7, #2a3b43); background: light-dark(#f2f9fd, #172329); color: light-dark(#1f2937, #e5e7eb); font-size: 13px;
+}
+.wkdrag-tip span { flex: 1; }
+.wkdrag-tip__ico { flex: none; display: inline-flex; width: 16px; height: 16px; color: #44b4df; }
+.wkdrag-tip__close { flex: none; width: 26px; height: 26px; border: 0; border-radius: 6px; background: none; color: inherit; cursor: pointer; opacity: .7; }
+.wkdrag-tip__close:hover { opacity: 1; background: light-dark(#e2f2fa, #22323a); }
+/* « Déplacé · Annuler » en bas de l'écran. */
+.wkmove-toast {
+  position: fixed; left: 50%; bottom: 24px; z-index: 1000; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 16px; max-width: calc(100vw - 32px); padding: 10px 16px; border-radius: 10px;
+  background: #1f2937; color: #fff; font-size: 14px; box-shadow: 0 10px 28px rgba(15, 23, 42, .3);
+}
+.wkmove-toast__undo { flex: none; padding: 4px 6px; border: 0; border-radius: 6px; background: none; color: #7fd0f0; font-weight: 700; cursor: pointer; }
+.wkmove-toast__undo:hover { background: rgba(255, 255, 255, .08); }
+
+/* ---------- Glisser un exercice de la bibliothèque dans la séance (souris, ≥ 768 px) ---------- */
+.wkdrawer__draghint { display: flex; align-items: center; gap: 6px; margin: 4px 0 0; font-size: 12px; color: light-dark(#6b7280, #9ca3af); }
+.wkdrawer__item.is-draggable { cursor: grab; user-select: none; transition: background-color .15s, box-shadow .15s, opacity .15s; }
+.wkdrawer__item.is-draggable:hover { background: light-dark(#f4fafd, #1b2328); box-shadow: inset 3px 0 0 #44b4df; }
+.wkdrawer__item.is-draggable .wkdrawer__add { cursor: pointer; }
+/* La ligne qu'on a prise reste à sa place, en creux. */
+.wkdrawer__item.is-lib-dragging { opacity: .4; box-shadow: inset 0 0 0 2px rgba(68, 180, 223, .5); }
+
+/* La séance accueille : cadre en pointillés, fond légèrement teinté (plus marqué quand la souris est dessus). */
+.np-root.np-layout .wkex.is-lib-target {
+  position: relative; border-radius: 14px; outline: 2px dashed rgba(68, 180, 223, .45); outline-offset: 8px;
+  background: rgba(68, 180, 223, .03); transition: outline-color .15s, background-color .15s;
+}
+.np-root.np-layout .wkex.is-lib-over { outline-color: #44b4df; background: rgba(68, 180, 223, .07); }
+
+/* La place où l'exercice va tomber : elle s'ouvre en poussant la suite vers le bas. */
+.wklib-slot {
+  display: flex; align-items: center; justify-content: center; gap: 8px; height: 64px; box-sizing: border-box;
+  border: 2px dashed #44b4df; border-radius: 12px; background: light-dark(rgba(68, 180, 223, .08), rgba(68, 180, 223, .12));
+  color: light-dark(#0b7fb8, #6cc8ef); font-size: 14px; font-weight: 600;
+  animation: wklib-slot-open .16s ease-out;
+}
+.wklib-slot__ico { display: inline-flex; width: 18px; height: 18px; }
+.np-root.np-layout .wkex__stack > .wklib-slot { margin-top: 12px; }
+.np-root.np-layout .wkex__stack > .wklib-slot:first-child { margin-top: 0; }
+.wkex > .wklib-slot { margin-bottom: 12px; }
+@keyframes wklib-slot-open { from { height: 0; opacity: 0; } to { height: 64px; opacity: 1; } }
+
+/* La carte qui suit la souris : nette, inclinée, avec une ombre (comme une fiche qu'on soulève). */
+.wklib-ghost {
+  position: fixed; left: 0; top: 0; z-index: 2000; pointer-events: none; will-change: transform;
+}
+.wklib-ghost.is-landing { transition: transform .2s cubic-bezier(.2, .8, .2, 1); }
+.wklib-ghost.is-returning { transition: transform .22s cubic-bezier(.4, 0, .2, 1), opacity .22s; opacity: 0; }
+.wklib-ghost__card {
+  display: flex; align-items: center; gap: 12px; width: 300px; padding: 10px 14px; box-sizing: border-box;
+  border: 2px dashed #44b4df; border-radius: 12px;
+  background: light-dark(rgba(255, 255, 255, .97), rgba(29, 33, 37, .97)); color: light-dark(#111827, #f3f4f6);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, .22), 0 2px 6px rgba(15, 23, 42, .12);
+  transform: rotate(-2deg) scale(1.03); transform-origin: 30% 50%;
+  animation: wklib-lift .16s ease-out; transition: transform .2s, border-color .15s;
+}
+.wklib-ghost__card.is-over { border-style: solid; }
+.wklib-ghost.is-landing .wklib-ghost__card { transform: rotate(0) scale(1); box-shadow: 0 4px 12px rgba(15, 23, 42, .12); }
+@keyframes wklib-lift { from { transform: rotate(0) scale(.96); opacity: .6; } to { transform: rotate(-2deg) scale(1.03); opacity: 1; } }
+.wklib-ghost__thumb {
+  flex: none; display: grid; place-items: center; width: 44px; height: 44px; overflow: hidden; border-radius: 8px;
+  background: light-dark(#eef2f6, #2a3036); color: light-dark(#94a3b8, #6b7280);
+}
+.wklib-ghost__thumb img { width: 100%; height: 100%; object-fit: cover; }
+.wklib-ghost__noimg { display: inline-flex; width: 20px; height: 20px; }
+.wklib-ghost__meta { min-width: 0; display: grid; gap: 4px; }
+.wklib-ghost__name { overflow: hidden; font-size: 14px; font-weight: 700; line-height: 1.2; white-space: nowrap; text-overflow: ellipsis; }
+.wklib-ghost__chip {
+  justify-self: start; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; text-transform: capitalize;
+  background: light-dark(#eef2f6, #2a3036); color: light-dark(#475569, #cbd5e1);
+}
+
+/* L'exercice qui vient d'arriver s'éclaire une fois. */
+.np-root.np-layout .wkex-card.is-just-added { animation: wklib-flash 1.4s ease-out; }
+@keyframes wklib-flash {
+  0%, 30% { box-shadow: 0 0 0 3px rgba(68, 180, 223, .55); background-color: light-dark(#eef8fd, #1b2b33); }
+  100% { box-shadow: 0 0 0 0 rgba(68, 180, 223, 0); }
+}
+
+::ng-deep body.yc-lib-dragging, ::ng-deep body.yc-lib-dragging * { cursor: grabbing !important; user-select: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wklib-slot, .wklib-ghost__card, .np-root.np-layout .wkex-card.is-just-added { animation: none; }
+}
+
+/* ---------- « Lier en superset » entre deux exercices seuls : un trait, un bouton lisible au milieu ---------- */
+.np-root.np-layout .wkex__stack > .wkex-supersetbar {
+  position: relative; display: flex; align-items: center; justify-content: center; margin: 6px 0 !important; min-height: 34px;
+}
+.np-root.np-layout .wkex__stack > .wkex-supersetbar + .wkex-card { margin-top: 0; }
+.np-root.np-layout .wkex-supersetbar::before {
+  content: ""; position: absolute; left: 16px; right: 16px; top: 50%; border-top: 1.5px dashed light-dark(#b9dff0, #2f5566);
+}
+.np-root.np-layout .wkex-supersetbtn {
+  position: relative; display: inline-flex; align-items: center; gap: 7px; padding: 6px 14px; border-radius: 999px;
+  border: 1.5px solid light-dark(#8fd0ec, #3a6a80); background: light-dark(#fff, #1d2125);
+  color: light-dark(#0b7fb8, #6cc8ef); font-size: 13px; font-weight: 600; line-height: 1.2; letter-spacing: 0;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .06); cursor: pointer; transition: background-color .15s, color .15s, border-color .15s, box-shadow .15s;
+}
+.np-root.np-layout .wkex-supersetbtn__ico { display: inline-flex; width: 15px; height: 15px; }
+.np-root.np-layout .wkex-supersetbtn:hover, .np-root.np-layout .wkex-supersetbtn:focus-visible {
+  border-color: #0b7fb8; background: #0b7fb8; color: #fff; box-shadow: 0 4px 12px rgba(11, 127, 184, .3); outline: none;
+}
+.np-root.np-layout .wkex-supersetbar:hover::before { border-top-style: solid; border-top-color: #44b4df; }

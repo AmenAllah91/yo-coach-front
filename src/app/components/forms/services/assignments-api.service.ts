@@ -52,6 +52,51 @@ export interface AssignFormRequest {
   dueDate?: string | null;
   endDate?: string | null;   // ✅ ADD THIS
 }
+/** The coach's check-in inbox (CE CheckinInboxService, 2026-11-19). Late = 1 to 7 days, missed = more than 7 days. */
+export interface CheckinInboxCounts {
+  toReview: number;
+  overdue: number;
+  missed: number;
+  sent: number;
+}
+
+/** One short answer on a row: « Poids 72,4 », « Sommeil 2/5 ». */
+export interface CheckinPreviewItem {
+  questionId: string;
+  label: string;
+  kind: 'NUMBER' | 'RATING' | 'YES_NO' | 'CHOICE';
+  value: string;
+  number?: number | null;
+  maxStars?: number | null;
+  previous?: number | null;
+  /** A low rating (2 / 5 or less). */
+  alert: boolean;
+}
+
+export interface CheckinPreviewDelta {
+  questionId: string;
+  label: string;
+  kind: 'NUMBER' | 'RATING';
+  current: number;
+  previous: number;
+  previousAt?: string;
+  maxStars?: number | null;
+}
+
+export interface CheckinPreview {
+  assignmentId: string;
+  items: CheckinPreviewItem[];
+  /** The client's first free-text answer, shortened. */
+  note?: string | null;
+  alert: boolean;
+  deltas: CheckinPreviewDelta[];
+}
+
+export interface CheckinBulkResult {
+  done: number;
+  failed: string[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class AssignmentsApiService {
   private readonly baseUrl = `${environment.baseApiUrl}/api/v1/assignments`;
@@ -65,6 +110,34 @@ export class AssignmentsApiService {
 
   listByForm(formId: string): Observable<FormAssignment[]> {
     return this.http.get<FormAssignment[]>(`${this.baseUrl}/by-form/${formId}`);
+  }
+
+  // The inbox routes (2026-11-19) are read in the background and an older server answers 404: the page then works
+  // without them, so no error toast and no global loader.
+  private static readonly QUIET = { 'X-Skip-Toast': 'true', 'X-Skip-Loader': 'true' };
+
+  ownerCounts(): Observable<CheckinInboxCounts> {
+    return this.http.get<CheckinInboxCounts>(`${this.baseUrl}/owner/counts`, { headers: AssignmentsApiService.QUIET });
+  }
+
+  ownerPreviews(ids: string[]): Observable<Record<string, CheckinPreview>> {
+    let params = new HttpParams();
+    ids.forEach(id => (params = params.append('ids', id)));
+    return this.http.get<Record<string, CheckinPreview>>(`${this.baseUrl}/owner/previews`, {
+      params, headers: AssignmentsApiService.QUIET,
+    });
+  }
+
+  bulkReview(ids: string[]): Observable<CheckinBulkResult> {
+    return this.http.post<CheckinBulkResult>(`${this.baseUrl}/owner/bulk-review`, { ids }, {
+      headers: { 'X-Skip-Toast': 'true' },
+    });
+  }
+
+  bulkCancel(ids: string[]): Observable<CheckinBulkResult> {
+    return this.http.post<CheckinBulkResult>(`${this.baseUrl}/owner/bulk-cancel`, { ids }, {
+      headers: { 'X-Skip-Toast': 'true' },
+    });
   }
 
   cancel(assignmentId: string): Observable<void> {
@@ -135,13 +208,16 @@ export class AssignmentsApiService {
     assigneeId?: string,
     statuses: AssignmentStatus[] = [],
     search?: string,
-    skipLoader = false
+    skipLoader = false,
+    /** Lists only: the server leaves out the frozen questions and the answers in progress (rows show names only). */
+    summary = false
   ): Observable<PageResponse<FormAssignment>> {
     let params = new HttpParams()
       .set('page', page)
       .set('size', size)
       .set('sortBy', sortBy)
       .set('direction', direction);
+    if (summary) params = params.set('summary', 'true');
 
     if (assigneeId) params = params.set('assigneeId', assigneeId);
     statuses.forEach((status) => {

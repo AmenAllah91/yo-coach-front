@@ -5,17 +5,17 @@ import { CopiedDayBannerComponent } from '@shared/program-copy/copied-day-banner
 import { ProgramCopyController } from '@shared/program-copy/program-copy-controller';
 import { ProgramDayClipboardService } from '@shared/program-copy/program-day-clipboard.service';
 import { copyWorkoutDayContent } from '@shared/program-copy/program-day-copy';
-import {Component, OnInit, AfterViewInit, OnDestroy, HostListener, ViewChild, ElementRef} from '@angular/core';
+import {Component, OnInit, AfterViewInit, OnDestroy, HostListener, ViewChild, ElementRef, ChangeDetectorRef, inject, NgZone} from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FeatherModule } from 'angular-feather';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
+import { DragDropModule, CdkDrag, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
+import { canMoveExercise, groupMembers, groupTypeOf, isGroupStart, measureOf, warmupCount } from '@shared/models/exercise-groups';
 import { WorkoutPlanFacade } from '../workout-plan.facade';
-import { WorkoutWeekPanelComponent } from '../workout-week-panel.component';
 import { workoutDayState } from '@shared/models/workout-publication';
-import { ProgramDayState, ProgramSummary, firstWorkoutIssue, programDaysError, workoutDayStatus, workoutSummary } from '@shared/models/program-days';
+import { ProgramDayState, ProgramSummary, firstWorkoutIssue, programDaysError, refusedDaysMessage, workoutDayStatus, workoutSummary } from '@shared/models/program-days';
 import {
   WorkoutDay,
   WorkoutPlan,
@@ -34,6 +34,29 @@ import { isLockedError, isPlanLocked, todayIso } from '@shared/models/program-sc
 import { ConfirmDialogService } from '@shared/components/confirm-dialog/confirm-dialog.service';
 import { LeavesUnsavedChanges, SavedContent, warnBeforeUnload } from '@config/guard/unsaved-changes.guard';
 import { WorkoutAiDraft } from 'app/service/workout-ai.service';
+import { ExerciseHistoryService } from 'app/service/exercise-history.service';
+import { CoachSettingsService } from 'app/service/coach-settings.service';
+import { ExerciseProgressDetailComponent } from '@shared/components/exercise-progress-detail/exercise-progress-detail.component';
+import { ExerciseDifficulty, ExerciseMetric, ExerciseSummary, HistorySession, exerciseHistoryKey, sessionBelowPlan, sessionDoneLine, sessionFromDayLog, sessionPlannedLine, sessionForOccurrence } from '@shared/models/exercise-history';
+import { findExerciseLog } from 'app/components/clients/profil-client/client-activity/client-activity';
+
+/**
+ * Sous un exercice d'une séance de client, prêt à afficher :
+ * - DAY : ce jour est déjà fait, c'est ce que le client a fait CE jour-là ;
+ * - LAST : ce jour n'est pas encore fait, c'est la dernière fois AVANT ce jour.
+ */
+interface LastTime {
+  kind: 'DAY' | 'LAST';
+  date: string;
+  /** « 12, 12, 12 rép. » ; vide si le client n'a rien noté. */
+  done: string;
+  /** Montré seulement si le client a fait moins que prévu. */
+  planned: string | null;
+  below: boolean;
+  /** DAY : exercice passé par le client, ou pas noté du tout. */
+  state: 'DONE' | 'SKIPPED' | 'NOT_LOGGED';
+  difficulty: ExerciseDifficulty | null;
+}
 
 /** Filled in by the display (photos, videos of the library exercise): not a change of the coach. */
 const EXERCISE_DISPLAY_FIELDS = new Set(['image', 'imageUrl', 'thumbnailUrl', 'photoUrl', 'videoUrl', 'videoLink']);
@@ -46,7 +69,7 @@ const EXERCISE_DISPLAY_FIELDS = new Set(['image', 'imageUrl', 'thumbnailUrl', 'p
 @Component({
   selector: 'app-create-workout',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule, WorkoutWeekPanelComponent, SectionLoaderComponent, EmptyDaysModalComponent, ProgramOverflowComponent, CopyDaysModalComponent, CopiedDayBannerComponent, ClientProgramDatesComponent],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule, SectionLoaderComponent, EmptyDaysModalComponent, ProgramOverflowComponent, CopyDaysModalComponent, CopiedDayBannerComponent, ClientProgramDatesComponent, ExerciseProgressDetailComponent],
   templateUrl: './create-workout.component.html',
   styleUrls: ['./create-workout.component.scss'],
 })
@@ -107,10 +130,135 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
     private toast: ToastService,
     private dayClipboard: ProgramDayClipboardService,
     private confirmDialog: ConfirmDialogService,
+    private exerciseHistories: ExerciseHistoryService,
+    private historySettings: CoachSettingsService,
+    private zone: NgZone,
   ) {
     this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
     this.assignOnly = this.route.snapshot.queryParamMap.get('assignOnly') === '1';
     this.clientId = this.route.snapshot.paramMap.get('idClient');
+    this.loadLastTimes();
+  }
+
+  // ---------------------------------------------------------------------------
+  // « La dernière fois » : ce que ce client a fait la dernière fois sur chaque exercice (séance d'un client seulement).
+  // ---------------------------------------------------------------------------
+  private lastSummaries = new Map<string, ExerciseSummary>();
+  /** Par exercice de la séance (le même exercice deux fois a deux lignes) ; recalculé si le jour change. */
+  private lastTimes = new WeakMap<object, { day: WorkoutDay | null; value: LastTime | null }>();
+  /** L'exercice dont le coach regarde tout l'historique. */
+  historyExercise: string | null = null;
+
+  private loadLastTimes(): void {
+    if (!this.clientId) return;
+    // Sans historique, l'éditeur marche comme avant : une erreur ici ne se montre pas.
+    this.exerciseHistories.summary(this.clientId).subscribe({
+      next: data => {
+        this.lastSummaries = new Map(data.exercises.map(item => [item.key, item]));
+        this.lastTimes = new WeakMap();
+      },
+      error: () => {},
+    });
+  }
+
+  /**
+   * L'unité de l'exercice tel que l'éditeur l'affiche (cardio en minutes, exercice au temps en secondes) :
+   * le serveur range parfois le cardio en secondes, d'où « —, —, — s » avant.
+   */
+  private displayMetric(exercise: any, history: ExerciseSummary | undefined, session: HistorySession): ExerciseMetric {
+    if (exercise?.type === 'CARDIO') return 'MIN';
+    if (measureOf(exercise) === 'TIME') return 'SEC';
+    const weighted = history?.metric === 'WEIGHT'
+      || session.sets.some(set => (set.weight ?? 0) > 0 || (set.plannedWeight ?? 0) > 0)
+      || (exercise?.sets || []).some((set: any) => Number(set?.weight) > 0);
+    return weighted ? 'WEIGHT' : 'REPS';
+  }
+
+  private describe(kind: 'DAY' | 'LAST', session: HistorySession, metric: ExerciseMetric): LastTime {
+    const fr = this.translate.currentLang !== 'en';
+    const words = {
+      fr,
+      weight: (kg: number) => {
+        const value = Math.round((this.historySettings.convertWeightFromKg(kg) ?? 0) * 10) / 10;
+        const text = Number.isInteger(value) ? String(value) : value.toFixed(1);
+        return `${fr ? text.replace('.', ',') : text} ${this.historySettings.getWeightUnit()}`;
+      },
+    };
+    const below = sessionBelowPlan(session, metric);
+    return {
+      kind,
+      date: new Date(`${session.date}T00:00:00`).toLocaleDateString(fr ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' }),
+      done: sessionDoneLine(session, metric, words),
+      // Le prévu n'est utile que si le client a fait moins : sinon « Comme prévu ».
+      planned: below ? sessionPlannedLine(session, metric, words) : null,
+      below,
+      state: 'DONE',
+      difficulty: session.difficulty,
+    };
+  }
+
+  /** Le jour ouvert est déjà commencé ou fait par le client : on montre CE jour, pas « la dernière fois ». */
+  private get selectedDayDone(): boolean {
+    return this.isClientMode && workoutDayActive(this.selectedDay);
+  }
+
+  /** Ce que le client a noté ce jour-là pour cet exercice. */
+  private dayResult(exercise: any): LastTime | null {
+    const day: any = this.selectedDay;
+    const list: any[] = day?.workoutSessions?.[0]?.exercises ?? [];
+    const index = Math.max(list.indexOf(exercise), 0);
+    const log = findExerciseLog(day?.clientExerciseLogs || [], exercise, index);
+    const date = String(day?.date || todayIso()).slice(0, 10);
+    const empty = (state: LastTime['state']): LastTime => ({
+      kind: 'DAY', state, done: '', planned: null, below: false, difficulty: null,
+      date: new Date(`${date}T00:00:00`).toLocaleDateString(this.translate.currentLang !== 'en' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'short' }),
+    });
+    if (log?.skipped) return empty('SKIPPED');
+    const session = log ? sessionFromDayLog(log, exercise?.sets || [], date) : null;
+    if (!session || !session.sets.some(set => set.status !== 'PENDING')) {
+      // « J'ai déjà fait la séance » sans détail : tout est fait comme prévu.
+      return String(day?.status || '').toUpperCase() === 'COMPLETED' ? { ...empty('DONE'), done: this.ht('Done', 'Fait') } : empty('NOT_LOGGED');
+    }
+    const result = this.describe('DAY', session, this.displayMetric(exercise, this.lastSummaries.get(exerciseHistoryKey(exercise?.name)), session));
+    return { ...result, difficulty: session.difficulty };
+  }
+
+  lastTime(exercise: { name?: string } | null | undefined): LastTime | null {
+    if (!this.clientId || !exercise) return null;
+    const cached = this.lastTimes.get(exercise);
+    if (cached !== undefined && cached.day === this.selectedDay) return cached.value;
+    let value: LastTime | null;
+    if (this.selectedDayDone) {
+      value = this.dayResult(exercise);
+    } else {
+      const key = exerciseHistoryKey(exercise?.name);
+      const history = this.lastSummaries.get(key);
+      const session = history ? sessionForOccurrence(history.last, this.occurrenceInSession(exercise, key)) : null;
+      // « Dernière fois » = avant ce jour : jamais ce jour-là ni un jour d'après.
+      const dayDate = String(this.selectedDay?.date || '').slice(0, 10);
+      const before = !!session && (!dayDate || session.date < dayDate);
+      value = before ? this.describe('LAST', session!, this.displayMetric(exercise, history, session!)) : null;
+    }
+    this.lastTimes.set(exercise, { day: this.selectedDay, value });
+    return value;
+  }
+
+  /** Le rang de cet exercice parmi les exercices du même nom dans la séance (1 = le premier). */
+  private occurrenceInSession(exercise: unknown, key: string): number {
+    const list: { name?: string }[] = this.selectedDay?.workoutSessions?.[0]?.exercises ?? [];
+    let rank = 0;
+    for (const item of list) {
+      if (exerciseHistoryKey(item?.name) === key) rank++;
+      if (item === exercise) return Math.max(rank, 1);
+    }
+    return 1;
+  }
+
+  /** Petit texte de l'éditeur dans la langue du coach (sans passer par les fichiers de traduction). */
+  ht(en: string, fr: string): string { return this.translate.currentLang === 'en' ? en : fr; }
+
+  difficultyText(value: ExerciseDifficulty | null): string {
+    return value === 'EASY' ? this.ht('Easy', 'Facile') : value === 'HARD' ? this.ht('Hard', 'Dur') : value === 'GOOD' ? this.ht('Just right', 'Bien') : '';
   }
 
   /** « Copier vers… », « Dupliquer la semaine », « Copier le jour » / « Coller sur… » of the day rail. */
@@ -177,6 +325,11 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
     this.mobileStructureOpen = false;
   }
 
+  /** Back to the list the program belongs to: the public templates for a template, else « Programmes ». */
+  private get libraryUrl(): string {
+    return this.isVisibleToOthers || this.facade.plan?.isWorkoutPlanTemplate ? '/workout/public-templates' : '/workout/program-library';
+  }
+
   goBack(): void {
     if (this.returnUrl?.startsWith('/')) {
       void this.router.navigateByUrl(this.returnUrl);
@@ -186,7 +339,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
       void this.router.navigate(['/clients/profil-client', this.clientId], { queryParams: { tab: 'workouts' } });
       return;
     }
-    void this.router.navigate(['/workout/program-library']);
+    void this.router.navigate([this.libraryUrl]);
   }
 
   get selectedWorkoutSession(): WorkoutSession | null {
@@ -853,11 +1006,70 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
     this.pendingDurationWeeks = null;
     this.pendingDurationRemovedDays = 0;
     this.applyDurationWeeks(nextWeeks);
+    if (this.saveAfterDuration) {
+      this.saveAfterDuration = false;
+      this.savePlan();
+    }
   }
 
   cancelDurationReduction() {
     this.pendingDurationWeeks = null;
     this.pendingDurationRemovedDays = 0;
+    // « Modifier le programme » : le reste est déjà appliqué, on l'enregistre avec l'ancienne durée.
+    if (this.saveAfterDuration) {
+      this.saveAfterDuration = false;
+      this.savePlan();
+    }
+  }
+
+  // ---------- « Modifier le programme » (programme déjà créé) ----------
+
+  planEditOpen = false;
+  planEdit = { name: '', details: '', weeks: 4, visible: false };
+  planEditError = '';
+  /** La durée réduite attend la confirmation (jours retirés) avant l'enregistrement. */
+  private saveAfterDuration = false;
+
+  /** Ouvre la fenêtre avec les valeurs actuelles : rien ne change tant que le coach n'enregistre pas. */
+  openPlanEdit() {
+    this.planEdit = {
+      name: this.workoutPlan.name || '',
+      details: this.workoutPlan.details || '',
+      weeks: this.durationWeeks,
+      visible: this.isVisibleToOthers,
+    };
+    this.planEditError = '';
+    this.planEditOpen = true;
+    setTimeout(() => document.getElementById('npPlanEditName')?.focus());
+  }
+
+  closePlanEdit() {
+    this.planEditOpen = false;
+  }
+
+  savePlanEdit() {
+    const name = this.planEdit.name.trim();
+    if (!name) {
+      this.planEditError = 'PLAN_EDIT_NAME_REQUIRED';
+      document.getElementById('npPlanEditName')?.focus();
+      return;
+    }
+    this.workoutPlan.name = name;
+    this.workoutPlan.details = this.planEdit.details.trim();
+    this.facade.showPlanDescription = !!this.workoutPlan.details;
+    if (this.canCreateTemplate && !this.isClientMode) this.isVisibleToOthers = this.planEdit.visible;
+    this.planEditOpen = false;
+
+    const weeks = this.normalizeDurationWeeks(this.planEdit.weeks);
+    if (weeks !== this.durationWeeks) {
+      this.onDurationWeeksChange(weeks);
+      // Moins de semaines : la confirmation des jours retirés s'affiche, l'enregistrement suit sa réponse.
+      if (this.pendingDurationWeeks) {
+        this.saveAfterDuration = true;
+        return;
+      }
+    }
+    this.savePlan();
   }
 
   private applyDurationWeeks(weeks: number) {
@@ -936,7 +1148,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
 
     if (this.selectedDay.isRestDay) {
       this.activeVideoExerciseId = null;
-      this.facade.showExerciseSelector = false;
+      this.facade.closeExerciseSelector();
       this.selectedDay.workoutSessions = [];
       this.selectedDay.session = null;
     } else {
@@ -966,7 +1178,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
   }
 
   closeExerciseSelector() {
-    this.facade.showExerciseSelector = false;
+    this.facade.closeExerciseSelector();
   }
 
   closeExerciseModal() {
@@ -1013,6 +1225,10 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
     return this.facade.isExerciseAdded(ex);
   }
 
+  isExerciseInSession(ex: Exercise): boolean {
+    return this.facade.isExerciseInSession(ex);
+  }
+
   isInSuperset(i: number) {
     return this.facade.isInSuperset?.(i) ?? false;
   }
@@ -1041,49 +1257,560 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
     this.facade.handleRemoveExercise?.(exId);
   }
 
-  private isSupersetOrderValid(list: Exercise[]): boolean {
-    const ranges = new Map<string, { first: number; last: number; count: number }>();
-
-    list.forEach((exercise, index) => {
-      const groupId = exercise.supersetGroupId;
-      if (!groupId) return;
-
-      const range = ranges.get(groupId) || { first: index, last: index, count: 0 };
-      range.first = Math.min(range.first, index);
-      range.last = Math.max(range.last, index);
-      range.count += 1;
-      ranges.set(groupId, range);
-    });
-
-    for (const [groupId, range] of ranges.entries()) {
-      if (range.count < 2) return false;
-
-      for (let i = range.first; i <= range.last; i += 1) {
-        if (list[i]?.supersetGroupId !== groupId) {
-          return false;
-        }
-      }
-    }
-
-    return true;
-  }
-
   onDropDay(event: CdkDragDrop<WorkoutDay[]>) {
     if (this.readOnly) return;
     moveItemInArray(this.days, event.previousIndex, event.currentIndex);
     this.refreshDates();
   }
 
+  // ---------- Glisser-déposer : un exercice seul, un exercice dans son groupe, ou tout un groupe ----------
+  // Dès qu'on appuie sur une poignée ☰, la liste se replie en lignes (un superset / circuit = une seule ligne) :
+  // on voit toute la séance, un trait bleu montre où l'élément va tomber, les places interdites n'en ont pas.
+
+  /** 'units' : on déplace un exercice seul ou un groupe entier ; 'members' : un exercice à l'intérieur de son groupe. */
+  sortMode: 'units' | 'members' | null = null;
+  private sortGroupId: string | null = null;
+  private dragActive = false;
+  /** Les lignes que l'on peut glisser, dans l'ordre de la page : en-tête de groupe ('head') ou exercice ('ex'). */
+  private sortRows: { kind: 'head' | 'ex'; i: number }[] = [];
+  /** Téléphone / tablette : on garde le doigt un instant avant d'attraper (sinon on déplace en voulant défiler). */
+  readonly dragDelay = { touch: 300, mouse: 0 };
+  /** Espaces vides ajoutés pendant le glisser quand la page ne peut pas défiler assez
+   *  pour garder l'élément attrapé sous le pointeur (la liste repliée est bien plus courte). */
+  sortSpacerTop = 0;
+  sortSpacerBottom = 0;
+  private readonly cdr = inject(ChangeDetectorRef);
+
+  private get dayExercises(): Exercise[] {
+    return this.selectedDay?.workoutSessions?.[0]?.exercises ?? [];
+  }
+
+  /** Appui sur une poignée ☰ : la liste passe en lignes avant que le geste commence. */
+  beginSort(mode: 'units' | 'members', i: number, ev?: Event) {
+    if (this.readOnly || this.dragActive) return;
+    if (ev instanceof MouseEvent && ev.button !== 0) return;
+    const list = this.dayExercises;
+    if (!list[i]) return;
+    const item = (ev?.target as HTMLElement | null)?.closest('.cdk-drag') as HTMLElement | null;
+    const before = item?.getBoundingClientRect().top;
+    this.groupMenuAt = null;
+    this.sortMode = mode;
+    this.sortGroupId = mode === 'members' ? list[i].supersetGroupId ?? null : null;
+    this.sortRows = [];
+    list.forEach((ex, index) => {
+      if (isGroupStart(list, index)) this.sortRows.push({ kind: 'head', i: index });
+      if (mode === 'members' || !ex.supersetGroupId) this.sortRows.push({ kind: 'ex', i: index });
+    });
+    // La liste se replie tout de suite (avant que le geste commence) ; on garde l'élément sous le pointeur.
+    if (item && before != null) {
+      this.cdr.detectChanges();
+      this.keepUnderPointer(item, before);
+    }
+  }
+
+  /** Défile la page pour que l'élément attrapé reste sous le pointeur ; sinon un espace vide en haut ou en bas. */
+  private keepUnderPointer(item: HTMLElement, before: number) {
+    const scroller = this.scrollParent(item);
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const error = item.getBoundingClientRect().top - before;
+      if (Math.abs(error) < 1) return;
+      const max = scroller.scrollHeight - scroller.clientHeight;
+      const target = scroller.scrollTop + error;
+      const clamped = Math.max(0, Math.min(max, target));
+      scroller.scrollTop = clamped;
+      const rest = target - clamped;
+      if (Math.abs(rest) < 1) continue;
+      if (rest < 0) this.sortSpacerTop += -rest; // page tout en haut : l'espace vide pousse l'élément vers le bas
+      else this.sortSpacerBottom += rest; // page tout en bas : on lui donne de la place pour défiler
+      this.cdr.detectChanges();
+    }
+  }
+
+  private scrollParent(el: HTMLElement): HTMLElement {
+    for (let node = el.parentElement; node; node = node.parentElement) {
+      const overflow = getComputedStyle(node).overflowY;
+      if ((overflow === 'auto' || overflow === 'scroll') && node.scrollHeight > node.clientHeight) return node;
+    }
+    return (document.scrollingElement as HTMLElement) || document.documentElement;
+  }
+
+  onDragStarted() {
+    this.dragActive = true;
+  }
+
+  /** Filet de sécurité : la liste se déplie toujours à la fin du geste. */
+  onDragEnded() {
+    setTimeout(() => {
+      if (this.dragActive) this.endSort();
+    });
+  }
+
+  /** Appui relâché sans avoir glissé : la liste se déplie. */
+  @HostListener('document:mouseup')
+  @HostListener('document:touchend')
+  @HostListener('document:touchcancel')
+  onPointerReleased() {
+    if (this.sortMode && !this.dragActive) this.endSort();
+  }
+
+  private endSort() {
+    this.sortMode = null;
+    this.sortGroupId = null;
+    this.dragActive = false;
+    this.sortRows = [];
+    this.sortSpacerTop = 0;
+    this.sortSpacerBottom = 0;
+  }
+
+  private rowOf(data: { kind: 'head' | 'ex'; i: number } | null | undefined): number {
+    return data ? this.sortRows.findIndex((r) => r.kind === data.kind && r.i === data.i) : -1;
+  }
+
+  /** Les places permises pour la ligne `from` (bornes comprises). */
+  private allowedRows(from: number): { min: number; max: number } {
+    const rows = this.sortRows;
+    const list = this.dayExercises;
+    if (this.sortMode === 'members') {
+      const own = rows
+        .map((r, k) => (r.kind === 'ex' && list[r.i]?.supersetGroupId === this.sortGroupId ? k : -1))
+        .filter((k) => k >= 0);
+      return own.length ? { min: Math.min(...own), max: Math.max(...own) } : { min: from, max: from };
+    }
+    // Un exercice seul ou un groupe : partout, sauf que l'échauffement reste en haut (ses lignes sont les premières).
+    const warm = warmupCount(list);
+    return from < warm ? { min: 0, max: warm - 1 } : { min: warm, max: rows.length - 1 };
+  }
+
+  /** Le trait bleu ne s'affiche qu'aux places permises. */
+  sortPredicate = (index: number, drag: CdkDrag): boolean => {
+    const from = this.rowOf(drag.data);
+    if (from < 0) return false;
+    const { min, max } = this.allowedRows(from);
+    return index >= min && index <= max;
+  };
+
   onDropExercise(event: CdkDragDrop<Exercise[]>) {
-    const exercises = this.selectedDay?.workoutSessions[0]?.exercises;
-    if (!exercises) return;
-    const item = exercises[event.previousIndex];
-    if (item.supersetGroupId) return;
-    const simulated = [...exercises];
-    simulated.splice(event.previousIndex, 1);
-    simulated.splice(event.currentIndex, 0, item);
-    if (!this.isSupersetOrderValid(simulated)) return;
-    moveItemInArray(exercises, event.previousIndex, event.currentIndex);
+    const list = this.dayExercises;
+    const rows = this.sortRows;
+    const mode = this.sortMode;
+    const from = event.previousIndex;
+    const to = event.currentIndex;
+    if (this.readOnly || !mode || !list.length || !rows[from] || !rows[to]) {
+      this.endSort();
+      return;
+    }
+
+    const before = [...list];
+    const refused = this.refusedText(event, from);
+    const { min, max } = this.allowedRows(from);
+    let moved = false;
+    if (from !== to && to >= min && to <= max) {
+      let next: Exercise[];
+      if (mode === 'units') {
+        const units = rows.map((r) => (r.kind === 'head' ? groupMembers(list, r.i) : [list[r.i]]));
+        moveItemInArray(units, from, to);
+        next = units.flat();
+      } else {
+        next = [...list];
+        moveItemInArray(next, rows[from].i, rows[to].i);
+      }
+      // Dernière vérification : même liste, aucun groupe coupé.
+      const ok = next.length === list.length && next.every((ex) => list.includes(ex))
+        && (mode === 'units' || canMoveExercise(list, rows[from].i, rows[to].i));
+      if (ok) {
+        list.splice(0, list.length, ...next);
+        moved = true;
+      }
+    }
+
+    const movedEx = before[rows[from].i];
+    const movedGroup = rows[from].kind === 'head';
+    this.endSort();
+    if (refused) this.showMoveToast(refused, moved ? before : null);
+    else if (moved) this.showMoveToast(this.translate.instant('DRAG_MOVED'), before);
+    if (moved) {
+      this.dismissDragTip();
+      this.scrollToExercise(movedEx, movedGroup);
+    }
+  }
+
+  /** Lâché hors des places permises : on dit pourquoi au lieu de ne rien faire en silence. */
+  private refusedText(event: CdkDragDrop<Exercise[]>, from: number): string | null {
+    const host = event.container.element.nativeElement as HTMLElement;
+    const items = Array.from(host.querySelectorAll(':scope > .cdk-drag')) as HTMLElement[];
+    const { min, max } = this.allowedRows(from);
+    if (items.length !== this.sortRows.length || !items[min] || !items[max]) return null;
+    const top = items[min].getBoundingClientRect().top;
+    const bottom = items[max].getBoundingClientRect().bottom;
+    const y = event.dropPoint?.y;
+    if (y == null || (y >= top - 12 && y <= bottom + 12)) return null;
+    const list = this.dayExercises;
+    if (this.sortMode === 'members') {
+      const circuit = groupTypeOf(list[this.sortRows[from].i]) === 'CIRCUIT';
+      return this.translate.instant(circuit ? 'DRAG_REFUSED_CIRCUIT' : 'DRAG_REFUSED_SUPERSET');
+    }
+    return this.translate.instant(from < warmupCount(list) ? 'DRAG_REFUSED_WARMUP_STAY' : 'DRAG_REFUSED_WARMUP');
+  }
+
+  /** Après le déplacement, la liste se déplie : on garde l'élément déplacé à l'écran. */
+  private scrollToExercise(ex: Exercise | undefined, group: boolean) {
+    if (!ex?.id) return;
+    setTimeout(() => {
+      const selector = group && ex.supersetGroupId ? `[data-grp-head="${ex.supersetGroupId}"]` : `[data-exid="${ex.id}"]`;
+      (document.querySelector(selector) as HTMLElement | null)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }, 50);
+  }
+
+  /** Une ligne d'un groupe replié : « Circuit · 4 exercices ». */
+  groupSummary(i: number): string {
+    const list = this.dayExercises;
+    const type = this.translate.instant(groupTypeOf(list[i]) === 'CIRCUIT' ? 'WKGRP_CIRCUIT' : 'WKGRP_SUPERSET');
+    return this.translate.instant('WKGRP_SUMMARY', { type, n: groupMembers(list, i).length });
+  }
+
+  // ---------- « Déplacé · Annuler » (5 s) ----------
+
+  moveToast: { text: string; undo: boolean } | null = null;
+  private undoOrder: { list: Exercise[]; order: Exercise[] } | null = null;
+  private moveToastTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private showMoveToast(text: string, before: Exercise[] | null) {
+    this.undoOrder = before ? { list: this.dayExercises, order: before } : null;
+    this.moveToast = { text, undo: !!before };
+    if (this.moveToastTimer) clearTimeout(this.moveToastTimer);
+    this.moveToastTimer = setTimeout(() => {
+      this.moveToast = null;
+      this.undoOrder = null;
+    }, 5000);
+  }
+
+  undoMove() {
+    const undo = this.undoOrder;
+    if (undo && undo.list === this.dayExercises) {
+      undo.list.splice(0, undo.list.length, ...undo.order);
+      // « Annuler » retire aussi un exercice glissé depuis la bibliothèque : les totaux suivent.
+      const session = this.selectedDay?.workoutSessions?.[0];
+      if (session) this.facade.recomputeSession(session);
+    }
+    this.undoOrder = null;
+    this.moveToast = null;
+    if (this.moveToastTimer) clearTimeout(this.moveToastTimer);
+  }
+
+  // ---------- Menu « ⋮ » du groupe : Monter / Descendre (pour qui préfère ne pas glisser) ----------
+
+  groupMenuAt: number | null = null;
+
+  toggleGroupMenu(i: number, ev: Event) {
+    ev.stopPropagation();
+    this.dayMenuOpen = false;
+    this.groupMenuAt = this.groupMenuAt === i ? null : i;
+  }
+
+  moveGroupBy(i: number, direction: -1 | 1) {
+    this.groupMenuAt = null;
+    if (this.readOnly || !this.facade.canMoveGroupAt(i, direction)) return;
+    const list = this.dayExercises;
+    const before = [...list];
+    const ex = list[i];
+    this.facade.moveGroupAt(i, direction);
+    this.showMoveToast(this.translate.instant('DRAG_MOVED'), before);
+    this.scrollToExercise(ex, true);
+  }
+
+  // ---------- Astuce affichée une seule fois ----------
+
+  private dragTipDismissed = (() => {
+    try {
+      return localStorage.getItem('yc.tip.dragGroups') === '1';
+    } catch {
+      return false;
+    }
+  })();
+
+  get showDragTip(): boolean {
+    return !this.readOnly && !this.dragTipDismissed && this.dayExercises.length >= 2;
+  }
+
+  dismissDragTip() {
+    if (this.dragTipDismissed) return;
+    this.dragTipDismissed = true;
+    try {
+      localStorage.setItem('yc.tip.dragGroups', '1');
+    } catch {
+      /* navigation privée : l'astuce reviendra, ce n'est pas grave */
+    }
+  }
+
+  // ---------- Glisser un exercice de la bibliothèque dans la séance ----------
+  // Glisser fait maison (souris seulement), à part du tri ☰ (CDK) : une carte nette suit la souris,
+  // une place en pointillés s'ouvre dans la séance, la carte s'y pose en douceur.
+  // Actif quand la bibliothèque est une colonne à côté de la séance (≥ 768 px). Sur téléphone, le « + » reste le seul moyen.
+  // Les mouvements de souris tournent hors d'Angular : on ne relance l'affichage que quand la place change.
+
+  private readonly libDragMedia = (() => {
+    try {
+      return window.matchMedia('(min-width: 768px) and (hover: hover) and (pointer: fine)');
+    } catch {
+      return null;
+    }
+  })();
+
+  private readonly reducedMotion = (() => {
+    try {
+      return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch {
+      return false;
+    }
+  })();
+
+  /** Exercice de la bibliothèque en cours de glisser. */
+  libDrag: Exercise | null = null;
+  /** Place où il tomberait (la place en pointillés), null quand la souris est hors de la séance. */
+  libDropIndex: number | null = null;
+  /** La carte qui suit la souris. */
+  libGhost: { name: string; sub: string; thumb: string | null } | null = null;
+  /** L'exercice qui vient d'arriver : il clignote une fois. */
+  justAddedId: string | null = null;
+
+  @ViewChild('libGhostEl') private libGhostEl?: ElementRef<HTMLElement>;
+
+  private libPress: { ex: Exercise; x: number; y: number; source: HTMLElement; offX: number; offY: number } | null = null;
+  private libPointer = { x: 0, y: 0 };
+  private libFrame = 0;
+  private libLanding = false;
+  private libScroller: HTMLElement | null = null;
+  private justAddedTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Pour un ajout simple seulement : en mode « ajouter au groupe / à l'échauffement », le « + » suffit. */
+  get canDragFromLibrary(): boolean {
+    return !this.readOnly && !this.facade.addTargetGroup && !this.facade.addTargetWarmup && !!this.libDragMedia?.matches;
+  }
+
+  /** Appui sur une ligne de la bibliothèque : le glisser commence après 5 px de mouvement (un clic reste un clic). */
+  onLibPointerDown(ex: Exercise, ev: PointerEvent) {
+    if (!this.canDragFromLibrary || ev.pointerType !== 'mouse' || ev.button !== 0 || this.libLanding) return;
+    if ((ev.target as HTMLElement).closest('button, a, input, select, textarea')) return;
+    ev.preventDefault(); // pas de sélection de texte pendant le geste
+    const source = ev.currentTarget as HTMLElement;
+    const r = source.getBoundingClientRect();
+    this.libPress = {
+      ex, x: ev.clientX, y: ev.clientY, source,
+      offX: Math.min(ev.clientX - r.left, 260), offY: Math.min(ev.clientY - r.top, 40),
+    };
+    this.zone.runOutsideAngular(() => {
+      document.addEventListener('pointermove', this.onLibPointerMove);
+      document.addEventListener('pointerup', this.onLibPointerUp);
+      document.addEventListener('pointercancel', this.onLibCancel);
+      document.addEventListener('keydown', this.onLibKey);
+    });
+  }
+
+  private onLibPointerMove = (ev: PointerEvent) => {
+    const press = this.libPress;
+    if (!press) return;
+    this.libPointer = { x: ev.clientX, y: ev.clientY };
+    if (!this.libDrag) {
+      if (Math.hypot(ev.clientX - press.x, ev.clientY - press.y) < 5) return;
+      this.startLibDrag(press);
+    }
+    if (!this.libFrame) this.libFrame = requestAnimationFrame(this.libTick);
+  };
+
+  private startLibDrag(press: NonNullable<CreateWorkoutComponent['libPress']>) {
+    const ex = press.ex;
+    this.zone.run(() => {
+      this.libDrag = ex;
+      this.libDropIndex = null;
+      this.libGhost = {
+        name: ex.name || '',
+        sub: ex.type || 'Exercise',
+        thumb: this.getExerciseThumbnail(ex) || null,
+      };
+    });
+    this.libScroller = this.findScroller(this.host.nativeElement.querySelector('.wkex') as HTMLElement | null);
+    document.body.classList.add('yc-lib-dragging');
+    this.placeGhost();
+  }
+
+  /** Une image par écran : la carte suit, la page défile près des bords, la place se met à jour. */
+  private libTick = () => {
+    this.libFrame = 0;
+    if (!this.libDrag || this.libLanding) return;
+    this.placeGhost();
+    const scrolled = this.autoScroll();
+    const zone = this.host.nativeElement.querySelector('.wkex') as HTMLElement | null;
+    let index: number | null = null;
+    if (zone) {
+      const r = zone.getBoundingClientRect();
+      const { x, y } = this.libPointer;
+      if (x >= r.left - 24 && x <= r.right + 24 && y >= r.top - 24 && y <= r.bottom + 24) {
+        index = this.libDropSpot(zone, y);
+      }
+    }
+    if (index !== this.libDropIndex) this.zone.run(() => (this.libDropIndex = index));
+    if (scrolled) this.libFrame = requestAnimationFrame(this.libTick);
+  };
+
+  private placeGhost() {
+    const el = this.libGhostEl?.nativeElement;
+    const press = this.libPress;
+    if (!el || !press) return;
+    el.style.transform = `translate3d(${this.libPointer.x - press.offX}px, ${this.libPointer.y - press.offY}px, 0)`;
+  }
+
+  /** Près du haut ou du bas de la zone qui défile, la page défile toute seule. */
+  private autoScroll(): boolean {
+    const box = this.libScroller;
+    const top = box ? box.getBoundingClientRect().top : 0;
+    const bottom = box ? box.getBoundingClientRect().bottom : window.innerHeight;
+    const y = this.libPointer.y;
+    const edge = 70;
+    let speed = 0;
+    if (y < top + edge) speed = -Math.ceil(((top + edge - y) / edge) * 14);
+    else if (y > bottom - edge) speed = Math.ceil(((y - (bottom - edge)) / edge) * 14);
+    if (!speed) return false;
+    if (box) {
+      const before = box.scrollTop;
+      box.scrollTop += speed;
+      return box.scrollTop !== before;
+    }
+    const before = window.scrollY;
+    window.scrollBy(0, speed);
+    return window.scrollY !== before;
+  }
+
+  private findScroller(from: HTMLElement | null): HTMLElement | null {
+    for (let el = from?.parentElement; el && el !== document.body; el = el.parentElement) {
+      const oy = getComputedStyle(el).overflowY;
+      if ((oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight + 1) return el;
+    }
+    return null;
+  }
+
+  private onLibPointerUp = () => {
+    if (!this.libDrag) {
+      this.clearLibDrag(); // simple clic : rien ne bouge
+      return;
+    }
+    if (this.libDropIndex === null) this.flyBack();
+    else this.land();
+  };
+
+  private onLibCancel = () => (this.libDrag ? this.flyBack() : this.clearLibDrag());
+
+  private onLibKey = (ev: KeyboardEvent) => {
+    if (ev.key === 'Escape' && this.libDrag) this.flyBack();
+  };
+
+  /** Lâché dans la séance : la carte se pose dans la place en pointillés, puis l'exercice y est ajouté. */
+  private land() {
+    const ex = this.libDrag;
+    const index = this.libDropIndex;
+    if (!ex || index === null) return;
+    this.libLanding = true;
+    const slot = this.host.nativeElement.querySelector('.wklib-slot') as HTMLElement | null;
+    const el = this.libGhostEl?.nativeElement;
+    const finish = () => this.zone.run(() => {
+      const before = [...this.dayExercises];
+      this.clearLibDrag();
+      const added = this.facade.insertExerciseAt(ex, index);
+      if (!added) return;
+      this.showMoveToast(this.translate.instant('LIB_DROP_ADDED', { name: added.name }), before);
+      this.flashAdded(added);
+    });
+    if (!slot || !el || this.reducedMotion) {
+      finish();
+      return;
+    }
+    const r = slot.getBoundingClientRect();
+    el.classList.add('is-landing');
+    el.style.transform = `translate3d(${r.left + 12}px, ${r.top + 8}px, 0)`;
+    setTimeout(finish, 200);
+  }
+
+  /** Lâché ailleurs (ou Échap) : la carte revient à sa ligne et disparaît. */
+  private flyBack() {
+    const press = this.libPress;
+    const el = this.libGhostEl?.nativeElement;
+    this.libLanding = true;
+    if (this.libDropIndex !== null) this.zone.run(() => (this.libDropIndex = null));
+    if (!press || !el || this.reducedMotion || !press.source.isConnected) {
+      this.zone.run(() => this.clearLibDrag());
+      return;
+    }
+    const r = press.source.getBoundingClientRect();
+    el.classList.add('is-returning');
+    el.style.transform = `translate3d(${r.left}px, ${r.top}px, 0)`;
+    setTimeout(() => this.zone.run(() => this.clearLibDrag()), 220);
+  }
+
+  private clearLibDrag() {
+    document.removeEventListener('pointermove', this.onLibPointerMove);
+    document.removeEventListener('pointerup', this.onLibPointerUp);
+    document.removeEventListener('pointercancel', this.onLibCancel);
+    document.removeEventListener('keydown', this.onLibKey);
+    if (this.libFrame) cancelAnimationFrame(this.libFrame);
+    this.libFrame = 0;
+    document.body.classList.remove('yc-lib-dragging');
+    this.libPress = null;
+    this.libDrag = null;
+    this.libDropIndex = null;
+    this.libGhost = null;
+    this.libLanding = false;
+    this.libScroller = null;
+  }
+
+  /** Le nouvel exercice s'éclaire une seconde, à l'écran. */
+  private flashAdded(ex: Exercise) {
+    this.justAddedId = ex.id ?? null;
+    if (this.justAddedTimer) clearTimeout(this.justAddedTimer);
+    this.justAddedTimer = setTimeout(() => (this.justAddedId = null), 1400);
+    this.scrollToExercise(ex, false);
+  }
+
+  /**
+   * La place la plus proche du pointeur : entre deux exercices seuls ou groupes entiers,
+   * jamais dans un superset / circuit, jamais au-dessus de l'échauffement.
+   * La place en pointillés déjà ouverte pousse la suite vers le bas : on mesure comme si elle n'était pas là,
+   * sinon la place sauterait d'un cran à chaque image.
+   */
+  private libDropSpot(host: HTMLElement, y: number): number {
+    const list = this.dayExercises;
+    const slot = host.querySelector('.wklib-slot') as HTMLElement | null;
+    const open = slot ? this.libDropIndex : null;
+    const slotSpace = slot ? slot.offsetHeight + (parseFloat(getComputedStyle(slot).marginTop) || 0) : 0;
+    const shift = (start: number, v: number) => (open !== null && start >= open ? v - slotSpace : v);
+    const find = (selector: string) => host.querySelector(selector) as HTMLElement | null;
+    const cardOf = (ex: Exercise) => find(`[data-exid="${CSS.escape(String(ex.id))}"]`);
+    const headOf = (ex: Exercise) => (ex.supersetGroupId ? find(`[data-grp-head="${CSS.escape(String(ex.supersetGroupId))}"]`) : null);
+
+    // Chaque bloc (exercice seul ou groupe entier, avec son pied « Ajouter au circuit ») : son haut et son bas à l'écran.
+    const units: { start: number; top: number; bottom: number }[] = [];
+    for (let i = 0; i < list.length; ) {
+      const end = list[i].supersetGroupId ? groupMembers(list, i).length + i - 1 : i;
+      const top = (headOf(list[i]) ?? cardOf(list[i]))?.getBoundingClientRect().top;
+      let lastEl = cardOf(list[end]);
+      const foot = lastEl?.nextElementSibling as HTMLElement | null;
+      if (foot?.classList.contains('wkgrp-foot')) lastEl = foot;
+      const bottom = lastEl?.getBoundingClientRect().bottom;
+      if (top != null && bottom != null) units.push({ start: i, top: shift(i, top), bottom: shift(i, bottom) });
+      i = end + 1;
+    }
+
+    const warm = warmupCount(list);
+    const spots: { index: number; y: number }[] = [];
+    units.forEach((u, k) => {
+      if (u.start < warm) return;
+      const prev = units[k - 1];
+      spots.push({ index: u.start, y: prev ? (prev.bottom + u.top) / 2 : u.top });
+    });
+    const last = units[units.length - 1];
+    spots.push({ index: list.length, y: last ? last.bottom + 24 : y });
+
+    let best = spots[0];
+    for (const s of spots) if (Math.abs(s.y - y) < Math.abs(best.y - y)) best = s;
+    return best.index;
   }
 
   handleAddSet(exId: string) {
@@ -1133,6 +1860,129 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
   @HostListener('document:click')
   onDocumentClick() {
     this.openSetTypeKey = null;
+    this.dayMenuOpen = false;
+    this.groupMenuAt = null;
+  }
+
+  // ---------- Pistes 5 à 7 : résumé de séance, « Tout replier », nom de séance dans le titre ----------
+
+  /** Exercices repliés (une ligne chacun), par id. */
+  private collapsedIds = new Set<string>();
+
+  isCollapsed(ex: { id?: string }): boolean {
+    // Pendant un glisser, toute la liste est en lignes.
+    if (this.sortMode) return true;
+    return !!ex?.id && this.collapsedIds.has(ex.id);
+  }
+
+  toggleCollapse(ex: { id?: string }) {
+    if (!ex?.id) return;
+    if (this.collapsedIds.has(ex.id)) this.collapsedIds.delete(ex.id);
+    else this.collapsedIds.add(ex.id);
+  }
+
+  allCollapsed(): boolean {
+    const list = this.selectedWorkoutSession?.exercises || [];
+    return list.length > 0 && list.every((ex) => this.isCollapsed(ex));
+  }
+
+  toggleCollapseAll() {
+    const list = this.selectedWorkoutSession?.exercises || [];
+    if (this.allCollapsed()) list.forEach((ex) => ex.id && this.collapsedIds.delete(ex.id));
+    else list.forEach((ex) => ex.id && this.collapsedIds.add(ex.id));
+  }
+
+  /** « 3 × 12 · 60 kg · repos 90 s » (des écarts : « 3 × 8–12 »). */
+  exerciseLine(ex: Exercise): string {
+    const sets = ex.sets || [];
+    if (!sets.length) return this.ht('No set', 'Aucune série');
+    const range = (values: (number | null | undefined)[]) => {
+      const nums = values.map((v) => Number(v)).filter((v) => Number.isFinite(v) && v > 0);
+      if (!nums.length) return '';
+      const min = Math.min(...nums), max = Math.max(...nums);
+      return min === max ? `${min}` : `${min}–${max}`;
+    };
+    const cardio = ex.type === 'CARDIO';
+    const timed = this.facade.measureOf(ex) === 'TIME';
+    const value = range(sets.map((st) => this.facade.singleValue(ex, st)));
+    const unit = cardio ? ' min' : timed ? ' s' : '';
+    const parts = [`${sets.length} × ${value || '—'}${value ? unit : ''}`];
+    const weight = range(sets.map((st) => st.weight));
+    if (weight && !cardio && this.facade.shouldShowWeightField()) parts.push(`${weight} ${this.facade.getWeightUnitLabel()}`);
+    if (!ex.supersetGroupId) {
+      const rest = range(sets.map((st) => this.facade.restSeconds(st)));
+      if (rest) parts.push(`${this.ht('rest', 'repos')} ${rest} s`);
+    }
+    return parts.join(' · ');
+  }
+
+  /** « 6 exercices · 18 séries · ~50 min » : durée = travail (≈ 3 s par rep, temps, minutes de cardio) + repos. */
+  sessionSummaryText(): string | null {
+    const list = this.selectedWorkoutSession?.exercises || [];
+    if (!list.length) return null;
+    let sets = 0;
+    let seconds = 0;
+    for (const ex of list) {
+      for (const st of ex.sets || []) {
+        sets++;
+        const v = Number(this.facade.singleValue(ex, st)) || 0;
+        seconds += ex.type === 'CARDIO' ? v * 60 : this.facade.measureOf(ex) === 'TIME' ? v : (v || 10) * 3;
+        seconds += this.facade.restSeconds(st);
+      }
+    }
+    const minutes = Math.max(5, Math.round(seconds / 60 / 5) * 5);
+    return this.ht(
+      `${list.length} exercise${list.length > 1 ? 's' : ''} · ${sets} set${sets > 1 ? 's' : ''} · ~${minutes} min`,
+      `${list.length} exercice${list.length > 1 ? 's' : ''} · ${sets} série${sets > 1 ? 's' : ''} · ~${minutes} min`,
+    );
+  }
+
+  /** Le champ du nom prend la largeur de son texte (le titre reste sur une ligne). */
+  nameFieldSize(name: string | null | undefined): number {
+    const text = (name || '').trim() || this.translate.instant('WORKOUT_NAME');
+    return Math.min(Math.max(text.length, 6), 40);
+  }
+
+  /** ⧉ d'une semaine (colonne de gauche) : elle devient la semaine choisie, puis la fenêtre « Dupliquer la semaine » s'ouvre. */
+  duplicateWeek(week: { days: WorkoutDay[] }, ev?: Event) {
+    ev?.stopPropagation();
+    const days = week?.days || [];
+    if (!days.length) return;
+    if (!days.includes(this.selectedDay as WorkoutDay)) {
+      const first = days.find((d) => !['EMPTY', 'GAP'].includes(this.dayRailState(d))) || days[0];
+      this.selectDay(first);
+    }
+    this.copy.openWeek();
+  }
+
+  /** Menu « ⋮ » du jour (Copier, Jour de repos, Vider la séance, Supprimer le jour). */
+  dayMenuOpen = false;
+
+  toggleDayMenu(ev: Event) {
+    ev.stopPropagation();
+    this.dayMenuOpen = !this.dayMenuOpen;
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeDayMenu() {
+    this.dayMenuOpen = false;
+    this.groupMenuAt = null;
+  }
+
+  /** « Vider la séance » : tous les exercices du jour retirés, toujours demandé avant. */
+  async clearDay() {
+    const day = this.selectedDay;
+    if (!day || !this.selectedWorkoutSession?.exercises?.length) return;
+    const confirmed = await this.confirmDialog.ask({
+      title: 'CONFIRM_ACTION.CLEAR_DAY_TITLE',
+      text: 'CONFIRM_ACTION.CLEAR_DAY_TEXT',
+      params: { label: this.weekDayLabel(day) },
+      confirm: 'CONFIRM_ACTION.CLEAR_DAY_CONFIRM',
+      icon: 'x-circle',
+    });
+    if (!confirmed || this.selectedDay !== day) return;
+    this.activeVideoExerciseId = null;
+    this.facade.clearSelectedSession();
   }
 
   getSetDisplayLabel(set: any, index: number): string {
@@ -1361,12 +2211,22 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
       this.emptyDaysPrompt = refused.days;
       return;
     }
-    this.saveError = refused ? refused.error : this.translate.instant('WORKOUT_SAVE_ERROR');
+    if (refused) {
+      // What to fix and where, and the day opened so the coach sees it.
+      this.saveError = refusedDaysMessage(refused, (key, params) => this.translate.instant(key, params));
+      const day = this.days[(refused.issue?.day ?? refused.days?.[0] ?? 0) - 1];
+      if (day) this.selectDay(day);
+      return;
+    }
+    this.saveError = this.translate.instant('WORKOUT_SAVE_ERROR');
   }
 
   ngOnDestroy(): void {
     this.destroyed = true;
     this.headerObserver?.disconnect();
+    if (this.moveToastTimer) clearTimeout(this.moveToastTimer);
+    if (this.justAddedTimer) clearTimeout(this.justAddedTimer);
+    if (this.libPress || this.libDrag) this.clearLibDrag();
   }
 
   /** `sent`: the content when the save was sent (what the coach changed meanwhile is still unsaved). */
@@ -1411,7 +2271,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
       this.facade.updatePlan().subscribe({
         next: () => {
           this.markSaved(sent);
-          if (navigateAfterSave) this.router.navigate(['/workout/program-library']);
+          if (navigateAfterSave) this.router.navigate([this.libraryUrl]);
         },
         error: (error) => this.onSaveError(error),
       });
@@ -1433,7 +2293,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
               },
             });
           } else if (navigateAfterSave) {
-            this.router.navigate(['/workout/program-library']);
+            this.router.navigate([this.libraryUrl]);
           }
         },
         error: (error) => this.onSaveError(error),

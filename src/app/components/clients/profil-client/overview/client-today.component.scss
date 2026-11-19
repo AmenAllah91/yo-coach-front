@@ -1,0 +1,157 @@
+@use '../../../coach-dashboard/shared/dashboard-tokens' as *;
+
+// The two cards follow the width they really get (menu and client list take room), not the screen width.
+:host { container: today / inline-size; }
+
+// Always the same height, side by side.
+.ov-today {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: stretch;
+}
+
+.ov-card { container: today-card / inline-size; }
+
+// An empty card stays short; its content is centred when the other card is taller.
+.ov-card.is-empty { padding: 12px 14px; justify-content: center; }
+
+.ov-empty__copy strong,
+.ov-empty__copy span { overflow-wrap: normal; }
+
+.ov-meta__plan {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+  color: $ink-soft;
+}
+
+.ov-head .fa-chevron-right { font-size: 10px; margin-left: 2px; }
+
+// Exercises: label, thumbnail, name, volume (as on the client's week screen, smaller).
+.tw-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  border-top: 1px solid $line-soft;
+}
+
+.tw-ex {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid $line-soft;
+
+  &__label { flex: none; width: 16px; font-size: 12px; font-weight: 700; color: $muted; }
+
+  &__thumb {
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    background: light-dark(#e9edf3, #292c31);
+    color: $faint;
+    font-size: 12px;
+
+    img { width: 100%; height: 100%; object-fit: cover; }
+  }
+
+  &__name {
+    flex: 1;
+    min-width: 0;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: $ink;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__volume { flex: none; font-size: 12.5px; color: $muted; }
+}
+
+.tw-more {
+  align-self: flex-start;
+  margin-top: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: $brand-strong;
+  cursor: pointer;
+
+  &:hover { text-decoration: underline; }
+}
+
+// Nutrition: calories on the left, the three macros as bars on the right.
+.tn-body {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.tn-kcal {
+  flex: none;
+  min-width: 92px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+
+  strong { font-size: 26px; line-height: 1.1; font-weight: 750; color: $ink; letter-spacing: -.5px; }
+  span { font-size: 12px; font-weight: 600; color: $muted; }
+  small { margin-top: 6px; font-size: 12px; color: $muted; }
+}
+
+.tn-macros {
+  flex: 1;
+  min-width: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+
+  &__head {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 12.5px;
+    color: $muted;
+
+    span { display: inline-flex; align-items: center; gap: 6px; }
+    i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    strong { color: $ink; font-weight: 650; }
+  }
+
+  &__bar {
+    display: block;
+    margin-top: 4px;
+    height: 6px;
+    border-radius: 999px;
+    background: $line-soft;
+    overflow: hidden;
+
+    b { display: block; height: 100%; border-radius: inherit; }
+  }
+}
+
+// Narrow card (under 420px): the button goes under the text, aligned with it, instead of squeezing it
+// into one word per line.
+@container today-card (max-width: 420px) {
+  .ov-empty { flex-wrap: wrap; row-gap: 10px; }
+  .ov-empty__copy { flex-basis: calc(100% - 46px); }
+  .ov-empty__actions { width: 100%; padding-left: 46px; justify-content: flex-start; }
+}
+
+// Too little room for two cards (under 560px for both): one under the other.
+@container today (max-width: 560px) {
+  .ov-today { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+}

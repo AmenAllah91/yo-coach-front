@@ -4,13 +4,15 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { Observable, Subject, catchError, forkJoin, map, of, shareReplay, takeUntil, timeout } from 'rxjs';
+import { EMPTY, Observable, Subject, catchError, expand, forkJoin, map, of, reduce, shareReplay, takeUntil, timeout } from 'rxjs';
 
 import { FormDetails, FormsApiService, PageResponse } from '../services/forms-api.service';
 import { AssignmentsApiService, FormAssignment } from '../services/assignments-api.service';
 import { SubmissionsApiService } from '../services/submissions-api.service';
 import { ClientThemeService } from 'app/core/service/client-theme.service';
-import { capitalizeFirst, capitalizeSentences, initials, planDate } from 'app/components/clients/shared/client-plan-utils';
+import { capitalizeFirst, capitalizeSentences, dateKey, initials, planDate } from 'app/components/clients/shared/client-plan-utils';
+import { WeekMark, WeekStripComponent, addDays, mondayOf } from 'app/components/clients/shared/week-strip.component';
+import { HistoryTimelineComponent } from 'app/components/clients/shared/history-timeline.component';
 import { CompletionCelebrationComponent } from 'app/components/clients/shared/completion-celebration.component';
 import { CelebrationView, celebrationHash, checkinCelebration } from 'app/components/clients/shared/celebration';
 import { PagePart, orderedQuestions, pageOf, pagesOf, visibleQuestionIds } from '../checkin-pages';
@@ -22,6 +24,11 @@ interface DraftAnswer {
 }
 
 const SUBMITTED = ['SUBMITTED', 'REVIEWED'];
+/** The week view needs every check-in at once: pages of 100, at most 5 (500 check-ins). */
+const ALL_PAGE_SIZE = 100;
+const ALL_MAX_PAGES = 5;
+
+interface CheckinDay { key: string; date: Date; today: boolean; selected: boolean; items: FormAssignment[]; }
 
 /** Shown between two parts, one after the other. */
 const CHEER_EMOJIS = ['🎉', '💪', '🔥', '⭐', '🚀', '🙌', '✨', '🏆'];
@@ -33,13 +40,13 @@ const ONE_TAP = ['YES_NO', 'MULTIPLE_CHOICE', 'STAR_RATING', 'SCALE', 'OPINION_R
 
 /**
  * Client check-ins, same content and logic as the mobile CheckInScreen and CheckInFormPage: "To complete"
- * (due soon / overdue) and "Submitted" lists loaded page by page, the form to fill on its own page, and the
+ * shown by week like the client Workouts page (with a History timeline), the form to fill on its own page, and the
  * answers already sent (with the coach review) in a sheet. Also shown read only in the coach "client view".
  */
 @Component({
   selector: 'app-my-assignments',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule, CompletionCelebrationComponent],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule, CompletionCelebrationComponent, WeekStripComponent, HistoryTimelineComponent],
   templateUrl: './my-assignments.component.html',
   styleUrls: ['./my-assignments.component.scss'],
 })
@@ -60,8 +67,15 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
   private totalPages = 0;
   private hasMore = true;
 
+  // Week view (same as the client Workouts page): week strip, the picked day in full, then « This week ».
+  weekStart = mondayOf(new Date());
+  selectedDate = startOfDay(new Date());
+  /** Day the client last opened from the history: the timeline comes back on it. */
+  historyDay: Date | null = null;
+  private openedFrom: 'list' | 'history' = 'list';
+
   // Opened assignment
-  view: 'list' | 'form' = 'list';
+  view: 'list' | 'form' | 'history' = 'list';
   sheetOpen = false;
   opening = false;
   formError = '';
@@ -153,48 +167,42 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
   // List (mobile CheckInProvider.loadPage / loadMore)
   // -------------------------------------------------------------------------
   private page$(page: number): Observable<PageResponse<FormAssignment>> {
-    if (this.tab === 1) {
-      // Sorted by the day the client filled it, not the day the coach sent it (2026-10-29).
-      return this.previewMode
-        ? this.assignmentsApi.pageOwnerAssignmentsByAssigneeIdStatuses(page, this.pageSize, 'submittedAt', 'DESC', this.previewClientId, ['SUBMITTED', 'REVIEWED'])
-        : this.assignmentsApi.pageMyAssignments(page, this.pageSize, 'submittedAt', 'DESC', undefined, true, ['SUBMITTED', 'REVIEWED']);
-    }
+    // Coach preview: `summary` leaves out the questions and drafts (rows show names only).
     return this.previewMode
-      ? this.assignmentsApi.pageOwnerAssignmentsByAsigneeId(page, this.pageSize, 'assignedAt', 'DESC', this.previewClientId)
-      : this.assignmentsApi.pageMyAssignments(page, this.pageSize, 'assignedAt', 'DESC', undefined, true);
+      ? this.assignmentsApi.pageOwnerAssignmentsByAssigneeIdStatuses(page, ALL_PAGE_SIZE, 'assignedAt', 'DESC', this.previewClientId, [], undefined, true, true)
+      : this.assignmentsApi.pageMyAssignments(page, ALL_PAGE_SIZE, 'assignedAt', 'DESC', undefined, true);
   }
 
-  loadPage(reset: boolean): void {
-    if (reset) { this.loading = true; this.error = ''; this.pageIndex = 0; this.hasMore = true; }
-    const sentTab = this.tab === 1;
-    this.page$(this.pageIndex).pipe(takeUntil(this.destroy$)).subscribe({
-      next: page => {
-        const content = page?.content || [];
-        this.totalPages = page?.totalPages ?? 0;
-        this.hasMore = this.pageIndex + 1 < this.totalPages && content.length > 0;
-        this.attachFormNames(content).subscribe(named => {
-          if (sentTab) this.sentAssignments = reset ? named : [...this.sentAssignments, ...named];
-          else this.assignments = reset ? named : [...this.assignments, ...named];
+  /** Every check-in of the client (newest first), then placed on the day it is due. */
+  loadPage(_reset = true): void {
+    this.loading = !this.assignments.length;
+    this.error = '';
+    this.hasMore = false;
+    this.page$(0).pipe(
+      expand((page, index) => {
+        const next = index + 1;
+        return next < (page?.totalPages ?? 0) && next < ALL_MAX_PAGES && (page?.content || []).length ? this.page$(next) : EMPTY;
+      }),
+      reduce((all, page) => [...all, ...(page?.content || [])], [] as FormAssignment[]),
+      takeUntil(this.destroy$),
+    ).subscribe({
+      next: content => {
+        this.attachFormNames(content.filter(item => item.status !== 'CANCELED')).subscribe(named => {
+          this.assignments = named;
           this.loading = false;
           this.loadingMore = false;
-          setTimeout(() => this.observeSentinel());
-          if (reset) this.openRequestedAssignment();
+          this.openRequestedAssignment();
         });
       },
       error: err => {
         this.loading = false;
-        if (this.loadingMore) { this.pageIndex = Math.max(this.pageIndex - 1, 0); this.loadingMore = false; }
         this.error = err?.error?.message || err?.message || this.t('Something went wrong', 'Une erreur est survenue');
       },
     });
   }
 
-  loadMore(): void {
-    if (this.loadingMore || this.loading || !this.hasMore || this.view !== 'list') return;
-    this.loadingMore = true;
-    this.pageIndex += 1;
-    this.loadPage(false);
-  }
+  /** Kept for the old infinite scroll: everything is loaded at once now. */
+  loadMore(): void {}
 
   /** Forms rarely change: cached so names and re-opened forms are instant. */
   private form$(formId: string, answeredAssignmentId?: string): Observable<FormDetails> {
@@ -214,10 +222,114 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
       : this.form$(item.formId).pipe(map(form => ({ ...item, formName: form?.title || item.formName })), catchError(() => of(item)))));
   }
 
-  setTab(index: number): void {
-    if (index === this.tab) return;
-    this.tab = index;
-    this.loadPage(true);
+  setTab(index: number): void { this.tab = index; }
+
+  // -------------------------------------------------------------------------
+  // Week view: check-ins on the day they are due (display only)
+  // -------------------------------------------------------------------------
+  /** Day a check-in belongs to: its due date, else the day it was sent. */
+  dayOf(item: FormAssignment): Date | null { return planDate(item.dueAt) ?? planDate(item.assignedAt); }
+  isSubmitted(item: FormAssignment): boolean { return SUBMITTED.includes(item.status); }
+
+  private get byDay(): Record<string, FormAssignment[]> {
+    const byDay: Record<string, FormAssignment[]> = {};
+    for (const item of this.assignments) {
+      const day = this.dayOf(item);
+      if (day) (byDay[dateKey(day)] ||= []).push(item);
+    }
+    return byDay;
+  }
+
+  /** Monday to Sunday of the week shown, each with its check-ins. */
+  get weekDays(): CheckinDay[] {
+    const byDay = this.byDay;
+    const today = dateKey(new Date());
+    const selected = dateKey(this.selectedDate);
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = addDays(this.weekStart, index);
+      const key = dateKey(date);
+      return { key, date, today: key === today, selected: key === selected, items: byDay[key] || [] };
+    });
+  }
+
+  weekIsEmpty(days: CheckinDay[]): boolean { return days.every(day => !day.items.length); }
+  focusDay(days: CheckinDay[]): CheckinDay { return days.find(day => day.selected) ?? days.find(day => day.today) ?? days[0]; }
+  otherDays(days: CheckinDay[]): CheckinDay[] { return days.filter(day => !day.selected && day.items.length); }
+
+  /** Check-ins still to send whose day is before this week: shown above it, they can still be sent. */
+  get olderOverdue(): FormAssignment[] {
+    const weekStart = this.weekStart.getTime();
+    return this.overdue.filter(item => (this.dayOf(item)?.getTime() ?? weekStart) < weekStart);
+  }
+
+  private marksOf(byDay: Record<string, FormAssignment[]>): Record<string, WeekMark> {
+    const today = dateKey(new Date());
+    const marks: Record<string, WeekMark> = {};
+    for (const [key, items] of Object.entries(byDay)) {
+      if (!items.length) continue;
+      const sent = items.filter(item => this.isSubmitted(item)).length;
+      marks[key] = sent === items.length ? 'done' : key < today ? 'missed' : 'planned';
+    }
+    return marks;
+  }
+
+  get weekMarks(): Record<string, WeekMark> {
+    const marks: Record<string, FormAssignment[]> = {};
+    for (const day of this.weekDays) marks[day.key] = day.items;
+    return this.marksOf(marks);
+  }
+
+  shiftWeek(delta: number): void { this.showWeekOf(addDays(this.weekStart, delta * 7), false); }
+  goToday(): void { this.showWeekOf(startOfDay(new Date())); }
+
+  /** Shows the week of `date`: `date` is opened, or today / the first day with a check-in when browsing. */
+  private showWeekOf(date: Date, select = true): void {
+    this.weekStart = mondayOf(date);
+    if (select) { this.selectedDate = date; return; }
+    const days = this.weekDays;
+    this.selectedDate = (days.find(day => day.today) ?? days.find(day => day.items.length) ?? days[0]).date;
+  }
+
+  selectDate(date: Date): void {
+    this.selectedDate = date;
+    setTimeout(() => document.querySelector(`.checkins [data-day="${dateKey(date)}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 0);
+  }
+
+  /** « Today · Tue, Nov 17 » / « Aujourd’hui · mar. 17 nov. », or the date alone for another day. */
+  focusLabel(day: CheckinDay): string {
+    const date = new Intl.DateTimeFormat(this.locale, { weekday: 'short', day: 'numeric', month: 'short' }).format(day.date);
+    return day.today ? `${this.t('Today', 'Aujourd’hui')} · ${date}` : capitalizeFirst(date);
+  }
+  weekdayLabel(date: Date): string { return new Intl.DateTimeFormat(this.locale, { weekday: 'short' }).format(date).toUpperCase(); }
+  sentCount(items: FormAssignment[]): number { return items.filter(item => this.isSubmitted(item)).length; }
+
+  // History: the days up to today on the timeline of Workouts and Nutrition.
+  openHistory(): void { this.historyDay = null; this.view = 'history'; window.scrollTo({ top: 0 }); }
+  closeHistory(): void { this.view = 'list'; window.scrollTo({ top: 0 }); }
+
+  get historyByDay(): Record<string, FormAssignment[]> {
+    const today = dateKey(new Date());
+    const byDay: Record<string, FormAssignment[]> = {};
+    for (const [key, items] of Object.entries(this.byDay)) if (key <= today) byDay[key] = items;
+    return byDay;
+  }
+
+  historyFirstDay(byDay: Record<string, FormAssignment[]>): Date {
+    const first = Object.keys(byDay).sort()[0];
+    return (first ? planDate(first) : null) ?? startOfDay(new Date());
+  }
+
+  historyMarks(byDay: Record<string, FormAssignment[]>): Record<string, WeekMark> { return this.marksOf(byDay); }
+
+  openFromHistory(item: FormAssignment): void {
+    this.historyDay = this.dayOf(item);
+    this.openedFrom = 'history';
+    this.open(item);
+  }
+
+  openFromList(item: FormAssignment): void {
+    this.openedFrom = 'list';
+    this.open(item);
   }
 
   get pending(): FormAssignment[] { return this.assignments.filter(item => item.status === 'ASSIGNED' || item.status === 'OPENED'); }
@@ -307,7 +419,12 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
     if (!id) return;
     this.requestedAssignmentId = '';
     const known = this.assignments.find(item => item.id === id);
-    if (known) { this.open(known); return; }
+    if (known) {
+      const day = this.dayOf(known);
+      if (day) this.showWeekOf(day);
+      this.open(known);
+      return;
+    }
     this.assignmentsApi.getById(id).pipe(takeUntil(this.destroy$)).subscribe({ next: item => this.open(item), error: () => {} });
   }
 
@@ -388,8 +505,10 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
 
   closeForm(): void {
     this.flushDraft();
-    this.view = 'list'; this.selected = null; this.form = null; this.stage = 'intro';
-    setTimeout(() => this.observeSentinel());
+    // Back where the check-in was opened from (the week or the history).
+    this.view = this.openedFrom === 'history' ? 'history' : 'list';
+    this.openedFrom = 'list';
+    this.selected = null; this.form = null; this.stage = 'intro';
   }
 
   /** « Done » on the celebration: back to the list. */
@@ -703,6 +822,7 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   trackById = (_: number, item: FormAssignment) => item.id;
+  trackByDay = (_: number, day: CheckinDay) => day.key;
   trackQuestion = (_: number, question: any) => question.id;
   /** A new element for each page, so each one slides in. */
   trackPage = (_: number, page: PagePart | null) => page?.id ?? '';
@@ -716,3 +836,5 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
     return first?.id === question.id ? this.pages.find(page => page.id === pageId) ?? null : null;
   }
 }
+
+function startOfDay(date: Date): Date { return new Date(date.getFullYear(), date.getMonth(), date.getDate()); }

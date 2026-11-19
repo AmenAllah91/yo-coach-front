@@ -761,6 +761,9 @@ export class ChatComponent implements OnInit, OnChanges, AfterViewChecked, OnDes
   /** Before the full list is loaded, only an existing conversation is opened; it is started afterwards. */
   private openPanelClient(): boolean {
     const clientId = this.panelClientId!;
+    // « Répondre » on a client's note (calendar): the quote waits in the field of the conversation opened.
+    const draft = this.chatService.takePanelDraft();
+    if (draft) this.pendingDraft = draft.slice(0, this.maxMessageLength);
     const existing = this.findExistingPrivateConversation(clientId);
     if (existing) {
       this.panelClientId = null;

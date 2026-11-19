@@ -28,7 +28,6 @@ import { NutritionAiDraft } from 'app/service/nutrition-ai.service';
 import { MealTemplatePickerComponent, MealTemplateSelection } from '../meal-template-picker/meal-template-picker.component';
 import { MealTimeFieldComponent } from '../meal-time-field/meal-time-field.component';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { WorkoutWeekPanelComponent } from '../../program-library/workout-week-panel.component';
 import { nutritionDayState, nutritionDayValidationMessages, nutritionFoodValidationKey } from '@shared/models/nutrition-publication';
 import { lineMacros, lineServing } from '@shared/models/nutrition-math';
 import { FoodServing } from '@shared/models/MealPlan';
@@ -48,9 +47,9 @@ import {
 @Component({
   selector: 'app-create-full-plan',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, MealTemplatePickerComponent, MealTimeFieldComponent, TranslateModule, WorkoutWeekPanelComponent, FoodServingFormComponent, ServingUnitPipe, EmptyDaysModalComponent, AddFoodModalComponent, LockedProgramBannerComponent, ProgramOverflowComponent, CopyDaysModalComponent, CopiedDayBannerComponent, ClientProgramDatesComponent],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, MealTemplatePickerComponent, MealTimeFieldComponent, TranslateModule, FoodServingFormComponent, ServingUnitPipe, EmptyDaysModalComponent, AddFoodModalComponent, LockedProgramBannerComponent, ProgramOverflowComponent, CopyDaysModalComponent, CopiedDayBannerComponent, ClientProgramDatesComponent],
   templateUrl: './create-full-plan.component.html',
-  styleUrls: ['./create-full-plan.component.scss', '../_nutrition-builder-template.scss', '../../program-library/_workout-builder-layout.scss', '../_nutrition-rail-parity.scss', '../_nutrition-day-parity.scss', '../_nutrition-foods.scss', '../../program-library/_builder-rail-readable.scss'],
+  styleUrls: ['./create-full-plan.component.scss', '../_nutrition-builder-template.scss', '../../program-library/_workout-builder-layout.scss', '../../program-library/_plan-edit-dialog.scss', '../_nutrition-rail-parity.scss', '../_nutrition-day-parity.scss', '../_nutrition-foods.scss', '../../program-library/_builder-rail-readable.scss'],
 })
 export class CreateFullPlanComponent implements OnInit, LeavesUnsavedChanges {
   /** Phones: the week/day structure opens over the page (same as the workout builder). */
@@ -488,6 +487,63 @@ export class CreateFullPlanComponent implements OnInit, LeavesUnsavedChanges {
     this.recalcAllDays();
   }
 
+  // ---------- « Modifier le programme » (programme déjà créé : plus de carte de réglages) ----------
+
+  planEditOpen = false;
+  planEdit = { name: '', details: '', weeks: 1, visible: false };
+  planEditError = '';
+  /** La durée réduite attend la confirmation (jours retirés) avant l'enregistrement. */
+  private saveAfterDuration = false;
+
+  /** Ouvre la fenêtre avec les valeurs actuelles : rien ne change tant que le coach n'enregistre pas. */
+  openPlanEdit() {
+    this.planEdit = {
+      name: this.planName || '',
+      details: this.planDescription || '',
+      weeks: this.durationWeeks,
+      visible: !!this.isMealPlanTemplate,
+    };
+    this.planEditError = '';
+    this.planEditOpen = true;
+    setTimeout(() => document.getElementById('pePlanName')?.focus());
+  }
+
+  closePlanEdit() {
+    this.planEditOpen = false;
+  }
+
+  savePlanEdit() {
+    const name = (this.planEdit.name || '').trim();
+    if (!name) {
+      this.planEditError = 'PLAN_EDIT_NAME_REQUIRED';
+      document.getElementById('pePlanName')?.focus();
+      return;
+    }
+    this.planName = name;
+    this.planDescription = (this.planEdit.details || '').trim();
+    this.showPlanDescription = !!this.planDescription;
+    if (this.canCreateTemplate && !this.clientMode.active) this.isMealPlanTemplate = this.planEdit.visible;
+    this.planEditOpen = false;
+
+    const weeks = Number(this.planEdit.weeks);
+    if (weeks && weeks !== this.durationWeeks) {
+      this.onDurationWeeksChange(weeks);
+      // Moins de semaines : la confirmation des jours retirés s'affiche, l'enregistrement suit sa réponse.
+      if (this.pendingDurationWeeks) {
+        this.saveAfterDuration = true;
+        return;
+      }
+    }
+    this.draft.saveDraft(this.days, this.savePlanFn);
+  }
+
+  /** Après « Supprimer les jours » ou « Annuler » de la confirmation, le reste de la fenêtre est enregistré. */
+  afterDurationChoice() {
+    if (!this.saveAfterDuration) return;
+    this.saveAfterDuration = false;
+    this.draft.saveDraft(this.days, this.savePlanFn);
+  }
+
   confirmDurationReduction() {
     if (!this.pendingDurationWeeks) return;
     const nextWeeks = this.pendingDurationWeeks;
@@ -509,6 +565,16 @@ export class CreateFullPlanComponent implements OnInit, LeavesUnsavedChanges {
     this.pendingDurationWeeks = null;
     this.pendingDurationRemovedDays = 0;
   }
+
+  /** ⧉ d'une semaine (colonne de gauche) : elle devient la semaine choisie, puis la fenêtre « Dupliquer la semaine » s'ouvre. */
+  duplicateWeek(week: { days: Array<{ day: MealDay }> }, ev?: Event) {
+    ev?.stopPropagation();
+    const days = (week?.days || []).map((item) => item.day);
+    if (!days.length) return;
+    if (!days.includes(this.selectedDay as MealDay)) this.selectDay(days[0]);
+    this.copy.openWeek();
+  }
+
 
   selectDay(day: MealDay) {
     this.selectedDay = day;

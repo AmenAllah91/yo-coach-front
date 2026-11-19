@@ -29,10 +29,11 @@ interface Point { left: number; top: number; last: boolean; }
  * measurement picker, "requested by your coach" banner (from a task), latest value with its change and the
  * chart, history with the change between records, and the add sheet.
  */
+import { ProgressTabsComponent } from '../shared/progress-tabs.component';
 @Component({
   selector: 'app-client-measurements',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule],
+  imports: [CommonModule, FormsModule, FeatherModule, ProgressTabsComponent],
   templateUrl: './client-measurements.component.html',
   styleUrl: './client-measurements.component.scss',
 })

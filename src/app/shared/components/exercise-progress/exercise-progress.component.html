@@ -1,0 +1,113 @@
+<p *ngIf="loading" class="xp__state">{{ t('Loading…', 'Chargement…') }}</p>
+<p *ngIf="failed" class="xp__state">{{ t('The progress could not be loaded.', 'La progression n’a pas pu être chargée.') }}</p>
+<p *ngIf="!loading && !failed && !all.length" class="xp__state xp__state--empty">
+  {{ t('No workout logged yet. The progress shows here after the first workout.', 'Aucune séance faite pour le moment. La progression s’affiche ici après la première séance.') }}
+</p>
+
+<div *ngIf="!loading && !failed && all.length" class="xp" [class.has-selection]="!!selected">
+  <!-- Liste -->
+  <aside class="xp-list">
+    <label class="xp-search">
+      <i-feather name="search"></i-feather>
+      <input type="search" [(ngModel)]="search" (ngModelChange)="onFilter()"
+             [placeholder]="t('Find an exercise', 'Chercher un exercice') + ' (' + all.length + ')'" />
+    </label>
+
+    <div class="xp-filters">
+      <select *ngIf="muscles.length" [(ngModel)]="muscle" (ngModelChange)="onFilter()" [attr.aria-label]="t('Muscle', 'Muscle')">
+        <option value="">{{ t('All muscles', 'Tous les muscles') }}</option>
+        <option *ngFor="let option of muscles" [value]="option.value">{{ option.label }}</option>
+      </select>
+      <select [(ngModel)]="period" (ngModelChange)="onFilter()" [attr.aria-label]="t('Period', 'Période')">
+        <option value="ALL">{{ t('All time', 'Depuis le début') }}</option>
+        <option value="3M">{{ t('Last 3 months', '3 derniers mois') }}</option>
+        <option value="4W">{{ t('Last 4 weeks', '4 dernières semaines') }}</option>
+      </select>
+      <select [(ngModel)]="sort" (ngModelChange)="onFilter()" [attr.aria-label]="t('Sort', 'Trier')">
+        <option value="RECENT">{{ t('Most recent', 'Les plus récents') }}</option>
+        <option value="PROGRESS">{{ t('Most progress', 'Ont le plus progressé') }}</option>
+        <option value="DOWN">{{ t('Going down first', 'En baisse d’abord') }}</option>
+        <option value="COUNT">{{ t('Most done', 'Les plus faits') }}</option>
+      </select>
+    </div>
+
+    <ng-container *ngIf="!filtering">
+      <section *ngIf="watch.length" class="xp-group">
+        <h4>{{ t('To look at', 'À regarder') }}</h4>
+        <ng-container *ngFor="let item of watch; trackBy: trackByKey">
+          <ng-container *ngTemplateOutlet="row; context: { $implicit: item, flags: true }"></ng-container>
+        </ng-container>
+      </section>
+
+      <section class="xp-group">
+        <h4>{{ t('Pinned', 'Épinglés') }}</h4>
+        <p *ngIf="!pinned.length" class="xp-hint">
+          <i-feather name="star"></i-feather>
+          {{ t('Pin the key exercises of this client: they stay here.', 'Épinglez les exercices clés de ce client : ils restent ici.') }}
+        </p>
+        <ng-container *ngFor="let item of pinned; trackBy: trackByKey">
+          <ng-container *ngTemplateOutlet="row; context: { $implicit: item }"></ng-container>
+        </ng-container>
+      </section>
+    </ng-container>
+
+    <section class="xp-group">
+      <h4>{{ filtering ? t('Results', 'Résultats') : t('All exercises', 'Tous les exercices') }} <small>{{ list.length }}</small></h4>
+      <p *ngIf="!list.length" class="xp-hint">{{ t('No exercise matches.', 'Aucun exercice ne correspond.') }}</p>
+      <ng-container *ngFor="let item of visible; trackBy: trackByKey">
+        <ng-container *ngTemplateOutlet="row; context: { $implicit: item }"></ng-container>
+      </ng-container>
+      <button *ngIf="remaining" type="button" class="xp-more" (click)="more()">
+        {{ t('Show more', 'Voir plus') }} ({{ remaining }})
+      </button>
+    </section>
+  </aside>
+
+  <!-- Détail -->
+  <section class="xp-detail" *ngIf="selected as item; else noSelection">
+    <button type="button" class="xp-back" (click)="back()">
+      <i-feather name="arrow-left"></i-feather>{{ t('All exercises', 'Tous les exercices') }}
+    </button>
+    <header class="xp-detail__head">
+      <div>
+        <h3>{{ item.name }}</h3>
+        <small *ngIf="item.muscle">{{ muscleLabel(item.muscle) }}</small>
+        <div *ngIf="item.flags.length" class="xp-flags">
+          <span *ngFor="let flag of item.flags" class="xp-flag" [attr.data-flag]="flag">{{ flagText(flag) }}</span>
+        </div>
+      </div>
+      <button type="button" class="xp-pin" [class.is-on]="isPinned(item)" [disabled]="pinBusy || (!isPinned(item) && pinsFull)"
+              [title]="!isPinned(item) && pinsFull ? t('12 pinned exercises at most', '12 exercices épinglés au plus') : ''"
+              (click)="togglePin(item)">
+        <i-feather name="star"></i-feather>{{ isPinned(item) ? t('Pinned', 'Épinglé') : t('Pin', 'Épingler') }}
+      </button>
+    </header>
+    <app-exercise-progress-detail [clientId]="clientId" [exercise]="item.key"></app-exercise-progress-detail>
+  </section>
+  <ng-template #noSelection>
+    <section class="xp-detail xp-detail--empty">
+      <i-feather name="trending-up"></i-feather>
+      <p>{{ t('Choose an exercise to see its progress.', 'Choisissez un exercice pour voir sa progression.') }}</p>
+    </section>
+  </ng-template>
+</div>
+
+<!-- Une ligne de la liste -->
+<ng-template #row let-item let-flags="flags">
+  <button type="button" class="xp-row" [class.is-selected]="selectedKey === item.key" (click)="select(item)">
+    <span class="xp-row__name">
+      <strong><i-feather *ngIf="isPinned(item)" name="star" class="xp-row__star"></i-feather>{{ item.name }}</strong>
+      <small *ngIf="!flags">{{ meta(item) }}</small>
+      <small *ngIf="flags" class="xp-row__flags">
+        <span *ngFor="let flag of item.flags" class="xp-flag" [attr.data-flag]="flag">{{ flagText(flag) }}</span>
+      </small>
+    </span>
+    <svg *ngIf="item.recent.length > 1" class="xp-spark" viewBox="0 0 72 28" aria-hidden="true">
+      <polyline [attr.points]="spark(item)"></polyline>
+    </svg>
+    <span class="xp-row__value">
+      <strong>{{ value(item) }}</strong>
+      <small *ngIf="delta(item) as change" [class.is-up]="change.up" [class.is-down]="!change.up && !change.flat">{{ change.text }}</small>
+    </span>
+  </button>
+</ng-template>

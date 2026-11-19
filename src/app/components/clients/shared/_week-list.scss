@@ -1,0 +1,246 @@
+// Week list shared by the client Workouts, Nutrition, Tasks and Check-ins pages:
+// the picked day in full (blue border for today), then « This week » in short lines.
+// Imported by each page scss (`@import '../shared/week-list';`).
+.wk-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 18px 2px 8px !important;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--yc-text-secondary);
+  scroll-margin: 12px;
+
+  &__count { margin-left: auto; font-weight: 500; }
+  &--late { color: var(--yc-error); }
+}
+
+// « In the past »: a short list (overdue check-ins…) shown above the week.
+.wk-late-note {
+  margin: -4px 2px 8px !important;
+  font-size: 12.5px;
+  color: var(--yc-text-secondary);
+}
+
+.wk-none {
+  margin: 0 !important;
+  padding: 14px 16px;
+  font-size: 13.5px;
+  color: var(--yc-text-hint);
+}
+
+.wk-rest {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+
+  &__copy {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    strong { font-size: 15px; font-weight: 600; }
+    span { font-size: 12.5px; color: var(--yc-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  }
+}
+
+.wk-focus {
+  padding: 16px 18px 18px;
+  border-radius: 18px;
+  cursor: pointer;
+
+  & + & { margin-top: 10px; }
+
+  &--today {
+    border: 1.5px solid var(--yc-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--yc-primary) 10%, transparent), var(--yc-shadow-card);
+  }
+
+  &__head {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+
+    .chevron { margin-top: 4px; }
+    .yc-chip { margin-top: 3px; }
+  }
+
+  &__titles {
+    flex: 1;
+    min-width: 0;
+
+    h3 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.25;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: var(--yc-text-primary);
+    }
+
+    p {
+      margin: 3px 0 0 !important;
+      font-size: 13px;
+      color: var(--yc-text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  &__meta {
+    margin: 12px 0 0 !important;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--yc-text-secondary);
+
+    span { display: inline-flex; align-items: center; gap: 6px; }
+    i-feather { width: 14px; height: 14px; color: var(--yc-text-hint); }
+  }
+
+  &__list {
+    margin-top: 14px;
+    border-top: 1px solid var(--yc-hairline);
+  }
+}
+
+.wk-ex {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--yc-hairline);
+
+  &__label {
+    flex: none;
+    width: 24px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--yc-text-secondary);
+  }
+
+  &__thumb {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 9px;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: light-dark(#e9edf3, #292c31);
+    color: var(--yc-text-hint);
+
+    img { width: 100%; height: 100%; object-fit: cover; }
+    i-feather { width: 16px; height: 16px; }
+  }
+
+  &__name {
+    flex: 1;
+    min-width: 0;
+    font-size: 14.5px;
+    font-weight: 500;
+    color: var(--yc-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__volume {
+    flex: none;
+    font-size: 13px;
+    color: var(--yc-text-secondary);
+  }
+}
+
+.wk-more {
+  margin-top: 10px;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--yc-primary);
+  cursor: pointer;
+
+  &:hover { text-decoration: underline; }
+}
+
+.wk-start {
+  width: 100%;
+  margin-top: 16px;
+  height: 48px;
+  border-radius: 12px;
+  font-size: 15px;
+
+  i-feather { width: 16px; height: 16px; fill: currentColor; }
+}
+
+.wk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wk-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+
+  &:hover { background: light-dark(#fafbfc, #181b1f); }
+
+  &__date {
+    flex: none;
+    width: 38px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+
+    small { font-size: 10.5px; font-weight: 700; letter-spacing: 0.4px; color: var(--yc-text-secondary); }
+    strong { font-size: 19px; line-height: 1.15; font-weight: 700; color: var(--yc-text-primary); }
+
+    &.is-today small, &.is-today strong { color: var(--yc-primary); }
+  }
+
+  &__copy {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding-left: 14px;
+    border-left: 1px solid var(--yc-hairline);
+
+    strong {
+      font-size: 14.5px;
+      font-weight: 600;
+      color: var(--yc-text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    span {
+      font-size: 12.5px;
+      color: var(--yc-text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  &__moon { flex: none; width: 16px; height: 16px; color: light-dark(#7455d9, #ac9eff); }
+
+  &--rest &__copy strong { color: var(--yc-text-secondary); }
+}

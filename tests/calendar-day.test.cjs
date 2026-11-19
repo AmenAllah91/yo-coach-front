@@ -107,3 +107,21 @@ test('meal lines: foods with their quantity, the calories target of a meal', () 
   assert.equal(lines[0].kcal, null);
   assert.equal(lines[1].kcal, 350);
 });
+
+test('exercise lines: timed exercise (measure TIME), superset links', () => {
+  const lines = d.exerciseLines({ workoutSessions: [{ exercises: [
+    { name: 'Squat', supersetGroupId: 'g1', groupType: 'CIRCUIT', measure: 'TIME', sets: [{ reps: 10, durationSec: 30 }] },
+    { name: 'Pompes', supersetGroupId: 'g1', sets: [{ reps: 12 }] },
+    { name: 'Gainage', supersetGroupId: 'g1', measure: 'time', sets: [{ durationSec: 45 }] },
+    { name: 'Curl', sets: [{ reps: 8 }] },
+  ] }] });
+  assert.deepEqual(JSON.parse(JSON.stringify(lines.map((l) => [l.label, l.link, l.groupKind, l.timed]))), [
+    ['A1', 'start', 'CIRCUIT', true],
+    ['A2', 'middle', null, false],
+    ['A3', 'end', null, true],
+    ['B', null, null, false],
+  ]);
+  assert.equal(lines[0].sets[0].seconds, 30);
+  const report = d.workoutReport({ workoutSessions: [{ exercises: [{ id: 'a', name: 'Gainage', measure: 'TIME', sets: [{ durationSec: 45 }] }] }] });
+  assert.equal(report.exercises[0].timed, true);
+});

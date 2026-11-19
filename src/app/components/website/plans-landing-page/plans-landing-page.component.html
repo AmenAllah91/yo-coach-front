@@ -4,35 +4,34 @@
       <img class="brand-logo" src="assets/logo/yocoach-logo.svg" alt="YoCoach" />
     </a>
 
-    <nav aria-label="Plans landing navigation">
-      <a href="#plans">Plans</a>
-      <a href="#details">Details</a>
-      <a href="#workflow">How it works</a>
+    <nav [attr.aria-label]="'PLANS_PAGE_NAV_ARIA' | translate">
+      <a href="#plans">{{ 'PLANS_PAGE_NAV_PLANS' | translate }}</a>
+      <a href="#details">{{ 'PLANS_PAGE_NAV_DETAILS' | translate }}</a>
+      <a href="#workflow">{{ 'PLANS_PAGE_NAV_HOW' | translate }}</a>
     </nav>
   </header>
 
   <section class="hero-section">
     <div class="hero-copy">
-      <span class="eyebrow">YoCoach for coaches</span>
-      <h1>Choose your plan, then create your account.</h1>
+      <span class="eyebrow">{{ 'PLANS_PAGE_EYEBROW' | translate }}</span>
+      <h1>{{ 'PLANS_PAGE_TITLE' | translate }}</h1>
       <p>
-        Every plan comes with clear pricing and limits. Plans with a free trial start
-        without any payment: pick one and your account is created with it.
+        {{ 'PLANS_PAGE_INTRO' | translate }}
       </p>
       <div class="hero-actions">
         <button type="button" class="primary-action" (click)="scrollToPlans()">
-          View plans
+          {{ 'PLANS_PAGE_VIEW_PLANS' | translate }}
           <mat-icon>arrow_downward</mat-icon>
         </button>
-        <a class="secondary-action" href="#details">Compare details</a>
+        <a class="secondary-action" href="#details">{{ 'PLANS_PAGE_COMPARE' | translate }}</a>
       </div>
     </div>
 
-    <div class="hero-panel" aria-label="Selected plan preview">
-      <span>Current selection</span>
-      <strong>{{ selectedPlanName }}</strong>
+    <div class="hero-panel" [attr.aria-label]="'PLANS_PAGE_SELECTION_ARIA' | translate">
+      <span>{{ 'PLANS_PAGE_CURRENT_SELECTION' | translate }}</span>
+      <strong>{{ selectedPlanName | translate }}</strong>
       <p>
-        Choose an offer below to create your YoCoach account and subscription.
+        {{ 'PLANS_PAGE_SELECTION_HINT' | translate }}
       </p>
     </div>
   </section>
@@ -42,27 +41,27 @@
       <div class="highlight-icon">
         <mat-icon>{{ item.icon }}</mat-icon>
       </div>
-      <h2>{{ item.title }}</h2>
-      <p>{{ item.description }}</p>
+      <h2>{{ item.title | translate }}</h2>
+      <p>{{ item.description | translate }}</p>
     </article>
   </section>
 
   <section class="plans-section" id="plans">
     <div class="section-heading">
-      <span>YoCoach subscriptions</span>
-      <h2>Choose the plan that fits the business stage.</h2>
+      <span>{{ 'PLANS_PAGE_SUBSCRIPTIONS' | translate }}</span>
+      <h2>{{ 'PLANS_PAGE_PLANS_TITLE' | translate }}</h2>
       <p>
-        These plans are loaded from the subscription catalog for YoCoach.
+        {{ 'PLANS_PAGE_PLANS_HINT' | translate }}
       </p>
     </div>
 
     <div class="plans-state" *ngIf="isLoading">
-      Loading plans...
+      {{ 'PLANS_PAGE_LOADING' | translate }}
     </div>
 
     <div class="plans-state plans-state-error" *ngIf="loadError">
-      <p>{{ loadError }}</p>
-      <button type="button" (click)="loadPlans()">Try again</button>
+      <p>{{ loadError | translate }}</p>
+      <button type="button" (click)="loadPlans()">{{ 'RETRY' | translate }}</button>
     </div>
 
     <div class="plans-grid" *ngIf="!isLoading && !loadError">
@@ -76,15 +75,15 @@
 
   <section class="workflow-section" id="workflow">
     <div class="section-heading compact">
-      <span>Plan flow</span>
-      <h2>How visitors move from browsing to action.</h2>
+      <span>{{ 'PLANS_PAGE_FLOW' | translate }}</span>
+      <h2>{{ 'PLANS_PAGE_FLOW_TITLE' | translate }}</h2>
     </div>
 
     <div class="workflow-grid">
       <article class="workflow-card" *ngFor="let step of steps; let i = index">
         <span class="step-number">0{{ i + 1 }}</span>
-        <h3>{{ step.title }}</h3>
-        <p>{{ step.description }}</p>
+        <h3>{{ step.title | translate }}</h3>
+        <p>{{ step.description | translate }}</p>
       </article>
     </div>
   </section>

@@ -148,14 +148,23 @@ svg {
   background: light-dark(#fff, #1d2125);
   border: 1px solid $sky-200;
   border-radius: 12px;
-  overflow: hidden;
+  // clip, not hidden: hidden would stop the bar of the ticked check-ins from sticking to the bottom of the screen.
+  overflow: clip;
   box-shadow: 0 1px 2px rgba(17, 24, 39, .06);
 }
 
 /* ===== Tabs ===== */
 .tabs-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
   padding: 0 20px;
   background: light-dark(#fff, #1d2125);
+  box-shadow: inset 0 -1px 0 $sky-100;
+
+  .header-filters { padding: 8px 0; }
 }
 
 .tabs {
@@ -164,7 +173,6 @@ svg {
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
-  box-shadow: inset 0 -1px 0 $sky-100;
 
   &::-webkit-scrollbar { display: none; }
 }
@@ -208,7 +216,8 @@ svg {
 /* ===== Rows ===== */
 .ck-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 170px 150px 150px;
+  grid-template-columns: minmax(0, 1fr) 180px 150px;
+  grid-template-areas: "main when actions";
   align-items: center;
   column-gap: 18px;
   padding: 14px 18px;
@@ -941,9 +950,242 @@ svg {
   }
 }
 
+/* ===== Inbox (2026-11-19): groups by client, preview, missed fold, actions on several ===== */
+.row-main {
+  grid-area: main;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ck-row .when { grid-area: when; }
+.ck-row .actions { grid-area: actions; }
+.ck-row .ck-check { grid-area: check; }
+.ck-row.can-select {
+  grid-template-columns: 22px minmax(0, 1fr) 180px 150px;
+  grid-template-areas: "check main when actions";
+}
+.ck-row.is-selected { background: light-dark(#f0f9ff, #1a2a33); }
+
+.form-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: $gray-700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.when .ck-badge { margin-top: 4px; }
+
+// Tick boxes
+.ck-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+
+  input {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: $brand;
+    cursor: pointer;
+  }
+}
+
+.ck-selectbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 18px;
+  border-bottom: 1px solid $sky-100;
+  background: light-dark(rgba(240, 249, 255, .45), transparent);
+  font-size: 13px;
+  color: $gray-600;
+}
+.ck-check-all span { font-weight: 500; color: $gray-700; }
+.ck-selectbar-hint { color: $gray-400; font-size: 12px; }
+
+// A client with several check-ins in the list: one card
+.ck-group {
+  border-bottom: 1px solid $sky-100;
+
+  &:last-child { border-bottom: 0; }
+  .ck-row:last-child { border-bottom: 0; }
+}
+.ck-group-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px 8px;
+
+  .group-who {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+
+    &:hover .name { color: $brand; }
+  }
+  .name, .formType { display: block; }
+  .summary-late { color: $red-600; font-weight: 500; }
+}
+.ck-row.in-group {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  padding-left: 66px;
+  border-bottom: 1px dashed $sky-100;
+}
+.ck-row.in-group.can-select { padding-left: 18px; }
+.ck-row.in-group.can-select .row-main { padding-left: 48px; }
+
+// Answers at a glance
+.ck-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: 48px;
+  min-width: 0;
+}
+.ck-row.in-group .ck-preview { margin-left: 0; }
+.chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  max-width: 260px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid $sky-200;
+  background: $sky-50;
+  font-size: 12px;
+  line-height: 1.4;
+  color: $gray-700;
+}
+.chip-label {
+  min-width: 0;
+  max-width: 140px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: $gray-500;
+}
+.chip-value { font-weight: 600; white-space: nowrap; }
+.chip-change { font-weight: 600; color: $brand; white-space: nowrap; }
+.chip-alert {
+  border-color: $red-200;
+  background: $red-50;
+  color: $red-700;
+
+  .chip-label { color: $red-700; }
+  .chip-change { color: $red-700; }
+}
+.chip-note {
+  min-width: 0;
+  max-width: 100%;
+  font-size: 12.5px;
+  font-style: italic;
+  color: $gray-500;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+// Late by more than a week: folded, removable in one click
+.ck-missed {
+  margin: 14px 18px 18px;
+  border: 1px dashed $gray-300;
+  border-radius: 10px;
+  background: light-dark(#fafafa, #1a1d21);
+  overflow: hidden;
+}
+.ck-missed-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px 0;
+}
+.ck-missed-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: $gray-700;
+  cursor: pointer;
+
+  .chevron { width: 16px; height: 16px; transition: transform 150ms ease; }
+  .chevron.open { transform: rotate(90deg); }
+}
+.ck-missed-title { font-size: 14px; font-weight: 600; }
+.ck-missed-hint {
+  margin: 4px 14px 12px 38px;
+  font-size: 12.5px;
+  color: $gray-500;
+}
+.ck-missed-list {
+  border-top: 1px solid $gray-200;
+  background: light-dark(#fff, #1d2125);
+}
+
+.row-cta-danger {
+  background: $red-600;
+
+  &:hover { background: $red-700; }
+  &:disabled { opacity: .55; cursor: not-allowed; }
+}
+.row-cta-ghost-danger {
+  background: transparent;
+  color: $red-700;
+  border: 1px solid $red-200;
+
+  &:hover { background: $red-50; }
+  &:disabled { opacity: .55; cursor: not-allowed; }
+}
+
+// Actions on the ticked check-ins: stays at the bottom of the screen
+.ck-bulk {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  border-top: 1px solid $sky-200;
+  background: light-dark(#fff, #1d2125);
+  box-shadow: 0 -4px 12px rgba(17, 24, 39, .08);
+
+  .spacer { flex: 1; }
+}
+.ck-bulk-count { font-size: 14px; font-weight: 600; color: $gray-900; }
+.ck-bulk button { white-space: nowrap; }
+.ck-bulk-count { white-space: nowrap; }
+
+// Opened check-in: change since last time, keyboard hint
+.answer-delta {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: $brand;
+}
+.keys-hint {
+  font-size: 12px;
+  color: $gray-400;
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 1100px) {
-  .ck-row { grid-template-columns: minmax(0, 1fr) 150px 120px auto; }
+  .ck-row { grid-template-columns: minmax(0, 1fr) 150px auto; }
+  .ck-row.can-select { grid-template-columns: 22px minmax(0, 1fr) 150px auto; }
 }
 
 @media (max-width: 900px) {
@@ -951,22 +1193,28 @@ svg {
   .header-filters { width: 100%; justify-content: flex-start; }
   .search { flex: 1 1 220px; width: auto; }
 
-  // Two lines: who + action, then the timing aligned under the name (and the status in the Waiting tab,
-  // where it says today / upcoming; elsewhere it repeats the tab).
-  .ck-row {
+  // Two lines: who + action, then the timing (and the preview) under the name.
+  .ck-row,
+  .ck-row.can-select {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
-      "who actions"
-      "when badge";
+      "main actions"
+      "when when";
     row-gap: 6px;
 
-    .row-left { grid-area: who; }
-    .actions { grid-area: actions; }
-    .when { grid-area: when; padding-left: 48px; display: flex; flex-wrap: wrap; gap: 0 8px; align-items: baseline; }
-    .badge-cell { grid-area: badge; align-items: flex-end; justify-content: center; }
-    .repeat { display: none; }
-    &:not(.tab-pending) .badge-cell { display: none; }
+    .when { padding-left: 48px; display: flex; flex-wrap: wrap; gap: 0 8px; align-items: baseline; }
   }
+  .ck-row.can-select {
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "check main actions"
+      ". when when";
+  }
+  .ck-row.in-group .when { padding-left: 0; }
+  .ck-row.in-group { padding-left: 66px; }
+  .ck-row.in-group.can-select { padding-left: 18px; }
+  .ck-row.in-group.can-select .row-main { padding-left: 0; }
+  .ck-preview { margin-left: 0; }
 }
 
 @media (max-width: 600px) {
@@ -977,6 +1225,7 @@ svg {
   // The four lists as a 2 x 2 grid: all visible, no hidden horizontal scroll.
   .tabs-wrap { padding: 12px; }
   .tabs {
+    width: 100%;
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
@@ -995,9 +1244,21 @@ svg {
     &.active { background: $sky-50; border-color: $brand; color: $brand; font-weight: 600; }
   }
 
+  .tabs-wrap .header-filters { width: 100%; padding: 0; }
   .ck-row { padding: 12px; column-gap: 10px; }
   .avatar { width: 34px; height: 34px; }
   .ck-row .when { padding-left: 46px; }
+  .ck-row.in-group { padding-left: 58px; }
+  .ck-row.in-group.can-select { padding-left: 12px; }
+  .ck-group-head { padding: 12px; }
+  .ck-group-head .row-cta { padding: 0 10px; }
+  .ck-selectbar-hint { display: none; }
+  .ck-bulk { padding: 10px 12px; gap: 8px; }
+  .ck-bulk .spacer { display: none; }
+  .ck-bulk-count { flex: 1 1 auto; font-size: 13px; }
+  .ck-bulk .btn-cancel, .ck-bulk .btn-reviewed { padding: .55rem .8rem; }
+  .ck-missed { margin: 12px; }
+  .keys-hint { display: none; }
   .name { font-size: 14.5px; }
   .when .date { display: none; }
   .row-cta { height: 30px; padding: 0 12px; }

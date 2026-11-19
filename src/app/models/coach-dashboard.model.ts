@@ -107,6 +107,7 @@ export type ClientActivityType =
   | 'WORKOUT_COMPLETED'
   | 'WORKOUT_PARTIAL'
   | 'NUTRITION_DAY_COMPLETED'
+  | 'MEAL_PHOTO_ADDED'
   | 'CHECK_IN_SUBMITTED'
   | 'FORM_SUBMITTED'
   | 'PROGRESS_PHOTOS_ADDED'
@@ -132,6 +133,9 @@ export interface ClientActivity {
   weight?: number;
   refId?: string;
   parentRefId?: string;
+  /** Meal photos: the last photo sent that day (signed link) and the note written with it. */
+  photoUrl?: string;
+  note?: string;
 }
 
 export interface ClientActivityPage {
