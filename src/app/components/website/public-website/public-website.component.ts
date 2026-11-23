@@ -4,6 +4,7 @@ import { DomSanitizer, Meta, SafeResourceUrl, Title } from '@angular/platform-br
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { LanguageService } from '../../../service/language.service';
 import { toWebsiteVideoEmbedUrl } from '../models/website-video';
+import { loadMetaPixel } from '../models/meta-pixel';
 import { CoachLandingPreviewComponent } from '../coach-landing-preview/coach-landing-preview.component';
 import { WebsiteService } from '../../../service/website.service';
 
@@ -96,6 +97,7 @@ export class PublicWebsiteComponent implements OnInit {
         this.videoEmbedUrl = this.buildSafeVideoUrl(res?.video?.url);
         this.loading = false;
         this.describePage(res);
+        loadMetaPixel(res?.metaPixelId);
       },
       error: () => {
         this.error = true;

@@ -9,6 +9,7 @@ import {
   FONT_PAIRINGS, SectionKey, SocialLinks, StatItem, WebsiteDesign,
   ensureWebsiteFontsLoaded, initialsOf, normalizeDesign, readableTextOn, whatsappLink,
 } from '../models/website-design';
+import { trackMetaPixelEvent } from '../models/meta-pixel';
 
 interface SocialEntry { key: keyof SocialLinks; url: string; label: string; }
 
@@ -208,6 +209,7 @@ export class CoachLandingPreviewComponent implements OnChanges {
         this.submittingLead = false;
         this.leadSuccess = true;
         this.leadForm = this.emptyLeadForm();
+        if (this.publicMode) trackMetaPixelEvent('Lead');
       },
       error: (err) => {
         this.submittingLead = false;

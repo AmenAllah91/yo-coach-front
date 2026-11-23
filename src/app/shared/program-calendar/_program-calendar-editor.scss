@@ -1,0 +1,140 @@
+/*
+ * The « Calendrier » mode in a program editor (workout and the three nutrition editors): added to the editor's
+ * styleUrls. The calendar takes the whole width; the editor's own day section (`.np-card--day`) becomes the day window
+ * over it. No transform on the window: the editor's fixed elements keep the screen as their reference.
+ * Layers: backdrop 1040, window 1050, the exercise picker 1060/1061, « Déplacé · Annuler » 1070; the copy, confirm,
+ * add-food and history windows are already higher.
+ */
+
+/* np-layout too: the nutrition editors show their rail with a stronger rule. */
+.np-root.np-layout.is-calendar .np-aside,
+.np-root.np-layout.is-calendar .np-shell > .np-aside,
+.np-root.np-layout.is-calendar .np-mobile-structure-backdrop,
+.np-root.np-layout.is-calendar .np-toolbar__weeks,
+.np-root.np-layout.is-calendar:not(.is-cal-editing) .np-card--day,
+.np-root.np-layout.is-calendar:not(.is-cal-editing) .np-drawer-slot { display: none !important; }
+.np-root.np-layout.is-calendar .np-shell { grid-template-columns: minmax(0, 1fr) !important; }
+.np-root.np-layout.is-calendar .np-main { grid-column: 1 / -1 !important; width: 100% !important; }
+
+.np-root.np-layout .np-main > .np-card.pc-card {
+  display: block;
+  width: calc(100% - 48px) !important;
+  max-width: 1400px !important;
+  margin: 24px auto 0 !important;
+  padding: 16px !important;
+}
+@media (max-width: 640px) {
+  .np-root.np-layout .np-main > .np-card.pc-card { width: calc(100% - 24px) !important; margin-top: 12px !important; padding: 12px !important; }
+}
+
+.pc-backdrop { position: fixed; inset: 0; z-index: 1040; padding: 0; border: 0; background: rgba(15, 23, 42, .45); cursor: default; }
+
+.np-root.np-layout.is-cal-editing .np-main > .np-card.np-card--day {
+  position: fixed !important;
+  z-index: 1050;
+  top: calc(var(--wb-app-header, 56px) + 16px);
+  bottom: 16px;
+  left: max(16px, calc((100vw - 960px) / 2));
+  right: max(16px, calc((100vw - 960px) / 2));
+  width: auto !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid light-dark(#dbe3ec, #353e47) !important;
+  border-radius: 14px;
+  background: light-dark(#f7f9fb, #171a1e) !important;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, .28) !important;
+}
+.np-root.np-layout.is-cal-editing .np-card--day > .np-mobile-days,
+.np-root.np-layout.is-cal-editing .np-card--day > .np-sep { display: none !important; }
+.np-root.np-layout.is-cal-editing .np-card--day .builder-rail { margin: 16px !important; flex: 0 0 auto; }
+
+/* The exercise picker (a column of the page on a wide screen) becomes a fixed panel right of the day window. */
+.np-root.is-cal-editing .wkdrawer__backdrop { z-index: 1060 !important; }
+.np-root.is-cal-editing .wkdrawer { z-index: 1061 !important; }
+@media (min-width: 901px) {
+  .np-root.np-layout.is-cal-editing .np-drawer-slot {
+    position: fixed !important;
+    z-index: 1061;
+    top: var(--wb-app-header, 56px) !important;
+    right: 0;
+    bottom: 0;
+    width: var(--exercise-drawer-width) !important;
+    height: calc(100vh - var(--wb-app-header, 56px)) !important;
+    box-shadow: -12px 0 32px rgba(15, 23, 42, .18);
+  }
+  .np-root.np-layout.is-cal-editing .np-drawer-slot .wkdrawer { width: 100% !important; height: 100% !important; max-width: none; }
+  .np-root.np-layout.is-cal-editing.exercise-drawer-open .np-main > .np-card.np-card--day {
+    left: max(16px, calc((100vw - var(--exercise-drawer-width) - 960px) / 2));
+    right: calc(var(--exercise-drawer-width) + 16px);
+  }
+}
+.np-root.is-cal-editing .wkmove-toast { z-index: 1070; }
+
+/* Phone: the window takes the whole screen. */
+@media (max-width: 640px) {
+  .np-root.np-layout.is-cal-editing .np-main > .np-card.np-card--day { inset: 0; border-radius: 0; border: 0 !important; }
+  .np-root.np-layout.is-cal-editing .np-card--day .builder-rail { margin: 10px !important; }
+}
+
+/* « Modifications non enregistrées »: nothing goes to the server before « Enregistrer ». */
+.np-unsaved-dot { display: inline-block; flex: 0 0 auto; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: #e08a00; }
+.np-root.np-layout .np-toolbar__status.is-unsaved { display: inline-flex; align-items: center; color: light-dark(#b45f00, #f0a54a); font-weight: 600; }
+.np-unsaved-short { display: none; }
+@media (max-width: 760px) {
+  .np-root.np-layout .np-toolbar__status.is-unsaved { display: inline-flex; }
+  .np-unsaved-long { display: none; }
+  .np-unsaved-short { display: inline; }
+}
+.np-root.np-layout .np-toolbar__savebtn.has-changes { position: relative; }
+.np-root.np-layout .np-toolbar__savebtn.has-changes::after {
+  content: ''; position: absolute; top: -4px; right: -4px; width: 11px; height: 11px; border-radius: 50%;
+  background: #e08a00; box-shadow: 0 0 0 2px light-dark(#fff, #1d2125);
+}
+
+/* A rest / free day back to a workout / meals in one click. */
+.np-rest-turn { display: inline-flex; align-items: center; gap: 8px; margin: 4px auto 14px; min-height: 38px; padding: 0 16px;
+  border: 1px solid #44b4df; border-radius: 8px; background: light-dark(#eaf6fc, #1b333a); color: light-dark(#0f6f93, #6abce3);
+  font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+.np-rest-turn:hover { background: #44b4df; color: #fff; }
+.np-rest-turn:focus-visible { outline: 2px solid #44b4df; outline-offset: 2px; }
+.np-rest-turn__ico { width: 16px; height: 16px; }
+
+/* ========= Over the client's profile (outlet « day », day-outlet.ts): only the day window, the page stays underneath ========= */
+.np-root.np-layout.pc-embedded {
+  position: fixed !important;
+  inset: 0;
+  z-index: 1040 !important; /* above the profile's own layers (the clients list is sticky, z 20) */
+  width: auto !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  background: transparent !important;
+}
+.np-root.np-layout.pc-embedded > .np-toolbar,
+.np-root.np-layout.pc-embedded .np-aside,
+.np-root.np-layout.pc-embedded .np-mobile-structure-backdrop,
+.np-root.np-layout.pc-embedded:not(.is-cal-editing) .np-card--day,
+.np-root.np-layout.pc-embedded .np-main > :not(.np-card--day):not(.pc-backdrop):not(.pc-embed-loading) { display: none !important; }
+.np-root.np-layout.pc-embedded .np-shell,
+.np-root.np-layout.pc-embedded .np-main { height: 0 !important; min-height: 0 !important; overflow: visible !important; padding: 0 !important; background: transparent !important; }
+
+/* While the program is read: the window's frame, with a spinner (not the editor's page). */
+.pc-embed-loading { position: fixed; z-index: 1050; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(420px, calc(100vw - 32px));
+  display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 28px 24px; border-radius: 14px;
+  background: light-dark(#fff, #1d2125); box-shadow: 0 24px 60px rgba(15, 23, 42, .28); color: light-dark(#334155, #d1d7e0);
+  font-size: 14px; font-weight: 600; text-align: center;
+  /* Shown only if the reading lasts: a quick opening goes straight to the window, no box flashing before it. */
+  animation: pc-embed-late .2s ease-out .35s both; }
+@keyframes pc-embed-late { from { opacity: 0; } to { opacity: 1; } }
+.pc-embed-loading__spin { width: 28px; height: 28px; border: 3px solid light-dark(#dbeaf3, #2b3a42); border-top-color: #44b4df;
+  border-radius: 50%; animation: pc-spin .8s linear infinite; }
+.pc-embed-loading__close { min-height: 38px; padding: 0 18px; border: 1px solid light-dark(#cbd6e2, #353e47); border-radius: 8px;
+  background: light-dark(#fff, #1d2125); color: inherit; font: inherit; cursor: pointer; }
+@keyframes pc-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .pc-embed-loading__spin { animation-duration: 2s; } }

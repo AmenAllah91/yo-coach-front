@@ -1,0 +1,27 @@
+/* =====================================================================
+   « Structure du programme » des éditeurs (séances + 3 éditeurs nutrition) : le jour ouvert se voit d'un coup d'œil.
+   Barre de couleur à gauche, fond plus marqué, titre et état en couleur de la marque ; la semaine qui le contient a
+   aussi son titre en couleur. Chargé en dernier par chaque éditeur ; sélecteurs plus précis que les styles de la liste.
+
+     ▌ ✓  Jour 4  jeu. 26 nov.      ← jour ouvert
+     ▌    Rempli
+   ===================================================================== */
+
+.np-root.np-layout .np-shell > .np-aside .np-dayrow .np-day.np-day.is-active {
+  background: light-dark(#d9f0fa, #1a4152) !important;
+  box-shadow: inset 4px 0 0 #44b4df !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-dayrow .np-day.np-day.is-active .np-day__title {
+  color: light-dark(#0b86b8, #5cc4ef) !important;
+  font-weight: 700 !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-dayrow .np-day.np-day.is-active .np-day__dateLine,
+.np-root.np-layout .np-shell > .np-aside .np-dayrow .np-day.np-day.is-active .np-day__meta:not(.is-warning) {
+  color: light-dark(#0b86b8, #5cc4ef) !important;
+}
+
+.np-root.np-layout .np-shell > .np-aside .np-week-card.has-active.has-active .np-week-card__head strong {
+  color: light-dark(#0b86b8, #5cc4ef) !important;
+}

@@ -1,3 +1,4 @@
+import { ActiveDayRail } from '@shared/program-calendar/active-day-rail';
 import { CopyDaysModalComponent } from '@shared/program-copy/copy-days-modal.component';
 import { ClientProgramDatesComponent } from '@shared/components/client-program-dates/client-program-dates.component';
 import { workoutDayActive } from '@shared/models/client-day-activity';
@@ -5,7 +6,7 @@ import { CopiedDayBannerComponent } from '@shared/program-copy/copied-day-banner
 import { ProgramCopyController } from '@shared/program-copy/program-copy-controller';
 import { ProgramDayClipboardService } from '@shared/program-copy/program-day-clipboard.service';
 import { copyWorkoutDayContent } from '@shared/program-copy/program-day-copy';
-import {Component, OnInit, AfterViewInit, OnDestroy, HostListener, ViewChild, ElementRef, ChangeDetectorRef, inject, NgZone} from '@angular/core';
+import {Component, OnInit, AfterViewInit, AfterViewChecked, OnDestroy, HostListener, ViewChild, ElementRef, ChangeDetectorRef, inject, NgZone} from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FeatherModule } from 'angular-feather';
 import { FormsModule } from '@angular/forms';
@@ -31,6 +32,7 @@ import { ToastService } from 'app/service/toast.service';
 import { Client, ClientService } from 'app/service/client.service';
 import { WorkoutService } from 'app/service/workout.service';
 import { isLockedError, isPlanLocked, todayIso } from '@shared/models/program-schedule';
+import { isoOf } from '@shared/program-calendar/program-calendar.model';
 import { ConfirmDialogService } from '@shared/components/confirm-dialog/confirm-dialog.service';
 import { LeavesUnsavedChanges, SavedContent, warnBeforeUnload } from '@config/guard/unsaved-changes.guard';
 import { WorkoutAiDraft } from 'app/service/workout-ai.service';
@@ -39,6 +41,13 @@ import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { ExerciseProgressDetailComponent } from '@shared/components/exercise-progress-detail/exercise-progress-detail.component';
 import { ExerciseDifficulty, ExerciseMetric, ExerciseSummary, HistorySession, exerciseHistoryKey, sessionBelowPlan, sessionDoneLine, sessionFromDayLog, sessionPlannedLine, sessionForOccurrence } from '@shared/models/exercise-history';
 import { findExerciseLog } from 'app/components/clients/profil-client/client-activity/client-activity';
+import { exerciseLines } from '@shared/models/calendar-day';
+import { CalendarLine, CalendarWeek, buildCalendarWeeks, calendarColumns, todayColumn } from '@shared/program-calendar/program-calendar.model';
+import { CalendarDayWindow } from '@shared/program-calendar/day-window';
+import { closeDayOutlet, inDayOutlet, openFullEditor, requestedDayNumber } from '@shared/program-calendar/day-outlet';
+import { dayWindowPlan, forgetDayWindowPlan } from '@shared/program-calendar/day-window-prefetch';
+import { CALENDAR_PREFS, DayWindowFootComponent, DayWindowHeadComponent, ViewSwitchComponent } from '@shared/program-calendar/day-window-bars.component';
+import { CalendarDayAction, ProgramCalendarComponent } from '@shared/program-calendar/program-calendar.component';
 
 /**
  * Sous un exercice d'une séance de client, prêt à afficher :
@@ -69,16 +78,18 @@ const EXERCISE_DISPLAY_FIELDS = new Set(['image', 'imageUrl', 'thumbnailUrl', 'p
 @Component({
   selector: 'app-create-workout',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule, SectionLoaderComponent, EmptyDaysModalComponent, ProgramOverflowComponent, CopyDaysModalComponent, CopiedDayBannerComponent, ClientProgramDatesComponent, ExerciseProgressDetailComponent],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule, SectionLoaderComponent, EmptyDaysModalComponent, ProgramOverflowComponent, CopyDaysModalComponent, CopiedDayBannerComponent, ClientProgramDatesComponent, ExerciseProgressDetailComponent, ProgramCalendarComponent, DayWindowHeadComponent, DayWindowFootComponent, ViewSwitchComponent],
   templateUrl: './create-workout.component.html',
-  styleUrls: ['./create-workout.component.scss'],
+  styleUrls: ['./create-workout.component.scss', '../../../shared/program-calendar/_program-calendar-editor.scss', '../_builder-rail-active.scss'],
 })
-export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy, LeavesUnsavedChanges {
+export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewChecked, OnDestroy, LeavesUnsavedChanges {
   /** Bottom of the app header, measured: the toolbar sticks right under it (no strip where the content shows). */
   isEditMode = false;
   isVisibleToOthers = false;
   durationWeeks = 4;
-  readonly durationOptions = [1, 2, 3, 4, 5, 6, 8, 10, 12];
+  /** Toutes les durées de 1 à 12 semaines (« Ajouter une semaine » passe de 6 à 7, de 8 à 9…). */
+  readonly durationOptions = Array.from({ length: 12 }, (_, i) => i + 1);
+  readonly maxWeeks = 12;
   pendingDurationWeeks: number | null = null;
   pendingDurationRemovedDays = 0;
   collapsedWeeks = new Set<number>(Array.from({length: 11}, (_, index) => index + 2));
@@ -331,6 +342,12 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
   }
 
   goBack(): void {
+    // Ouvert par-dessus la fiche du client : on la retrouve telle quelle, relue si quelque chose a été enregistré.
+    if (this.embedded) {
+      if (this.savedAt) this.programSchedule.changed$.next();
+      closeDayOutlet(this.router);
+      return;
+    }
     if (this.returnUrl?.startsWith('/')) {
       void this.router.navigateByUrl(this.returnUrl);
       return;
@@ -697,7 +714,9 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
   private loadPlan(planId: string): void {
     this.planLoading = true;
     this.planLoadError = false;
-    this.facade.loadPlanForEdit(planId).subscribe({
+    // Over the client's profile: the program its week card already read (day-window-prefetch.ts), shown at once.
+    const plan$ = this.embedded ? dayWindowPlan(planId, () => this.facade.loadPlanForEdit(planId)) : this.facade.loadPlanForEdit(planId);
+    plan$.subscribe({
         next: (plan: WorkoutPlan) => this.applyLoadedPlan(plan),
         error: (err) => {
           console.error('Erreur lors du chargement du plan :', err);
@@ -730,6 +749,24 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
     }
     this.openRequestedDay();
     this.savedContent.rememberAfterDisplay(() => this.content());
+    this.openRequestedWindow();
+  }
+
+  /**
+   * Ouvert depuis la fiche du client sur un jour (`?day=N&open=1`) : la fenêtre de ce jour s'ouvre tout de suite, le
+   * calendrier derrière, comme un clic dans le calendrier ; « Fermer » ramène à la fiche.
+   */
+  private openRequestedWindow(): void {
+    if (!this.embedded && this.route.snapshot.queryParamMap.get('open') !== '1') return;
+    const day = this.selectedDay;
+    if (!day) return;
+    if (this.readOnly && !this.embedded) return;
+    // Après le point de départ « rien de changé » pris par rememberAfterDisplay.
+    setTimeout(() => {
+      this.viewMode = 'calendar'; // pour cette visite seulement : le choix gardé du coach ne change pas
+      this.win.returnOnClose = true;
+      this.win.openDay(day);
+    });
   }
 
   /** What the coach edits (name, settings, days, sessions, exercises and their sets), to compare with the saved one. */
@@ -779,7 +816,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
 
   /** Opened on a day (the client's « Programmes » tab, « Remplir »): that day, its week open. */
   private openRequestedDay(): void {
-    const dayNumber = Number(this.route.snapshot.queryParamMap.get('day'));
+    const dayNumber = requestedDayNumber(this.route);
     const day = dayNumber > 0 ? this.days[dayNumber - 1] : null;
     if (day) this.selectDay(day);
   }
@@ -832,6 +869,19 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
     }
   }
 
+  /** Le jour ouvert reste visible dans la liste de gauche (défile jusqu'à lui quand il change). */
+  private readonly activeDayRail = new ActiveDayRail(() => this.host.nativeElement);
+
+  ngAfterViewChecked(): void {
+    this.activeDayRail.follow(this.selectedDay?.id ?? null, this.mobileStructureOpen);
+  }
+
+  /** La semaine qui contient le jour ouvert (son titre est mis en couleur). */
+  weekHasSelectedDay(week: { days: WorkoutDay[] }): boolean {
+    const id = this.selectedDay?.id;
+    return id != null && week.days.some(day => day.id === id);
+  }
+
   private scheduleExercisePrefetch(): void {
     const run = () => this.facade.prefetchExercises();
     const win = window as Window & { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number };
@@ -882,6 +932,16 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
 
   ngDoCheck(): void {
     this.summaryCache = null;
+    this.calendarCache = null;
+    this.unsavedCache = null;
+    this.win.check(this.saveError);
+  }
+
+  /** Des changements pas encore envoyés au serveur (calculé une fois par détection de changements). */
+  private unsavedCache: boolean | null = null;
+
+  get unsaved(): boolean {
+    return this.unsavedCache ??= this.hasUnsavedChanges();
   }
 
   get programSummary(): ProgramSummary {
@@ -1918,7 +1978,11 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
 
   /** « 6 exercices · 18 séries · ~50 min » : durée = travail (≈ 3 s par rep, temps, minutes de cardio) + repos. */
   sessionSummaryText(): string | null {
-    const list = this.selectedWorkoutSession?.exercises || [];
+    return this.summaryOf(this.selectedWorkoutSession?.exercises || []);
+  }
+
+  /** Le même résumé pour une liste d'exercices (le jour choisi, ou une case du calendrier). */
+  private summaryOf(list: Exercise[]): string | null {
     if (!list.length) return null;
     let sets = 0;
     let seconds = 0;
@@ -1955,6 +2019,224 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
     this.copy.openWeek();
   }
 
+  // ---------- Mode Calendrier (shared/program-calendar) : une ligne par semaine, une colonne par jour ----------
+  // Le calendrier sert à voir et ranger le programme ; un clic sur un jour ouvre sa fenêtre (l'éditeur du jour).
+
+  private static readonly VIEW_KEY = 'yc.workoutEditor.view';
+  private static readonly COMPACT_KEY = 'yc.workoutEditor.calendarCompact';
+
+  /** Ouvert par-dessus la fiche du client (outlet « day », day-outlet.ts) : seulement la fenêtre du jour. */
+  readonly embedded = inDayOutlet(this.route);
+  viewMode: 'list' | 'calendar' = this.embedded ? 'calendar' : CALENDAR_PREFS.view(CreateWorkoutComponent.VIEW_KEY);
+  calendarDetailed = CALENDAR_PREFS.detailed(CreateWorkoutComponent.COMPACT_KEY);
+  @ViewChild(ProgramCalendarComponent) private calendar?: ProgramCalendarComponent<WorkoutDay>;
+  private calendarCache: CalendarWeek<WorkoutDay>[] | null = null;
+
+  /** La fenêtre du jour (shared/program-calendar/day-window.ts). */
+  readonly win = new CalendarDayWindow<WorkoutDay>({
+    days: () => this.days,
+    selected: () => this.selectedDay ?? null,
+    select: (day) => this.selectDay(day),
+    content: () => this.content(),
+    restore: (days) => this.restoreDays(days),
+    save: () => this.savePlan(),
+    saving: () => this.savingDraft,
+    unsaved: () => this.hasUnsavedChanges(),
+    readOnly: () => this.readOnly,
+    subWindowOpen: () => this.subWindowOpen(),
+    closeSubPanels: () => { if (this.showExerciseSelector) this.closeExerciseSelector(); this.dayMenuOpen = false; },
+    goBack: () => this.goBack(),
+    toList: () => this.showDayInList(),
+    t: (key, params) => this.translate.instant(key, params),
+    dateLabel: (day) => (this.isClientMode ? this.getRailDateLabel(day) : ''),
+    scrollTop: () => setTimeout(() => this.host.nativeElement.querySelector('.np-card--day')?.scrollTo({ top: 0 })),
+  });
+
+  setViewMode(mode: 'list' | 'calendar'): void {
+    if (this.viewMode === mode) return;
+    this.viewMode = mode;
+    if (this.showExerciseSelector) this.closeExerciseSelector();
+    this.win.reset();
+    this.dayMenuOpen = false;
+    this.mobileStructureOpen = false;
+    CALENDAR_PREFS.setView(CreateWorkoutComponent.VIEW_KEY, mode);
+  }
+
+  setCalendarDetailed(on: boolean): void {
+    this.calendarDetailed = on;
+    CALENDAR_PREFS.setDetailed(CreateWorkoutComponent.COMPACT_KEY, on);
+  }
+
+  /** Le mode Liste sur le jour choisi (« Tout le programme », programme en lecture seule). */
+  private showDayInList(): void {
+    const day = this.selectedDay;
+    if (this.embedded) {
+      // Par-dessus la fiche : la page complète de l'éditeur, en mode Liste sur ce jour.
+      CALENDAR_PREFS.setView(CreateWorkoutComponent.VIEW_KEY, 'list');
+      openFullEditor(this.router, this.route, this.days.indexOf(day as WorkoutDay) + 1);
+      return;
+    }
+    this.setViewMode('list');
+    if (day) this.selectDay(day);
+    setTimeout(() => {
+      window.scrollTo({ top: 0 });
+      this.host.nativeElement.querySelector('.np-day.is-active')?.scrollIntoView({ block: 'nearest' });
+    });
+  }
+
+  get calendarColumns(): string[] {
+    return calendarColumns({ days: this.days, client: this.isClientMode, locale: this.dateLocale(), iso: (d: WorkoutDay) => isoOf(d.date), t: (k, p) => this.translate.instant(k, p) });
+  }
+
+  get calendarTodayColumn(): number {
+    return todayColumn(this.calendarWeeks);
+  }
+
+  /** Les semaines du calendrier, calculées une fois par détection de changements. */
+  get calendarWeeks(): CalendarWeek<WorkoutDay>[] {
+    return this.calendarCache ??= buildCalendarWeeks<WorkoutDay>({
+      kind: 'WORKOUT',
+      days: this.days,
+      client: this.isClientMode,
+      readOnly: this.readOnly,
+      detailed: this.calendarDetailed,
+      today: todayIso(),
+      locale: this.dateLocale(),
+      state: (day) => this.dayRailState(day),
+      started: (day) => workoutDayActive(day),
+      status: (day) => String((day as { status?: string }).status || ''),
+      iso: (day) => isoOf(day.date),
+      title: (day) => day.workoutSessions?.[0]?.name?.trim() || this.ht('Workout', 'Séance'),
+      meta: (day) => this.summaryOf((day.workoutSessions || []).flatMap((session) => session?.exercises || [])) || '',
+      lines: (day) => this.calendarLines(day),
+      t: (key, params) => this.translate.instant(key, params),
+      ht: (en, fr) => this.ht(en, fr),
+    });
+  }
+
+  private calendarLines(day: WorkoutDay): CalendarLine[] {
+    const exercises = (day.workoutSessions || []).flatMap((session) => session?.exercises || []);
+    return exerciseLines(day).map((line, i) => ({
+      label: line.label,
+      name: line.name,
+      detail: exercises[i] ? this.exerciseLine(exercises[i]) : '',
+      link: line.link,
+      groupKind: line.groupKind,
+    }));
+  }
+
+  /** « Abandonner les changements » : les jours comme à l'ouverture de la fenêtre. */
+  private restoreDays(restored: WorkoutDay[]): void {
+    // La copie JSON sépare la séance de sa liste : on les relie (comme « Annuler » de la copie de jours).
+    restored.forEach((day) => (day.session = day.workoutSessions?.[0] ?? null));
+    const index = Math.max(0, this.days.indexOf(this.selectedDay as WorkoutDay));
+    this.days.splice(0, this.days.length, ...restored);
+    this.durationWeeks = this.normalizeDurationWeeks(Math.ceil((this.days.length || 7) / 7));
+    this.facade.syncPlanDays();
+    const day = this.days[Math.min(index, this.days.length - 1)];
+    if (day) this.facade.selectDay(day);
+    this.refreshDates();
+  }
+
+  /** Une petite fenêtre est ouverte par-dessus la fenêtre du jour (copier, historique, confirmation…). */
+  private subWindowOpen(): boolean {
+    return !!this.copy.modal || !!this.historyExercise || this.planEditOpen
+      || !!this.emptyDaysPrompt || this.pendingDurationWeeks !== null
+      || !!document.querySelector('.cd-backdrop, .wkex-history, .np-planedit');
+  }
+
+  /** Menu ⋮ d'une case : les mêmes actions que le menu du jour, sans ouvrir le jour. */
+  onCalendarDayAction(event: { type: CalendarDayAction; day: WorkoutDay }): void {
+    this.selectDay(event.day);
+    if (event.type === 'copy') this.copy.openDay();
+    else if (event.type === 'rest') this.toggleRestDay();
+    else this.clearDay();
+  }
+
+  onCalendarDuplicateWeek(week: CalendarWeek<WorkoutDay>): void {
+    this.duplicateWeek({ days: week.days });
+  }
+
+  // ---------- Semaines entières : jamais de semaine à moitié ----------
+
+  get weekCount(): number {
+    return Math.ceil((this.days.length || 0) / 7);
+  }
+
+  /** « Ajouter une semaine » : 7 jours vides d'un coup et la durée suit (une semaine incomplète est d'abord complétée). */
+  addWeek(): void {
+    if (this.readOnly) return;
+    const before = this.days.length;
+    const weeks = before % 7 ? this.weekCount : this.weekCount + 1;
+    if (weeks > this.maxWeeks) return;
+    this.applyDurationWeeks(weeks);
+    const first = this.days[before];
+    if (!first) return;
+    this.selectDay(first);
+    if (this.viewMode === 'calendar') this.calendar?.scrollToWeek(Math.floor(before / 7) + 1);
+    else setTimeout(() => this.host.nativeElement.querySelector('.np-day.is-active')?.scrollIntoView({ block: 'nearest' }));
+  }
+
+  /** « Supprimer la semaine » : ses 7 jours partent, les semaines suivantes remontent ; toujours demandé avant. */
+  async deleteWeek(weekNumber: number): Promise<void> {
+    if (this.readOnly || this.weekCount <= 1) return;
+    const start = (weekNumber - 1) * 7;
+    const removed = this.days.slice(start, start + 7);
+    if (!removed.length) return;
+    const week = this.calendarWeeks[weekNumber - 1];
+    if (week?.cells.some((cell) => cell.locked)) {
+      this.toast.show({
+        type: 'warning',
+        title: this.ht('This week cannot be deleted', 'Cette semaine ne peut pas être supprimée'),
+        message: this.ht('It has past days or days the client already started.', 'Elle a des jours passés ou déjà commencés par le client.'),
+      });
+      return;
+    }
+    const filled = week?.filled ?? 0;
+    const confirmed = await this.confirmDialog.ask({
+      title: this.ht(`Delete week ${weekNumber}?`, `Supprimer la semaine ${weekNumber} ?`),
+      text: filled
+        ? this.ht(`Its ${filled} filled day(s) will be removed. The next weeks move up.`, `Ses ${filled} jour(s) rempli(s) seront retirés. Les semaines suivantes remontent.`)
+        : this.ht('The next weeks move up.', 'Les semaines suivantes remontent.'),
+      confirm: 'DELETE',
+      icon: 'trash-2',
+    });
+    if (!confirmed || this.days[start] !== removed[0]) return;
+    this.days.splice(start, removed.length);
+    this.applyDurationWeeks(this.weekCount);
+  }
+
+  /** Lâché sur un autre jour : les deux jours échangent leur place (« Annuler » remet comme avant). */
+  onCalendarSwap(event: { from: WorkoutDay; to: WorkoutDay }): void {
+    if (!this.swapCalendarDays(event.from, event.to)) return;
+    this.toast.show({
+      type: 'success',
+      title: this.ht('Days swapped', 'Jours échangés'),
+      message: this.ht('Not saved yet: click Save.', 'Pas encore enregistré : cliquez sur Enregistrer.'),
+      duration: 8000,
+      actions: [{ label: this.translate.instant('COPY_DAYS.UNDO'), run: () => this.swapCalendarDays(event.from, event.to), icon: 'fa-undo' }],
+    });
+  }
+
+  private swapCalendarDays(a: WorkoutDay, b: WorkoutDay): boolean {
+    const ia = this.days.indexOf(a);
+    const ib = this.days.indexOf(b);
+    if (ia < 0 || ib < 0 || ia === ib) return false;
+    this.days[ia] = b;
+    this.days[ib] = a;
+    // Les dates et les titres « Jour N » suivent la place du jour.
+    if (this.isClientMode) {
+      this.refreshDates();
+    } else {
+      this.days.forEach((day, index) => {
+        day.dayNumber = index + 1;
+        day.title = `Day ${(index % 7) + 1}`;
+        day.name = day.title;
+      });
+    }
+    return true;
+  }
+
   /** Menu « ⋮ » du jour (Copier, Jour de repos, Vider la séance, Supprimer le jour). */
   dayMenuOpen = false;
 
@@ -1965,8 +2247,16 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
 
   @HostListener('document:keydown.escape')
   onEscapeDayMenu() {
+    const hadMenu = this.dayMenuOpen || this.groupMenuAt !== null;
     this.dayMenuOpen = false;
     this.groupMenuAt = null;
+    // Échap ferme d'abord un menu, le choix d'exercice ou une petite fenêtre, puis seulement la fenêtre du jour.
+    if (hadMenu || !this.win.open) return;
+    if (this.showExerciseSelector && !document.querySelector('.cd-backdrop, .wkex-history')) {
+      this.closeExerciseSelector();
+      return;
+    }
+    this.win.escape();
   }
 
   /** « Vider la séance » : tous les exercices du jour retirés, toujours demandé avant. */
@@ -2223,6 +2513,8 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
 
   ngOnDestroy(): void {
     this.destroyed = true;
+    // Saved from the window over the profile: the next click reads the program again.
+    if (this.embedded && this.savedAt) forgetDayWindowPlan(this.route.snapshot.paramMap.get('id'));
     this.headerObserver?.disconnect();
     if (this.moveToastTimer) clearTimeout(this.moveToastTimer);
     if (this.justAddedTimer) clearTimeout(this.justAddedTimer);
@@ -2370,7 +2662,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, OnDestroy,
   }
 
   addDayFromMobile(): void {
-    this.addDay();
+    this.addWeek();
 
     setTimeout(() => {
       this.scrollMobileDaysToEnd();

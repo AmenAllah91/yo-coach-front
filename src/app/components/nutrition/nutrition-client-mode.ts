@@ -1,4 +1,5 @@
 import { ActivatedRoute, Router } from '@angular/router';
+import { requestedDayNumber } from '@shared/program-calendar/day-outlet';
 import { TranslateService } from '@ngx-translate/core';
 import { Client, ClientService } from 'app/service/client.service';
 import { NutritionService } from 'app/service/nutrition.service';
@@ -102,7 +103,7 @@ export class NutritionClientMode {
 
   /** The day asked by the address (`?day=N`, « Remplir » in the client's « Programmes » tab), if any. */
   requestedDay(days: MealDay[]): MealDay | null {
-    const dayNumber = Number(this.route.snapshot.queryParamMap.get('day'));
+    const dayNumber = requestedDayNumber(this.route);
     return dayNumber > 0 ? days[dayNumber - 1] || null : null;
   }
 

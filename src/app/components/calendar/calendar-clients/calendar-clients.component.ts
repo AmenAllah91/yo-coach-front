@@ -1,4 +1,5 @@
 import { ClientProfileCacheService } from 'app/service/client-profile-cache.service';
+import { DayOutletKind, openDayOutlet } from '@shared/program-calendar/day-outlet';
 import { NutritionPlanKind, nutritionPlanKind } from '@shared/models/nutrition-plan-kind';
 import { NutritionService } from 'app/service/nutrition.service';
 import { WorkoutService } from 'app/service/workout.service';
@@ -298,7 +299,7 @@ type CalendarType = 'workout' | 'nutrition';
   imports: [CommonModule, FormsModule, TranslateModule, SectionLoaderComponent, AssignScheduleComponent, AssignConfirmComponent,
     ProgramShiftModalComponent, CopyDaysModalComponent, RemoveProgramConfirmComponent],
   templateUrl: './calendar-clients.component.html',
-  styleUrl: './calendar-clients.component.scss',
+  styleUrls: ['./calendar-clients.component.scss', '../../../shared/program-calendar/_calendar-cards.scss', './calendar-clients-cards.scss'],
 })
 export class CalendarClientsComponent implements OnInit, OnChanges {
 
@@ -490,7 +491,197 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
   /** Échap closes the side panel (not while one of its windows is open: Échap closes that window). */
   @HostListener('document:keydown.escape')
   onEscape(): void {
+    if (this.cardMenu || this.pick) {
+      this.cardMenu = null;
+      this.pick = null;
+      return;
+    }
     if (this.sidePanel && !this.removeTarget && !this.shiftTarget && !this.copyWeek) this.closeDay();
+  }
+
+  /* ---- The same actions as the editors' calendar and the client's profile (shared/program-calendar) ---- */
+
+  /** The ⋮ of a card open (its day and kind). */
+  cardMenu: { kind: CalendarType; item: WorkoutProgram | NutritionProgram } | null = null;
+  /** A workout day picked for « Déplacer », « Copier vers… » or « Copier un jour ici »: the next card clicked is the other day. */
+  pick: { mode: 'MOVE' | 'COPY_TO' | 'COPY_FROM'; kind: CalendarType; item: WorkoutProgram | NutritionProgram } | null = null;
+
+  @HostListener('document:click')
+  closeCardMenu(): void {
+    this.cardMenu = null;
+  }
+
+  private outletKind(kind: CalendarType, item: WorkoutProgram | NutritionProgram): DayOutletKind {
+    if (kind === 'workout') return 'workout';
+    const planKind = (item as NutritionProgram).planKind;
+    return planKind === 'DAY_MACROS' ? 'macro-day' : planKind === 'MEAL_MACROS' ? 'macro-plan' : 'full-plan';
+  }
+
+  /** The day's window over this calendar (the editor's day, as everywhere); the calendar is read again after a save. */
+  openDayWindow(kind: CalendarType, item: WorkoutProgram | NutritionProgram): void {
+    if (!item.programId || !item.dayNumber || !this.selectedClient) return;
+    openDayOutlet(this.router, this.outletKind(kind, item), this.selectedClient, item.programId, item.dayNumber);
+  }
+
+  /** A click on a card: its window (a past nutrition day: its report in the day panel); while picking: the other day. */
+  onCardClick(kind: CalendarType, date: string, item: WorkoutProgram | NutritionProgram): void {
+    if (this.pick) {
+      this.pickDay(kind, item);
+      return;
+    }
+    if (!item.programId || (kind === 'nutrition' && date < todayIso())) {
+      this.selectDay(date, kind);
+      return;
+    }
+    this.openDayWindow(kind, item);
+  }
+
+  toggleCardMenu(kind: CalendarType, item: WorkoutProgram | NutritionProgram, event: Event): void {
+    event.stopPropagation();
+    this.cardMenu = this.isMenuOpen(item) ? null : { kind, item };
+  }
+
+  /** The day panel builds its days again on each display: a day is known by its id and date. */
+  private sameDay(a: { id?: string; date?: string } | null | undefined, b: { id?: string; date?: string }): boolean {
+    return !!a && a.id === b.id && a.date === b.date;
+  }
+
+  isMenuOpen(item: WorkoutProgram | NutritionProgram): boolean {
+    return this.sameDay(this.cardMenu?.item, item);
+  }
+
+  /** The ⋮ of a card: the same as the client's profile (moves and copies saved at once, with « Annuler »). */
+  cardMenuItems(kind: CalendarType, item: WorkoutProgram | NutritionProgram, inDay = false): { type: string; label: string; icon: string }[] {
+    const t = (key: string) => this.translate.instant(`CLIENT_PROGRAMS.${key}`);
+    const items: { type: string; label: string; icon: string }[] = [];
+    if (!item.programId) return items;
+    const empty = !!(item as { emptyDay?: boolean }).emptyDay;
+    items.push({ type: 'edit', label: kind === 'workout' ? t(empty ? 'DAY_CREATE' : 'DAY_EDIT') : (empty ? this.ht('Fill the day', 'Remplir le jour') : this.ht('Edit the day', 'Modifier le jour')), icon: 'edit' });
+    // The same quick changes for a workout and a nutrition day (a free day is the rest day of nutrition).
+    const changeable = !this.isLocked(kind, item);
+    if (empty && changeable) {
+      items.push({ type: 'copyHere', label: t('DAY_COPY_HERE'), icon: 'content_copy' });
+      items.push(kind === 'workout'
+        ? { type: 'rest', label: t('DAY_SET_REST'), icon: 'bedtime' }
+        : { type: 'rest', label: this.ht('Make it a free day', 'Mettre en jour libre'), icon: 'flag' });
+    } else if (!empty && changeable) {
+      items.push({ type: 'move', label: t('DAY_MOVE'), icon: 'open_with' });
+      items.push({ type: 'copyTo', label: t('DAY_COPY_TO'), icon: 'content_copy' });
+    } else if (!empty) {
+      items.push({ type: 'copyTo', label: t('DAY_COPY_TO'), icon: 'content_copy' });
+    }
+    items.push({ type: 'day', label: this.ht('See the day', 'Voir la journée'), icon: 'calendar_view_day' });
+    // In the day panel: « Ouvrir dans l'éditeur » is already its main button, and the day is the one shown.
+    return inDay ? items.filter((entry) => entry.type !== 'edit' && entry.type !== 'day') : items;
+  }
+
+  cardAction(type: string, kind: CalendarType, date: string, item: WorkoutProgram | NutritionProgram): void {
+    this.cardMenu = null;
+    switch (type) {
+      case 'edit': this.openDayWindow(kind, item); break;
+      case 'day': this.selectDay(date, kind); break;
+      case 'move': this.startPick('MOVE', kind, item, date); break;
+      case 'copyTo': this.startPick('COPY_TO', kind, item, date); break;
+      case 'copyHere': this.startPick('COPY_FROM', kind, item, date); break;
+      case 'rest': this.restDay(kind, item); break;
+    }
+  }
+
+  /** The other day is chosen on a week (or the month): from the day view, its week opens, the panel closes. */
+  private startPick(mode: 'MOVE' | 'COPY_TO' | 'COPY_FROM', kind: CalendarType, item: WorkoutProgram | NutritionProgram, date: string): void {
+    if (this.currentView === 'day') {
+      const parsed = this.parseCalendarDate(date);
+      if (parsed) this.currentDate = parsed;
+      this.setView('week');
+    }
+    if (this.sidePanel) this.closeDay();
+    this.pick = { mode, kind, item };
+  }
+
+  get pickText(): string {
+    switch (this.pick?.mode) {
+      case 'MOVE': return this.pick?.kind === 'nutrition'
+        ? this.ht('Click the day where this day goes (Escape: cancel).', 'Cliquez sur le jour où mettre ce jour (Échap : annuler).')
+        : this.ht('Click the day where the workout goes (Escape: cancel).', 'Cliquez sur le jour où mettre la séance (Échap : annuler).');
+      case 'COPY_TO': return this.ht('Click the empty day to copy it to (Escape: cancel).', 'Cliquez sur le jour vide où la copier (Échap : annuler).');
+      case 'COPY_FROM': return this.ht('Click the day to copy here (Escape: cancel).', 'Cliquez sur le jour à copier ici (Échap : annuler).');
+      default: return '';
+    }
+  }
+
+  /** While picking: can this day be chosen (same program; past or started days do not change)? */
+  isPickTarget(item: WorkoutProgram | NutritionProgram, kind: CalendarType = 'workout'): boolean {
+    const pick = this.pick;
+    if (!pick || kind !== pick.kind || this.sameDay(pick.item, item) || item.programId !== pick.item.programId) return false;
+    switch (pick.mode) {
+      case 'MOVE': return !this.isLocked(kind, item);
+      case 'COPY_TO': return !!item.emptyDay && !this.isLocked(kind, item);
+      case 'COPY_FROM': return !item.emptyDay;
+    }
+  }
+
+  pickState(item: WorkoutProgram | NutritionProgram, kind: CalendarType = 'workout'): 'target' | 'source' | 'dim' | null {
+    if (!this.pick) return null;
+    if (kind === this.pick.kind && this.sameDay(this.pick.item, item)) return 'source';
+    return this.isPickTarget(item, kind) ? 'target' : 'dim';
+  }
+
+  private pickDay(kind: CalendarType, target: WorkoutProgram | NutritionProgram): void {
+    const pick = this.pick;
+    if (!pick || !this.isPickTarget(target, kind) || !pick.item.programId) return;
+    this.pick = null;
+    const date = (value: string) => (this.parseCalendarDate(value) || new Date())
+      .toLocaleDateString(this.calendarLocale, { weekday: 'long', day: 'numeric', month: 'long' });
+    if (pick.mode === 'MOVE') {
+      this.movingDay = true;
+      this.programSchedule.swapDays(pick.item.programId, this.dayIdOf(kind, pick.item), this.dayIdOf(kind, target))
+        .pipe(finalize(() => (this.movingDay = false)))
+        .subscribe({
+          next: (result) => {
+            const title = target.emptyDay
+              ? this.translate.instant('CALENDAR_DAY_MOVED', { date: date(target.date) })
+              : this.translate.instant('CALENDAR_DAYS_SWAPPED', { first: date(pick.item.date), second: date(target.date) });
+            const details = result.restedDayId ? [this.translate.instant('CALENDAR_LEFT_REST', { date: date(pick.item.date) })] : [];
+            this.programSchedule.announceCalendarChange(result.undoId, title, details);
+          },
+          error: (err) => this.toast.error(this.calendarChangeError(err)),
+        });
+      return;
+    }
+    const copy = pick.mode === 'COPY_TO'
+      ? { from: pick.item.dayNumber!, to: target.dayNumber! }
+      : { from: target.dayNumber!, to: pick.item.dayNumber! };
+    const to = pick.mode === 'COPY_TO' ? target : pick.item;
+    this.programSchedule.copyDays(pick.item.programId, [copy]).subscribe({
+      next: (result) => {
+        if (!result.copied.length) {
+          this.toast.error(this.translate.instant('CALENDAR_CHANGE_ERROR'));
+          return;
+        }
+        this.programSchedule.announceCalendarChange(result.undoId,
+          this.translate.instant('CLIENT_PROGRAMS.COPIED_TO', { date: date(to.date) }));
+      },
+      error: (err) => this.toast.error(this.calendarChangeError(err)),
+    });
+  }
+
+  /** « Jour de repos » of an empty day, saved at once (with « Annuler »). */
+  private restDay(kind: CalendarType, item: WorkoutProgram | NutritionProgram): void {
+    if (!item.programId || !item.dayNumber) return;
+    this.programSchedule.restDays(item.programId, [item.dayNumber]).subscribe({
+      next: (result) => {
+        if (!result.rested.length) {
+          this.toast.error(this.translate.instant('CLIENT_PROGRAMS.REST_NOTHING'));
+          return;
+        }
+        const when = (this.parseCalendarDate(item.date) || new Date())
+          .toLocaleDateString(this.calendarLocale, { weekday: 'long', day: 'numeric', month: 'long' });
+        this.programSchedule.announceCalendarChange(result.undoId, kind === 'workout'
+          ? this.translate.instant('CLIENT_PROGRAMS.RESTED_ONE', { date: when })
+          : this.ht(`${when} is a free day`, `Le ${when} est un jour libre`));
+      },
+      error: (err) => this.toast.error(this.calendarChangeError(err)),
+    });
   }
 
   /* ---- The help (drag hint, legend of the symbols): shown the first 3 visits, then behind a « ? » button. ---- */
@@ -1502,6 +1693,8 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
       meals: item.cheatMeal ? [] : mealLines(item.raw),
       notes,
       notesNew: this.notesUnread(date, notes),
+      // As a workout: a day with meals or a free day moves; an empty day receives (2026-11-23).
+      movable: !!item.programId && !item.emptyDay && !this.isLocked('nutrition', item),
     };
   }
 
@@ -1639,6 +1832,20 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
     }
   }
 
+  ht(en: string, fr: string): string {
+    return this.translate.currentLang === 'en' ? en : fr;
+  }
+
+  /** yyyy-MM-dd of today (past days drawn paler). */
+  get todayString(): string {
+    return todayIso();
+  }
+
+  /** « Cartes : Détail | Résumé » (the same control as the editors' calendar). */
+  setWeekDetail(on: boolean): void {
+    if (on !== this.weekDetailed) this.toggleWeekDetail();
+  }
+
   toggleWeekDetail(): void {
     this.weekDetailed = !this.weekDetailed;
     try {
@@ -1665,16 +1872,20 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
   }
 
   /* Drag a workout onto another day of its program (C4): the two days change places; on an empty day it moves there. */
-  dragging: WorkoutProgram | null = null;
+  dragging: WorkoutProgram | NutritionProgram | null = null;
+  /** The row of the dragged day (a day moves inside its program, so inside its row). */
+  dragKind: CalendarType = 'workout';
   dropDate: string | null = null;
+  dropKind: CalendarType = 'workout';
   movingDay = false;
 
-  onDayDragStart(event: DragEvent, cell: WeekCell<WorkoutProgram>): void {
-    if (!cell.movable || this.movingDay) {
+  onDayDragStart(event: DragEvent, cell: WeekCell<WorkoutProgram | NutritionProgram>, kind: CalendarType = 'workout'): void {
+    if (!cell.movable || this.movingDay || this.pick) {
       event.preventDefault();
       return;
     }
     this.dragging = cell.item;
+    this.dragKind = kind;
     event.dataTransfer?.setData('text/plain', cell.item.id);
     if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
   }
@@ -1684,33 +1895,47 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
     this.dropDate = null;
   }
 
-  /** The day of the dragged workout's program on that date, when the workout can go there (K1-K3, C4). */
-  private dropTargetOf(day: WeekRowDay): WorkoutProgram | null {
+  /** The day of the dragged day's program on that date, in its row, when it can go there (K1-K3, C4). */
+  private dropTargetOf(day: WeekRowDay, kind: CalendarType): WorkoutProgram | NutritionProgram | null {
     const moving = this.dragging;
-    if (!moving || day.dateString === moving.date || day.dateString < todayIso()) return null;
-    const target = day.workout.find((cell) => cell.item.programId === moving.programId)?.item || null;
-    return target && !this.isDayLocked(target) ? target : null;
+    if (!moving || kind !== this.dragKind || day.dateString === moving.date || day.dateString < todayIso()) return null;
+    const cells: WeekCell<WorkoutProgram | NutritionProgram>[] = kind === 'workout' ? day.workout : day.nutrition;
+    const target = cells.find((cell) => cell.item.programId === moving.programId)?.item || null;
+    return target && !this.isLocked(kind, target) ? target : null;
   }
 
-  onDayDragOver(event: DragEvent, day: WeekRowDay): void {
-    if (!this.dropTargetOf(day)) return;
+  onDayDragOver(event: DragEvent, day: WeekRowDay, kind: CalendarType = 'workout'): void {
+    if (!this.dropTargetOf(day, kind)) return;
     event.preventDefault();
     if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
     this.dropDate = day.dateString;
+    this.dropKind = kind;
   }
 
   onDayDragLeave(day: WeekRowDay): void {
     if (this.dropDate === day.dateString) this.dropDate = null;
   }
 
-  onDayDrop(event: DragEvent, day: WeekRowDay): void {
+  /** The id of a day for the server (a nutrition empty day has a calendar id of its own). */
+  private dayIdOf(kind: CalendarType, item: WorkoutProgram | NutritionProgram): string {
+    return kind === 'nutrition' ? (item as NutritionProgram).dayId || item.id : item.id;
+  }
+
+  /** A day not done, not past, in a program not stopped: it can move, receive a copy, rest. */
+  isLocked(kind: CalendarType, item: WorkoutProgram | NutritionProgram): boolean {
+    if (kind === 'workout') return this.isDayLocked(item as WorkoutProgram);
+    return !!item.done || (!!item.date && item.date < todayIso())
+      || this.nutritionRanges.some((range) => range.programId === item.programId && range.locked);
+  }
+
+  onDayDrop(event: DragEvent, day: WeekRowDay, kind: CalendarType = 'workout'): void {
     event.preventDefault();
     const moving = this.dragging;
-    const target = this.dropTargetOf(day);
+    const target = this.dropTargetOf(day, kind);
     this.onDayDragEnd();
     if (!moving?.programId || !target) return;
     this.movingDay = true;
-    this.programSchedule.swapDays(moving.programId, moving.id, target.id)
+    this.programSchedule.swapDays(moving.programId, this.dayIdOf(kind, moving), this.dayIdOf(kind, target))
       .pipe(finalize(() => (this.movingDay = false)))
       .subscribe({
         next: (result) => {
@@ -1831,9 +2056,8 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
 
   /** The workout day in the program's editor (L4): changed there, or read there when done or past (K1). */
   openWorkoutEditor(item: WorkoutProgram): void {
-    if (item.programId && this.selectedClient) {
-      this.openEditor(['/clients/create-workout', this.selectedClient, 'edit', item.programId], item.dayNumber);
-    }
+    // The day's window over this calendar (« Tout le programme » in it opens the editor's page).
+    this.openDayWindow('workout', item);
   }
 
   /** « Décaler la suite » of the program of that day: the window of the client's tabs. */
@@ -2143,6 +2367,8 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
 
   /** A day of the month clicked: the day view opens on it (« Ce jour-là »). */
   openDay(date: string): void {
+    // While a day is being picked, the cell's click is for the card under it (onCardClick).
+    if (this.pick) return;
     if (this.narrow && this.currentView === 'month') {
       this.selectedDate = date;
       this.monthDay = this.monthDayOf(date);
@@ -2303,13 +2529,8 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
    * editor keeps the client's rules (a day done or past is read-only) and its « Retour » comes back here.
    */
   viewNutrition(n: NutritionProgram): void {
-    if (!n.programId || !this.selectedClient) return;
-    const editor = n.planKind === 'MEAL_MACROS'
-      ? 'create-macro-plan'
-      : n.planKind === 'DAY_MACROS'
-        ? 'create-macro-plan-total-day'
-        : 'create-full-plan';
-    this.openEditor(['/clients', editor, this.selectedClient, 'edit', n.programId], n.dayNumber);
+    // The day's window over this calendar (« Tout le programme » in it opens the editor's page).
+    this.openDayWindow('nutrition', n);
   }
 
   /** The program's editor on that day; « Retour » comes back to this calendar, on the same month. */
@@ -2419,7 +2640,7 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
       this.viewNutrition({ programId: program.programId, planKind: program.planKind, dayNumber } as NutritionProgram);
       return;
     }
-    this.openEditor(['/clients/create-workout', this.selectedClient, 'edit', program.programId], dayNumber);
+    this.openDayWindow('workout', { programId: program.programId, dayNumber } as WorkoutProgram);
   }
 
   openCreateProgramModal(dateStr: string): void {

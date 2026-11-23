@@ -4,7 +4,7 @@
       <i-feather name="arrow-left"></i-feather>
     </button>
     <div class="header-content">
-      <h1>{{ (publicTemplates ? 'PUBLIC_TEMPLATES' : 'PROGRAM_LIBRARY') | translate }}</h1>
+      <h1>{{ 'PROGRAM_LIBRARY' | translate }}</h1>
       <p>{{ (publicTemplates ? (isAdmin ? 'PUBLIC_TEMPLATES_SUBTITLE_ADMIN' : 'PUBLIC_TEMPLATES_SUBTITLE') : 'PROGRAM_LIBRARY_SUBTITLE') | translate }}</p>
     </div>
     <!-- Public templates: only the admin creates them; a coach copies them. -->
@@ -15,6 +15,18 @@
   </div>
 
   <div class="content">
+    <!-- One page for every program (2026-11-20): the coach's own programs, and the ready-made ones of YoCoach. -->
+    <div class="library-tabs" role="tablist">
+      <button type="button" role="tab" class="library-tab" [class.active]="!publicTemplates" [attr.aria-selected]="!publicTemplates" (click)="switchLibraryTab('my-library')">
+        {{ 'PROGRAMS_TAB_MINE' | translate }}
+        <span class="library-tab__count">{{ myLibraryCount }}</span>
+      </button>
+      <button type="button" role="tab" class="library-tab" [class.active]="publicTemplates" [attr.aria-selected]="publicTemplates" (click)="switchLibraryTab('templates')">
+        {{ 'PROGRAMS_TAB_TEMPLATES' | translate }}
+        <span class="library-tab__count">{{ templatesCount }}</span>
+      </button>
+    </div>
+
     <div class="program-toolbar">
       <div class="search-box">
         <i-feather name="search" class="search-icon"></i-feather>

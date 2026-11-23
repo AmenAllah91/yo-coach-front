@@ -69,17 +69,6 @@ export class ContactFormManagerComponent implements OnInit, OnDestroy {
     return this.form?.slug ? `${window.location.origin}/contact/${this.form.slug}` : '';
   }
 
-  get whatsappShareUrl(): string {
-    const text = `${this.translate.instant('CONTACT_SHARE_TEXT')} ${this.publicUrl}`;
-    return `https://wa.me/?text=${encodeURIComponent(text)}`;
-  }
-
-  get emailShareUrl(): string {
-    const subject = this.translate.instant('CONTACT_SHARE_SUBJECT');
-    const body = `${this.translate.instant('CONTACT_SHARE_TEXT')}\n${this.publicUrl}`;
-    return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  }
-
   /** The saved form with the draft's look; same object while nothing changed, so the preview is not re-fed each tick. */
   get previewForm(): CoachContactForm | null {
     if (!this.form) return null;

@@ -27,7 +27,7 @@ type DescriptionBlockType = 'text' | 'heading' | 'image';
 
 export type BuilderSection =
   | 'address' | 'domain' | 'theme' | 'sections' | 'profile' | 'video' | 'description' | 'stats' | 'results' | 'services'
-  | 'certificates' | 'testimonials' | 'social' | 'announcement' | 'cta' | 'leadForm';
+  | 'certificates' | 'testimonials' | 'social' | 'announcement' | 'cta' | 'leadForm' | 'tracking';
 
 interface DescriptionBlock {
   id: string;
@@ -220,6 +220,7 @@ export class WebsiteBuilderComponent implements OnInit {
         { key: 'leadForm', label: 'WB_SECTION_LEAD_FORM', icon: 'inbox' },
         { key: 'cta', label: 'ACTION_BUTTON', icon: 'mouse-pointer' },
         { key: 'announcement', label: 'ANNOUNCEMENT_BAR', icon: 'volume-2' },
+        { key: 'tracking', label: 'WB_SECTION_TRACKING', icon: 'activity' },
       ],
     },
   ];
@@ -282,6 +283,9 @@ export class WebsiteBuilderComponent implements OnInit {
   colors: SiteColors = { ...THEME_PRESETS[0].colors };
   socialLinks: SocialLinks = { ...EMPTY_SOCIAL_LINKS };
   stats: StatItem[] = [];
+
+  /** Meta Pixel id as typed (or the whole code copied from Meta: the id is read from it). */
+  metaPixelId = '';
 
   /** Custom domain, as typed; the saved one and its state come from the API. */
   customDomain = '';
@@ -378,6 +382,7 @@ export class WebsiteBuilderComponent implements OnInit {
     this.socialLinks = { ...EMPTY_SOCIAL_LINKS, ...(data.socialLinks || {}) };
     this.stats = Array.isArray(data.stats) ? data.stats.map((s: any) => ({ value: s?.value || '', label: s?.label || '' })) : [];
     this.customDomain = data.customDomain || '';
+    this.metaPixelId = data.metaPixelId || '';
     this.services = data.services || [];
     this.results = data.results || [];
     this.certificates = data.certificates || [];
@@ -492,6 +497,7 @@ export class WebsiteBuilderComponent implements OnInit {
       case 'leadForm': return this.leadFields.email || this.leadFields.phone;
       case 'cta': return this.cta.enabled;
       case 'announcement': return this.announcement.enabled && !!this.announcement.message.trim();
+      case 'tracking': return !!this.normalizedPixelId && !this.metaPixelError;
     }
   }
 
@@ -629,6 +635,18 @@ export class WebsiteBuilderComponent implements OnInit {
     return '';
   }
 
+  /** The id alone, even when the coach pasted Meta's whole code (fbq('init', '…') or …?id=…). */
+  get normalizedPixelId(): string {
+    const raw = (this.metaPixelId || '').trim();
+    const fromCode = raw.match(/fbq\(\s*['"]init['"]\s*,\s*['"](\d+)['"]/) || raw.match(/[?&]id=(\d+)/);
+    return fromCode ? fromCode[1] : raw.replace(/\s+/g, '');
+  }
+
+  get metaPixelError(): string {
+    const id = this.normalizedPixelId;
+    return id && !/^\d{10,20}$/.test(id) ? 'WB_PIXEL_INVALID' : '';
+  }
+
   /** The DNS records can only be checked once the domain typed is the one saved. */
   get domainSaved(): boolean {
     return this.hasSavedSite && !!this.savedCustomDomain && this.savedCustomDomain === this.normalizedDomain;
@@ -678,7 +696,7 @@ export class WebsiteBuilderComponent implements OnInit {
   }
 
   get canSave(): boolean {
-    return !this.brandingLocked && !this.saving && !this.uploadingCount && !this.slugError && !this.customDomainError
+    return !this.brandingLocked && !this.saving && !this.uploadingCount && !this.slugError && !this.customDomainError && !this.metaPixelError
       && (this.dirty || !this.hasSavedSite);
   }
 
@@ -710,6 +728,7 @@ export class WebsiteBuilderComponent implements OnInit {
     if (!this.canSave) {
       if (this.slugError) this.activeSection = 'address';
       else if (this.customDomainError) this.activeSection = 'domain';
+      else if (this.metaPixelError) this.activeSection = 'tracking';
       return;
     }
     const payload = this.payload();
@@ -792,6 +811,7 @@ export class WebsiteBuilderComponent implements OnInit {
       socialLinks: this.socialLinks,
       stats: this.filledStats(),
       customDomain: this.normalizedDomain,
+      metaPixelId: this.normalizedPixelId,
       descriptionBlocks: this.filledBlocks(),
       profile: this.profile,
       video: { url: this.video.url.trim() },

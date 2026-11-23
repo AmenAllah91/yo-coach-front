@@ -1,4 +1,5 @@
 import { WriteActionDirective } from 'app/shared/subscription/write-action.directive';
+import { openDayOutlet } from '@shared/program-calendar/day-outlet';
 import { Component, DestroyRef, EventEmitter, HostListener, Input, OnInit, Output, ViewChild, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
@@ -38,6 +39,8 @@ export class WorkoutsClientTabComponent implements OnInit {
   @Output() assignNew = new EventEmitter<string | null>();
   /** « Voir le suivi » / a past day: the client's calendar. */
   @Output() openCalendar = new EventEmitter<string | null>();
+  /** « Envoyer un message » from a day shown in the tab: the profile opens its chat. */
+  @Output() message = new EventEmitter<void>();
   @ViewChild(ClientProgramsComponent) programs?: ClientProgramsComponent;
   /** « Progression par exercice » : lue seulement quand le coach l'ouvre. */
 
@@ -112,6 +115,9 @@ export class WorkoutsClientTabComponent implements OnInit {
   onProgramAction(action: ClientProgramAction): void {
     const id = action.programId || action.item?.id;
     switch (action.type) {
+      case 'message':
+        this.message.emit();
+        return;
       case 'assign':
         this.assignNew.emit(action.date || null);
         return;
@@ -120,7 +126,7 @@ export class WorkoutsClientTabComponent implements OnInit {
         return;
       case 'edit':
       case 'view':
-        if (id) this.openEditor(id, action.dayNumber);
+        if (id) this.openEditor(id, action.dayNumber, action.open);
         return;
       case 'remove':
         this.removeTarget = action.item || null;
@@ -151,7 +157,13 @@ export class WorkoutsClientTabComponent implements OnInit {
     });
   }
 
-  private openEditor(id: string, dayNumber?: number | null): void {
+  /** `open`: the day opens in its window over the calendar, « Fermer » comes back to this tab. */
+  private openEditor(id: string, dayNumber?: number | null, open?: boolean): void {
+    // A day: its window over this page (the profile stays underneath, read again after a save).
+    if (dayNumber && open) {
+      openDayOutlet(this.router, 'workout', this.clientId, id, dayNumber);
+      return;
+    }
     this.router.navigate(['/clients/create-workout', this.clientId, 'edit', id], dayNumber ? { queryParams: { day: dayNumber } } : {});
   }
 

@@ -7,6 +7,7 @@ import { FeatherModule } from 'angular-feather';
 import { CoachContactForm, ContactFormService } from 'app/service/contact-form.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { LanguageService } from 'app/service/language.service';
+import { loadMetaPixel, trackMetaPixelEvent } from '../models/meta-pixel';
 
 export const CONTACT_LIMITS = { fullName: 100, email: 254, message: 2000 };
 
@@ -67,6 +68,7 @@ export class PublicContactFormComponent implements OnInit, OnChanges {
         this.form = form;
         this.loading = false;
         this.title.setTitle(`${form.coachName} · Yo Coach`);
+        loadMetaPixel(form.metaPixelId);
       },
       error: () => {
         this.error = this.translate.instant('CONTACT_FORM_NOT_AVAILABLE');
@@ -135,6 +137,7 @@ export class PublicContactFormComponent implements OnInit, OnChanges {
       next: () => {
         this.submitting = false;
         this.submitted = true;
+        if (!this.preview) trackMetaPixelEvent('Lead');
       },
       error: (err) => {
         this.error = err?.status === 429 ? 'CONTACT_ERROR_TOO_MANY' : 'CONTACT_ERROR_SEND';

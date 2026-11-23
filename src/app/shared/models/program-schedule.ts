@@ -380,6 +380,8 @@ export interface OverviewDay {
   calories?: number | null;
   /** What the client wrote that day. */
   note?: string | null;
+  /** The day itself (moving, copying, resting it from the tab); null outside the program. */
+  dayId?: string | null;
 }
 
 export interface OverviewCurrent {
@@ -389,6 +391,8 @@ export interface OverviewCurrent {
   doneThisWeek: number;
   plannedThisWeek: number;
   days: OverviewDay[];
+  /** Every week of the program, 7 days each, the first one first (the tab's arrows). Missing on an older server. */
+  allWeeks?: OverviewDay[][] | null;
 }
 
 export interface OverviewNext {

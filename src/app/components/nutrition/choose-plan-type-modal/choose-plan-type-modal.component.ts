@@ -39,6 +39,8 @@ export class ChoosePlanTypeModalComponent implements OnChanges {
   @Input() presetEndDate = '';
   @Input() skipDurationStep = false;
   @Input() selectOnly = false;
+  /** Admin on the « Modèles YoCoach » tab: the new plan is a YoCoach template (the editor ticks it). */
+  @Input() asTemplate = false;
 
   @Output() onClose = new EventEmitter<void>();
   @Output() planTypeSelected = new EventEmitter<NutritionPlanChoice>();
@@ -328,6 +330,10 @@ export class ChoosePlanTypeModalComponent implements OnChanges {
   }
 
   private addPresetSchedule(queryParams: any): void {
+    if (this.asTemplate && !this.isAssign) {
+      queryParams.template = '1';
+    }
+
     if (this.presetStartDate) {
       queryParams.startDate = this.presetStartDate;
     }

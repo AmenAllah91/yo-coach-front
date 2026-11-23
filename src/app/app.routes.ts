@@ -108,6 +108,31 @@ export const APP_ROUTE: Route[] = [
         path: 'clients/client-nutrition',
         loadComponent: () => import('./components/clients/client-nutrition/client-nutrition.component').then((m) => m.ClientNutritionComponent),
       },
+      // A day of a client's program edited over the client's profile (the « day » outlet of the layout, day-outlet.ts).
+      {
+        path: 'workout/:idClient/:id/:day',
+        outlet: 'day',
+        loadComponent: () => import('./components/program-library/create-workout/create-workout.component').then((m) => m.CreateWorkoutComponent),
+        canDeactivate: [unsavedChangesGuard],
+      },
+      {
+        path: 'full-plan/:idClient/:id/:day',
+        outlet: 'day',
+        loadComponent: () => import('./components/nutrition/create-full-plan/create-full-plan.component').then((m) => m.CreateFullPlanComponent),
+        canDeactivate: [unsavedChangesGuard],
+      },
+      {
+        path: 'macro-plan/:idClient/:id/:day',
+        outlet: 'day',
+        loadComponent: () => import('./components/nutrition/create-macro-plan/create-macro-plan.component').then((m) => m.CreateMacroPlanComponent),
+        canDeactivate: [unsavedChangesGuard],
+      },
+      {
+        path: 'macro-day/:idClient/:id/:day',
+        outlet: 'day',
+        loadComponent: () => import('./components/nutrition/create-macro-plan-total-day/create-macro-plan-total-day.component').then((m) => m.CreateMacroPlanTotalDayComponent),
+        canDeactivate: [unsavedChangesGuard],
+      },
       {
         path: 'workout/program-library',
         loadComponent: () => import('./components/program-library/program-library.component').then((m) => m.ProgramLibraryComponent),
@@ -172,6 +197,12 @@ export const APP_ROUTE: Route[] = [
       {
         path: 'nutrition/plans',
         loadComponent: () => import('./components/nutrition/nutrition-plans/nutrition-plans.component').then((m) => m.NutritionPlansComponent),
+      },
+      {
+        // YoCoach templates (2026-11-20): ready-made meal plans of the admin, a tab of the meal plans page.
+        path: 'nutrition/public-templates',
+        loadComponent: () => import('./components/nutrition/nutrition-plans/nutrition-plans.component').then((m) => m.NutritionPlansComponent),
+        data: { tab: 'templates' },
       },
       {
         path: 'nutrition/create-macro-plan',

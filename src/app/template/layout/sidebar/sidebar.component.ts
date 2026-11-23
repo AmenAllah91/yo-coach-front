@@ -27,14 +27,14 @@ export const PAY_INVOICE_PATH = '/billing/pay';
 /** Paid branding pages (SUB-27): a lock is shown on them during the trial (decision SUB-03). */
 const WEBSITE_PATH = '/websites/create';
 /** The coach's check-ins entry: its badge counts the answers to read (2026-11-19). */
-const CHECKINS_PATH = '/forms/manage-checkins';
+const CHECKINS_PATH = '/forms';
 const BRANDING_PATHS = ['/theme', WEBSITE_PATH];
 /** Plan features (2026-11-11): the menu entries a plan can lock, and their code. */
 const PATH_FEATURES: Record<string, string> = {
   [WEBSITE_PATH]: FEATURE.WEBSITE,
   '/theme': FEATURE.BRANDING,
-  '/forms': FEATURE.CHECKINS,
   [CHECKINS_PATH]: FEATURE.CHECKINS,
+  '/forms/manage-checkins': FEATURE.CHECKINS,
   '/tasks': FEATURE.TASKS,
   '/grow/contact-form': FEATURE.CONTACT_FORM,
   '/referral': FEATURE.REFERRAL,
@@ -247,8 +247,9 @@ export class SidebarComponent implements OnInit, OnDestroy {
         const sub = item.submenu
           .filter((s) => {
             if (!s.path) return false;
-            const normalized = normalizePath(s.path);
-            return currentUrl === normalized || currentUrl.startsWith(normalized + '/');
+            return [s.path, ...(s.activeOn || [])]
+              .map(normalizePath)
+              .some((normalized) => currentUrl === normalized || currentUrl.startsWith(normalized + '/'));
           })
           .sort((a, b) => normalizePath(b.path).length - normalizePath(a.path).length)[0];
         if (sub) {

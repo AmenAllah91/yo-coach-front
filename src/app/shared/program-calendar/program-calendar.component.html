@@ -1,0 +1,136 @@
+<div class="wcal" [class.is-detailed]="detailed" [class.is-single]="single">
+  <div class="wcal__bar" *ngIf="!single">
+    <p class="wcal__hint">
+      {{ readOnly ? ht('Click a day to see it.', 'Cliquez sur un jour pour le voir.')
+        : isWorkout ? ht('Click a day to edit it. Drag a workout onto another day to swap them.', 'Cliquez sur un jour pour le modifier. Glissez une séance sur un autre jour pour les échanger.')
+        : ht('Click a day to edit it. Drag a day onto another one to swap them.', 'Cliquez sur un jour pour le modifier. Glissez un jour sur un autre pour les échanger.') }}
+      <ng-container *ngIf="!readOnly && hasLockedDays">{{ ht('Past or done days stay in place.', 'Les jours passés ou déjà faits restent à leur place.') }}</ng-container>
+    </p>
+    <!-- What the cards show: the exercises / meals (default) or a one-line summary. -->
+    <div class="wcal__density" role="group" [attr.aria-label]="ht('Card content', 'Contenu des cartes')">
+      <button type="button" class="wcal__densitybtn" [class.is-on]="detailed" [attr.aria-pressed]="detailed" (click)="setDetailed(true)">
+        <i-feather name="list" class="wcal__densityico"></i-feather>{{ isWorkout ? ht('Exercises', 'Exercices') : ht('Meals', 'Repas') }}
+      </button>
+      <button type="button" class="wcal__densitybtn" [class.is-on]="!detailed" [attr.aria-pressed]="!detailed" (click)="setDetailed(false)">
+        <i-feather name="align-justify" class="wcal__densityico"></i-feather>{{ ht('Summary', 'Résumé') }}
+      </button>
+    </div>
+  </div>
+
+  <div class="wcal__scroll">
+    <div class="wcal__grid wcal__head">
+      <div class="wcal__corner" *ngIf="!single"></div>
+      <div class="wcal__dayhead" *ngFor="let col of columns; let ci = index" [class.is-today]="ci === todayColumn">
+        {{ col }}<span class="wcal__todaytag" *ngIf="ci === todayColumn">{{ ht('Today', "Aujourd'hui") }}</span>
+      </div>
+    </div>
+
+    <div class="wcal__grid wcal__week" *ngFor="let week of weeks; trackBy: trackWeek" [class.is-current]="week.current">
+      <div class="wcal__label" *ngIf="!single">
+        <span class="wcal__nowtag" *ngIf="week.current">{{ ht('This week', 'Cette semaine') }}</span>
+        <strong>{{ week.title }}</strong>
+        <span class="wcal__range" *ngIf="week.range">{{ week.range }}</span>
+        <!-- The week's progress: done over planned (client) or filled days (library). -->
+        <span class="wcal__progress" role="img" [attr.aria-label]="week.progressText">
+          <span class="wcal__progressbar" [style.width.%]="week.progress" [class.is-full]="week.progress >= 100"></span>
+        </span>
+        <small class="wcal__count">{{ week.progressText }}</small>
+        <!-- The ⋯ of a week: copy it, or delete it. -->
+        <div class="wcal__weekmenu" *ngIf="!readOnly" (click)="$event.stopPropagation()">
+          <button type="button" class="wcal__dup" [attr.aria-label]="ht('Week options', 'Options de la semaine')" [title]="ht('Week options', 'Options de la semaine')"
+                  [attr.aria-expanded]="weekMenu === week.number" aria-haspopup="menu" (click)="toggleWeekMenu(week.number, $event)">
+            <i-feather name="more-horizontal" class="wcal__ico"></i-feather>
+          </button>
+          <div class="pc-menu pc-menu--week" role="menu" *ngIf="weekMenu === week.number">
+            <button type="button" role="menuitem" class="pc-menu__item" *ngIf="weekCount > 1 && canCopy" [disabled]="!week.filled" (click)="onDuplicateWeek(week)">
+              <i-feather name="copy" class="pc-menu__ico"></i-feather>{{ 'COPY_DAYS.BUTTON_DUPLICATE_WEEK' | translate }}
+            </button>
+            <button type="button" role="menuitem" class="pc-menu__item pc-menu__item--danger" [disabled]="weekCount <= 1" (click)="onDeleteWeek(week.number)">
+              <i-feather name="trash-2" class="pc-menu__ico"></i-feather>{{ ht('Delete the week', 'Supprimer la semaine') }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <ng-container *ngFor="let cell of week.cells; trackBy: trackCell">
+      <div class="wcal__cell is-out" *ngIf="cell.out; else dayCell" aria-hidden="true">
+        <span class="wcal__date" *ngIf="cell.date">{{ cell.date }}</span>
+      </div>
+      <ng-template #dayCell>
+      <div
+        class="wcal__cell"
+        [class.is-target]="cell.pick === 'target'"
+        [class.is-source]="cell.pick === 'source'"
+        [class.is-dim]="cell.pick === 'dim'"
+        [class.is-today]="cell.today"
+        [class.is-past]="cell.past"
+        [class.is-selected]="highlight && selected === cell.day"
+        [class.has-menu]="menuDay === cell.day"
+        [class.is-drop-target]="dropDay === cell.day"
+        (dragover)="onDragOver($event, cell)"
+        (dragleave)="onDragLeave(cell)"
+        (drop)="onDrop($event, cell)"
+      >
+        <span class="wcal__date" *ngIf="cell.date" [class.is-today]="cell.today">
+          <ng-container *ngIf="cell.today">{{ ht('Today', "Aujourd'hui") }} · </ng-container>{{ cell.date }}
+        </span>
+        <!-- The ⋮ of a card: the day's actions without opening it. -->
+        <div class="wcal__menu" *ngIf="cell.movable && !cell.pick && menuOf(cell).length" (click)="$event.stopPropagation()">
+          <button type="button" class="wcal__kebab" [attr.aria-label]="'DAY_OPTIONS' | translate" [title]="'DAY_OPTIONS' | translate"
+                  [attr.aria-expanded]="menuDay === cell.day" aria-haspopup="menu" (click)="toggleDayMenu(cell.day, $event)">
+            <i-feather name="more-vertical" class="wcal__kebabico"></i-feather>
+          </button>
+          <div class="pc-menu pc-menu--day" role="menu" *ngIf="menuDay === cell.day">
+            <button type="button" role="menuitem" class="pc-menu__item" *ngFor="let item of menuOf(cell)" [class.pc-menu__item--danger]="item.danger"
+                    [disabled]="item.disabled" (click)="act(item.type, cell.day)">
+              <i-feather [name]="item.icon" class="pc-menu__ico"></i-feather>{{ item.label }}
+            </button>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="wr-card"
+          [ngClass]="'st-' + cell.tone"
+          [class.is-movable]="cell.movable"
+          [class.is-dragging]="dragDay === cell.day"
+          [attr.draggable]="cell.movable ? 'true' : null"
+          [attr.title]="cell.locked && !readOnly ? ht('Past or already started by the client: this day cannot be moved.', 'Jour passé ou déjà commencé par le client : il ne peut pas être déplacé.') : null"
+          (dragstart)="onDragStart($event, cell)"
+          (dragend)="onDragEnd()"
+          (click)="openDay.emit(cell.day)"
+        >
+          <span class="wr-card__title"><i-feather *ngIf="!cell.hasContent" name="plus" class="wr-card__plus"></i-feather><i-feather *ngIf="cell.rest" [name]="isWorkout ? 'moon' : 'flag'" class="wr-card__kindico"></i-feather><i-feather *ngIf="cell.hasContent && !cell.rest" [name]="isWorkout ? 'activity' : 'coffee'" class="wr-card__kindico is-main"></i-feather>{{ cell.title }}</span>
+          <span class="wr-card__meta" *ngIf="cell.meta">{{ cell.meta }}</span>
+          <span class="wr-line" *ngFor="let line of cell.lines" [class.is-linked]="line.link" [ngClass]="line.link ? 'is-link-' + line.link : ''">
+            <span class="wr-line__group" *ngIf="line.groupKind">
+              <i-feather [name]="line.groupKind === 'CIRCUIT' ? 'repeat' : 'link'" class="wr-line__groupico"></i-feather>
+              {{ line.groupKind === 'CIRCUIT' ? 'Circuit' : 'Superset' }}
+            </span>
+            <span class="wr-line__label" *ngIf="line.label">{{ line.label }}</span>
+            <span class="wr-line__body">
+              <span class="wr-line__name">{{ line.name }}</span>
+              <span class="wr-line__detail" *ngIf="line.detail">{{ line.detail }}</span>
+            </span>
+          </span>
+          <!-- What the client wrote that day. -->
+          <span class="wr-card__note" *ngIf="cell.note" [title]="cell.note"><i-feather name="message-circle" class="wr-card__noteico"></i-feather>{{ cell.note }}</span>
+          <span class="wr-card__status" *ngIf="cell.status">
+            <i-feather [name]="cell.icon" class="st-icon"></i-feather>{{ cell.status }}
+          </span>
+        </button>
+      </div>
+      </ng-template>
+      </ng-container>
+      <div class="wcal__cell is-out" *ngFor="let _ of week.pad" aria-hidden="true"></div>
+    </div>
+  </div>
+
+  <!-- The same legend as the client calendar. -->
+  <ul class="cal-legend" *ngIf="legend && !single" [attr.aria-label]="'CALENDAR_LEGEND' | translate">
+    <li *ngFor="let item of legendItems" [ngClass]="'st-' + item.tone"><i-feather [name]="item.icon" class="st-icon"></i-feather>{{ item.key | translate }}</li>
+  </ul>
+
+  <button type="button" class="wcal__add" *ngIf="!readOnly && !single" [disabled]="!canAddWeek" (click)="addWeek.emit()">
+    <i-feather name="plus" class="wcal__ico"></i-feather>{{ ht('Add a week', 'Ajouter une semaine') }}
+  </button>
+</div>

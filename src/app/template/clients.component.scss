@@ -88,7 +88,7 @@
 
 .filters-section {
   display: grid;
-  grid-template-columns: minmax(260px, 1fr) 140px 150px 130px auto;
+  grid-template-columns: minmax(260px, 1fr) auto;
   gap: 14px;
   margin-bottom: 16px;
   align-items: center;
@@ -1814,17 +1814,7 @@
   &--late { color: light-dark(#b91c1c, #ffa096); font-weight: 600; }
 }
 
-// Coach labels (2026-11-18): filter next to the search, chips under the client name.
-.tag-filter {
-  height: 40px;
-  max-width: 220px;
-  padding: 0 10px;
-  border: 1px solid light-dark(#e2e8f0, #34393f);
-  border-radius: 8px;
-  background: light-dark(#fff, #1d2125);
-  color: light-dark(#0f172a, #e8ecf6);
-  font-size: 13px;
-}
+// Coach labels (2026-11-18): chips under the client name.
 .client-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 .client-tag {
   display: inline-flex;

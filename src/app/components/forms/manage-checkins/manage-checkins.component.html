@@ -23,7 +23,7 @@
     </div>
 
     <!-- Card -->
-    <div class="ck-card">
+    <div class="ck-card" [class.has-selection]="selectedIds.size > 0">
       <!-- Tabs + filters -->
       <div class="tabs-wrap">
         <div class="tabs" role="tablist" [attr.aria-label]="'CHECK_IN_TABS' | translate">
@@ -80,15 +80,14 @@
           <input type="checkbox" [checked]="allState === 'all'" [indeterminate]="allState === 'some'" (change)="toggleAll()" />
           <span>{{ 'CHK_SELECT_ALL' | translate: { n: filteredRows.length } }}</span>
         </label>
-        <span class="ck-selectbar-hint">{{ (activeTab === 'to_review' ? 'CHK_SELECT_HINT_REVIEW' : 'CHK_SELECT_HINT_OVERDUE') | translate }}</span>
       </div>
 
-      <!-- List: one card per client -->
+      <!-- List: one line per check-in, each with the client's photo and name -->
       <app-section-loader *ngIf="!listReady"></app-section-loader>
       <ng-container *ngIf="listReady">
-        <ng-container *ngIf="paginatedGroups.length > 0; else emptyTpl">
-          <ng-container *ngFor="let group of paginatedGroups; trackBy: trackGroup">
-            <ng-container *ngTemplateOutlet="groupTpl; context: { $implicit: group, missed: false }"></ng-container>
+        <ng-container *ngIf="paginatedRows.length > 0; else emptyTpl">
+          <ng-container *ngFor="let row of paginatedRows; trackBy: trackRow">
+            <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: row }"></ng-container>
           </ng-container>
         </ng-container>
 
@@ -106,62 +105,18 @@
           </div>
           <p class="ck-missed-hint">{{ 'CHK_MISSED_HINT' | translate }}</p>
           <div *ngIf="missedOpen" class="ck-missed-list">
-            <ng-container *ngFor="let group of missedGroups; trackBy: trackGroup">
-              <ng-container *ngTemplateOutlet="groupTpl; context: { $implicit: group, missed: true }"></ng-container>
+            <ng-container *ngFor="let row of missedRows; trackBy: trackRow">
+              <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: row }"></ng-container>
             </ng-container>
           </div>
         </div>
       </ng-container>
 
-      <!-- A client: one row, or a card with their check-ins under their name -->
-      <ng-template #groupTpl let-group let-missed="missed">
-        <ng-container *ngIf="group.rows.length === 1; else manyTpl">
-          <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: group.rows[0], inGroup: false }"></ng-container>
-        </ng-container>
-        <ng-template #manyTpl>
-          <div class="ck-group" [class.has-selection]="groupState(group) !== 'none'">
-            <div class="ck-group-head">
-              <label *ngIf="canSelect" class="ck-check" (click)="$event.stopPropagation()">
-                <input type="checkbox" [checked]="groupState(group) === 'all'" [indeterminate]="groupState(group) === 'some'"
-                       (change)="toggleGroup(group)" [attr.aria-label]="'CHK_SELECT_CLIENT' | translate: { client: group.name }" />
-              </label>
-              <button type="button" class="row-left group-who" (click)="openClientProfile(group.rows[0], $event)" [title]="'CHK_OPEN_PROFILE' | translate">
-                <span class="avatar">
-                  <img *ngIf="group.rows[0].avatar; else groupInitials" [src]="group.rows[0].avatar" [alt]="group.name" (error)="onAvatarError(group.rows[0])" />
-                  <ng-template #groupInitials><span class="avatar-fallback">{{ initials(group.name) }}</span></ng-template>
-                </span>
-                <span class="name-form">
-                  <span class="name">{{ group.name }}</span>
-                  <span class="formType" [class.summary-late]="activeTab === 'overdue'">{{ groupSummary(group, missed) }}</span>
-                </span>
-              </button>
-              <div class="actions">
-                <button *ngIf="activeTab === 'overdue'" class="row-cta row-cta-light" type="button" (click)="messageClient(group.rows[0], $event)">
-                  {{ 'CHK_REMIND' | translate }}
-                </button>
-                <button *ngIf="activeTab === 'overdue'" class="row-cta row-cta-ghost-danger" type="button" [disabled]="bulkBusy"
-                        (click)="removeRows(group.rows, $event)">
-                  {{ 'CHK_REMOVE_ALL' | translate }}
-                </button>
-                <button *ngIf="activeTab !== 'overdue'" class="action-btn" type="button" (click)="messageClient(group.rows[0], $event)"
-                        [title]="'MESSAGE_CLIENT' | translate" [attr.aria-label]="'MESSAGE_CLIENT' | translate">
-                  <svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path></svg>
-                </button>
-              </div>
-            </div>
-            <ng-container *ngFor="let row of group.rows; trackBy: trackRow">
-              <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: row, inGroup: true }"></ng-container>
-            </ng-container>
-          </div>
-        </ng-template>
-      </ng-template>
-
       <!-- A check-in -->
-      <ng-template #rowTpl let-row let-inGroup="inGroup">
+      <ng-template #rowTpl let-row>
         <div
           class="ck-row"
           [ngClass]="'tab-' + row.tab"
-          [class.in-group]="inGroup"
           [class.is-selected]="isSelected(row)"
           [class.can-select]="canSelect"
           role="button"
@@ -175,42 +130,48 @@
 
           <div class="row-main">
             <div class="row-left">
-              <div *ngIf="!inGroup" class="avatar">
+              <button type="button" class="avatar" (click)="openClientProfile(row, $event)" [title]="'CHK_OPEN_PROFILE' | translate">
                 <img *ngIf="row.avatar; else initialsTpl" [src]="row.avatar" [alt]="row.name" (error)="onAvatarError(row)" />
-                <ng-template #initialsTpl><div class="avatar-fallback">{{ initials(row.name) }}</div></ng-template>
-              </div>
+                <ng-template #initialsTpl><span class="avatar-fallback">{{ initials(row.name) }}</span></ng-template>
+              </button>
               <div class="name-form">
-                <p *ngIf="!inGroup" class="name">{{ row.name }}</p>
-                <p [class.formType]="!inGroup" [class.form-title]="inGroup">{{ row.formName }}</p>
+                <p class="name">{{ row.name }}</p>
+                <p class="formType">{{ row.formName }}</p>
               </div>
             </div>
 
             <!-- A few answers at a glance: numbers, ratings (red when low), the client's note -->
             <div *ngIf="row.status === 'to_review' && preview(row) as p" class="ck-preview">
-              <span *ngFor="let item of p.items" class="chip" [class.chip-alert]="item.alert" [title]="item.label">
-                <span class="chip-label">{{ item.label }}</span>
+              <span *ngFor="let item of previewChips(p)" class="chip" [class.chip-alert]="item.alert" [title]="item.label + ' : ' + previewValue(item)">
+                <span class="chip-label">{{ chipLabel(item) }}</span>
                 <span class="chip-value">{{ previewValue(item) }}</span>
                 <span *ngIf="previewChange(item) as change" class="chip-change">{{ change }}</span>
               </span>
-              <span *ngIf="p.note" class="chip-note" [title]="p.note">« {{ p.note }} »</span>
+              <span *ngIf="previewMore(p) as more" class="chip chip-more">+{{ more }}</span>
+              <span *ngIf="p.note" class="chip-note" [title]="p.note">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path></svg>
+                <span class="chip-note-text">{{ p.note }}</span>
+              </span>
             </div>
           </div>
 
-          <div class="when">
-            <p class="timing" [ngClass]="'timing-' + row.status">{{ timing(row) }}</p>
-            <p class="date" *ngIf="timingDate(row)">{{ timingDate(row) }}</p>
+          <!-- One line: how long it waits / how late it is; the exact date on hover -->
+          <div class="when" [title]="timingDate(row)">
+            <p class="timing" [ngClass]="['timing-' + row.status, 'wait-' + waitLevel(row)]">
+              <span *ngIf="waitLevel(row)" class="wait-dot" aria-hidden="true"></span>{{ timing(row) }}
+            </p>
             <!-- The status only where the tab does not already say it -->
             <span *ngIf="row.tab === 'pending'" class="ck-badge" [ngClass]="row.status">{{ statusLabel(row.status) }}</span>
           </div>
 
           <div class="actions" (click)="$event.stopPropagation()">
-            <button *ngIf="row.tab === 'to_review'" class="row-cta" type="button" (click)="openCheckIn(row)">
+            <button *ngIf="row.tab === 'to_review'" class="row-cta row-cta-open" type="button" (click)="openCheckIn(row)">
               {{ 'CHK_REVIEW' | translate }}
             </button>
-            <button *ngIf="row.tab === 'overdue' && !inGroup" class="row-cta row-cta-light" type="button" (click)="messageClient(row, $event)">
+            <button *ngIf="row.tab === 'overdue'" class="row-cta row-cta-light" type="button" (click)="messageClient(row, $event)">
               {{ 'CHK_REMIND' | translate }}
             </button>
-            <button *ngIf="row.tab !== 'overdue' && !inGroup" class="action-btn" type="button" (click)="messageClient(row, $event)"
+            <button *ngIf="row.tab !== 'overdue'" class="action-btn" type="button" (click)="messageClient(row, $event)"
                     [title]="'MESSAGE_CLIENT' | translate" [attr.aria-label]="'MESSAGE_CLIENT' | translate">
               <svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path></svg>
             </button>
@@ -242,12 +203,17 @@
       </ng-template>
 
       <!-- Footer / Pagination -->
-      <div class="footer" *ngIf="listReady && totalPages > 1">
+      <div class="footer" *ngIf="listReady && filteredRows.length > 0">
         <p class="results">
-          <strong>{{ groups.length }}</strong>
-          {{ (groups.length !== 1 ? 'CHK_CLIENTS' : 'CHK_CLIENT') | translate }}
+          <ng-container *ngIf="totalPages > 1; else allRowsTpl">
+            {{ 'CHK_RANGE' | translate: { from: (safePage - 1) * rowsPerPage + 1, to: (safePage - 1) * rowsPerPage + paginatedRows.length, total: filteredRows.length } }}
+          </ng-container>
+          <ng-template #allRowsTpl>
+            <strong>{{ filteredRows.length }}</strong>
+            {{ (filteredRows.length !== 1 ? 'CHK_COUNT_MANY' : 'CHK_COUNT_ONE') | translate }}
+          </ng-template>
         </p>
-        <div class="pager">
+        <div class="pager" *ngIf="totalPages > 1">
           <button class="icon-btn" type="button" (click)="prevPage()" [disabled]="safePage <= 1" [attr.aria-label]="'PREVIOUS_PAGE' | translate">
             <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"></path></svg>
           </button>

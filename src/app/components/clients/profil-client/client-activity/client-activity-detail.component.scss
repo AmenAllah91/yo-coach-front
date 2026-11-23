@@ -5,6 +5,10 @@
 .activity-modal__header .activity-detail-profile,
 .nutrition-report__actions .activity-detail-profile { border:1px solid light-dark(#cfd9e3, #353d45); background:light-dark(#fff, #1d2125); color:light-dark(#091426, #e8eef7); }
 
+// « Modifier la séance » (client's « Programmes » tab): the main action, dark like the tab's « Modifier ».
+.activity-modal__header .activity-detail-edit,
+.nutrition-report__actions .activity-detail-edit { border:1px solid #0f172a; background:#0f172a; color:#fff; }
+
 .activity-modal--notice { width:min(440px,calc(100vw - 28px)); }
 .activity-notice { padding:22px 20px; display:flex; flex-direction:column; align-items:flex-start; gap:14px; }
 .activity-notice p { margin:0; color:light-dark(#43566b, #bec5cd); font-size:14px; }

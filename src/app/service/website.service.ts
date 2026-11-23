@@ -72,6 +72,8 @@ export interface CoachWebsitePayload {
   stats: StatItem[];
   /** The coach's own domain (apex, without www); empty when the site only uses the slug. */
   customDomain: string;
+  /** Meta (Facebook) Pixel id, digits only; empty when the coach does not use one. */
+  metaPixelId?: string;
 
   descriptionBlocks: Array<{
     id: string;

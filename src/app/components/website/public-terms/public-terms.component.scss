@@ -12,7 +12,7 @@ $line: light-dark(#e2e8f0, #34393f);
 
 .terms__header { position: sticky; top: 0; z-index: 2; background: light-dark(rgba(255, 255, 255, .92), rgba(29, 33, 37, 0.92)); backdrop-filter: blur(8px); border-bottom: 1px solid $line; }
 .terms__header-inner { height: 60px; display: flex; align-items: center; justify-content: space-between; }
-.terms__brand { font-weight: 800; font-size: 18px; color: $brand-strong; text-decoration: none; letter-spacing: -.01em; }
+.terms__brand { display: inline-flex; align-items: center; text-decoration: none; img { display: block; height: 34px; width: auto; } }
 
 .terms__lang {
   display: inline-flex;

@@ -713,6 +713,26 @@
           <p class="wb-hint"><i-feather name="info"></i-feather> {{ 'WB_SOCIAL_HTTPS_HINT' | translate }}</p>
         </section>
 
+        <!-- TRACKING (META PIXEL) -->
+        <section *ngIf="activeSection === 'tracking'">
+          <header class="wb-panel__head">
+            <h2>{{ 'WB_SECTION_TRACKING' | translate }}</h2>
+            <p>{{ 'WB_TRACKING_HINT' | translate }}</p>
+          </header>
+          <div class="wb-field">
+            <label class="wb-label" for="metaPixelId">{{ 'WB_PIXEL_LABEL' | translate }}</label>
+            <input id="metaPixelId" class="wb-input" type="text" inputmode="numeric" maxlength="4000" [(ngModel)]="metaPixelId"
+                   placeholder="123456789012345" autocomplete="off" spellcheck="false" [class.is-invalid]="!!metaPixelError" />
+            <div class="wb-error" *ngIf="metaPixelError">{{ metaPixelError | translate }}</div>
+            <div class="wb-hint" *ngIf="!metaPixelError && normalizedPixelId && normalizedPixelId !== metaPixelId.trim()">
+              <i-feather name="check"></i-feather> {{ 'WB_PIXEL_READ_FROM_CODE' | translate:{ id: normalizedPixelId } }}
+            </div>
+            <div class="wb-hint" *ngIf="!normalizedPixelId">{{ 'WB_PIXEL_EMPTY_HINT' | translate }}</div>
+          </div>
+          <p class="wb-hint"><i-feather name="info"></i-feather> {{ 'WB_PIXEL_WHERE' | translate }}</p>
+          <p class="wb-hint"><i-feather name="activity"></i-feather> {{ 'WB_PIXEL_EVENTS' | translate }}</p>
+        </section>
+
         <!-- LEAD FORM -->
         <section *ngIf="activeSection === 'leadForm'">
           <header class="wb-panel__head">

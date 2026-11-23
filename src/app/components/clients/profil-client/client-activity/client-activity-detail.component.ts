@@ -33,6 +33,9 @@ export class ClientActivityDetailComponent implements OnChanges {
   @Input() loading = false;
   @Input() notice: string | null = null;
   @Input() showProfileLink = false;
+  /** The client's « Programmes » tab: « Modifier » opens the day in the editor. */
+  @Input() canEdit = false;
+  @Output() edit = new EventEmitter<void>();
   @Output() closed = new EventEmitter<void>();
   @Output() message = new EventEmitter<void>();
   @Output() openProfile = new EventEmitter<void>();

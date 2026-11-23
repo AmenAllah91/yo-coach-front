@@ -47,7 +47,7 @@ export interface TodayStatus {
   changeDetection: ChangeDetectionStrategy.OnPush,
   styleUrls: ['./overview.scss', './client-today.component.scss'],
   template: `
-    <div class="ov-today">
+    <div class="ov-today" [class.ov-today--mixed]="!workout !== !nutrition">
       <!-- Workout -->
       <article class="ov-card" [class.is-empty]="!workout">
         <ng-container *ngIf="workout as w; else noWorkout">

@@ -5,16 +5,29 @@
     </button>
     <div class="header-content">
       <h1>{{ 'NUTRITION_PLANS' | translate }}</h1>
-      <p>{{ 'NUTRITION_PLANS_SUBTITLE' | translate }}</p>
+      <p>{{ (publicTemplates ? (isAdmin ? 'NUTRITION_TEMPLATES_SUBTITLE_ADMIN' : 'NUTRITION_TEMPLATES_SUBTITLE') : 'NUTRITION_PLANS_SUBTITLE') | translate }}</p>
     </div>
 
-    <button class="primary-btn" type="button" appWriteAction (click)="openChooseModal()">
+    <!-- YoCoach templates: only the admin creates them; a coach copies them. -->
+    <button class="primary-btn" type="button" appWriteAction *ngIf="!readOnlyTemplates" (click)="openChooseModal()">
       <i-feather name="plus"></i-feather>
-      {{ 'CREATE_NUTRITION_PLAN' | translate }}
+      {{ (publicTemplates ? 'CREATE_PUBLIC_TEMPLATE' : 'CREATE_NUTRITION_PLAN') | translate }}
     </button>
   </div>
 
   <div class="content">
+    <!-- One page for every meal plan (2026-11-20): the coach's own plans, and the ready-made ones of YoCoach. -->
+    <div class="library-tabs" role="tablist">
+      <button type="button" role="tab" class="library-tab" [class.active]="!publicTemplates" [attr.aria-selected]="!publicTemplates" (click)="switchLibraryTab('my-library')">
+        {{ 'NUTRITION_TAB_MINE' | translate }}
+        <span class="library-tab__count">{{ myLibraryCount }}</span>
+      </button>
+      <button type="button" role="tab" class="library-tab" [class.active]="publicTemplates" [attr.aria-selected]="publicTemplates" (click)="switchLibraryTab('templates')">
+        {{ 'PROGRAMS_TAB_TEMPLATES' | translate }}
+        <span class="library-tab__count">{{ templatesCount }}</span>
+      </button>
+    </div>
+
     <div class="program-toolbar">
       <div class="search-box">
         <i-feather name="search" class="search-icon"></i-feather>
@@ -53,7 +66,10 @@
         text="EMPTY_NUTRITION_PLANS_TEXT"
         actionLabel="CREATE_NUTRITION_PLAN"
         (action)="openChooseModal()"></app-empty-state>
-      <ng-template #noPlanFound><div class="plans-state">{{ 'NO_NUTRITION_PLANS_FOUND' | translate }}</div></ng-template>
+      <ng-template #noPlanFound>
+        <div class="plans-state" *ngIf="!publicTemplates || searchTerm.trim(); else noTemplate">{{ 'NO_NUTRITION_PLANS_FOUND' | translate }}</div>
+        <ng-template #noTemplate><div class="plans-state">{{ (isAdmin ? 'NUTRITION_TEMPLATES_EMPTY_ADMIN' : 'NUTRITION_TEMPLATES_EMPTY') | translate }}</div></ng-template>
+      </ng-template>
     </ng-container>
 
     <!-- The Type column always shows: it tells apart the 3 kinds of plan (foods, daily macros, macros per meal). -->
@@ -110,8 +126,20 @@
               </button>
 
               <div class="dropdown-menu dropdown-menu--side" *ngIf="openDropdownId === getProgramId(plan)" (click)="$event.stopPropagation()">
+                <!-- A coach on the YoCoach templates: copy it into his plans (then adapt and assign the copy). -->
+                <ng-container *ngIf="readOnlyTemplates; else ownerMenu">
+                  <button class="dropdown-item" type="button" appWriteAction [disabled]="duplicatingId === plan.id" (click)="duplicatePlan(plan.id)">
+                    <i-feather name="copy"></i-feather>
+                    {{ 'NUTRITION_TEMPLATE_COPY' | translate }}
+                  </button>
+                  <button class="dropdown-item" type="button" *ngIf="isFilePlan(plan)" (click)="openProgramFile(plan)">
+                    <i-feather name="eye"></i-feather>
+                    {{ 'OPEN_FILE' | translate }}
+                  </button>
+                </ng-container>
+                <ng-template #ownerMenu>
                 <ng-container *ngIf="isFilePlan(plan); else appPlanMenu">
-                  <button class="dropdown-item" type="button" (click)="assignToClients(plan)">
+                  <button class="dropdown-item" type="button" *ngIf="!publicTemplates" (click)="assignToClients(plan)">
                     <i-feather name="users"></i-feather>
                     {{ 'ASSIGN_TO_CLIENTS' | translate }}
                   </button>
@@ -133,7 +161,7 @@
                 </ng-container>
 
                 <ng-template #appPlanMenu>
-                  <button class="dropdown-item" type="button" (click)="assignToClients(plan)">
+                  <button class="dropdown-item" type="button" *ngIf="!publicTemplates" (click)="assignToClients(plan)">
                     <i-feather name="users"></i-feather>
                     {{ 'ASSIGN_TO_CLIENTS' | translate }}
                   </button>
@@ -152,6 +180,7 @@
                     <i-feather name="trash-2"></i-feather>
                     {{ 'DELETE' | translate }}
                   </button>
+                </ng-template>
                 </ng-template>
               </div>
             </div>
@@ -270,6 +299,7 @@
   <app-choose-plan-type-modal
     [isVisible]="showChooseModal"
     [isAssign]="false"
+    [asTemplate]="publicTemplates && isAdmin"
     (onClose)="closeChooseModal()"
   ></app-choose-plan-type-modal>
 

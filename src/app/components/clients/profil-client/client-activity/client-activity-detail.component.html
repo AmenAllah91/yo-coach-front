@@ -26,6 +26,9 @@
         <small><i class="far fa-calendar"></i> {{ activity.scheduledDate | date:'EEEE d MMMM':undefined:dateLocale }} · {{ 'WEEK' | translate }} {{ activity.week }} · {{ activity.programName }}</small>
       </div>
       <span class="nutrition-report__actions">
+        <button *ngIf="canEdit" class="nutrition-report__message activity-detail-edit" type="button" (click)="edit.emit()">
+          <i class="fas fa-pencil-alt"></i> <span>{{ 'ACTIVITY_EDIT_NUTRITION' | translate }}</span>
+        </button>
         <button *ngIf="showProfileLink" class="nutrition-report__message activity-detail-profile" type="button" (click)="openProfile.emit()">
           <i class="far fa-user"></i> <span>{{ 'VIEW_PROFILE' | translate }}</span>
         </button>
@@ -123,6 +126,9 @@
         <small><i class="far fa-user"></i> {{ clientName }} &nbsp; <i class="far fa-calendar"></i> {{ formatActivityDate(activity.scheduledDate) }} · {{ activity.programName }} · {{ 'WEEK' | translate }} {{ activity.week }} · {{ 'DAY' | translate }} {{ activity.dayInWeek }}</small>
       </span>
       <span class="activity-detail-actions">
+        <button *ngIf="canEdit" class="activity-send-message activity-detail-edit" type="button" (click)="edit.emit()">
+          <i class="fas fa-pencil-alt"></i> <span>{{ 'ACTIVITY_EDIT_WORKOUT' | translate }}</span>
+        </button>
         <button *ngIf="showProfileLink" class="activity-send-message activity-detail-profile" type="button" (click)="openProfile.emit()">
           <i class="far fa-user"></i> <span>{{ 'VIEW_PROFILE' | translate }}</span>
         </button>

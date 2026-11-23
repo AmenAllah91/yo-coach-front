@@ -609,6 +609,7 @@
         [clientName]="fullName"
         (assignNew)="openAssignProgramModal('WORKOUT', $event)"
         (openCalendar)="openCalendarAt('workout', $event)"
+        (message)="openChatPanel()"
       />
     </div>
 
@@ -619,6 +620,7 @@
         [clientName]="fullName"
         (assignNew)="openAssignProgramModal('NUTRITION', $event)"
         (openCalendar)="openCalendarAt('nutrition', $event)"
+        (message)="openChatPanel()"
       />
     </div>
     </ng-container>

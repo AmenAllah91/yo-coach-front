@@ -70,17 +70,24 @@ export function workoutSetCount(day: any): number {
   return allExercises(day).reduce((total, exercise) => total + Math.max((exercise?.sets || []).length, 1), 0);
 }
 
-/** Rough session length in minutes (work time + prescribed rest), rounded to the nearest 5 minutes. */
+/**
+ * Rough session length in minutes, rounded to the nearest 5 minutes — same rule as the program editor summary
+ * (« 6 exercices · 18 séries · ~50 min »). Work per set: seconds for a timed exercise (durationSec), minutes for
+ * cardio (duration), about 3 s per rep otherwise (10 reps when empty). A reps exercise never counts `duration`:
+ * it can hold an old cardio value the coach no longer sees. Rest: restMin + restSec as prescribed.
+ */
 export function estimatedWorkoutMinutes(day: any): number {
   let seconds = 0;
   for (const exercise of allExercises(day)) {
     const sets: any[] = exercise?.sets || [];
     if (!sets.length) { seconds += (Number(exercise?.duration) || 1) * 60; continue; }
+    const timed = String(exercise?.measure || '').toUpperCase() === 'TIME';
+    const cardio = !timed && exercise?.type === 'CARDIO';
     for (const set of sets) {
-      const duration = Number(set?.duration) || 0;
-      const work = duration > 0 ? duration * 60 : 45;
-      const rest = (Number(set?.restMin) || 0) * 60 + (Number(set?.restSec) || 0);
-      seconds += work + (rest > 0 ? rest : 60);
+      if (timed) seconds += Number(set?.durationSec) || 0;
+      else if (cardio) seconds += (Number(set?.duration) || 0) * 60;
+      else seconds += (parseInt(String(set?.reps ?? ''), 10) || 10) * 3;
+      seconds += (Number(set?.restMin) || 0) * 60 + (Number(set?.restSec) || 0);
     }
   }
   const minutes = Math.round(seconds / 60);

@@ -1,4 +1,4 @@
-<div class="np-root np-layout" [class.settings-collapsed]="!draft.settingsVisible" [class.mobile-structure-open]="mobileStructureOpen" [class.is-client]="clientMode.active" [class.is-readonly]="draft.readOnly">
+<div class="np-root np-layout" [class.settings-collapsed]="!draft.settingsVisible" [class.mobile-structure-open]="mobileStructureOpen" [class.is-client]="clientMode.active" [class.is-readonly]="draft.readOnly" [class.is-calendar]="cal.viewMode === 'calendar'" [class.is-cal-editing]="cal.editing" [class.pc-embedded]="cal.embedded">
   <!-- Same toolbar as the workout builder: back, title, structure (phones), save. -->
   <header class="np-toolbar">
     <button type="button" class="np-toolbar__back app-page-back" [attr.aria-label]="'BACK' | translate" (click)="goBack()">
@@ -16,6 +16,7 @@
       </p>
     </div>
     <!-- Programme déjà créé : ses informations (nom, description, durée, dates) se modifient ici, plus dans une carte. -->
+    <app-view-switch [mode]="cal.viewMode" (modeChange)="cal.setViewMode($event)"></app-view-switch>
     <button type="button" class="np-toolbar__edit" *ngIf="draft.hasPlan && !draft.readOnly" (click)="openPlanEdit()"
             [title]="'PLAN_EDIT_HINT' | translate" [attr.aria-label]="'PLAN_EDIT_BUTTON' | translate">
       <i-feather name="edit-2" class="np-ico"></i-feather>
@@ -26,12 +27,14 @@
       <span>{{ 'PROGRAM_STRUCTURE' | translate }}</span>
     </button>
     <div class="np-toolbar__save" *ngIf="!draft.readOnly">
-      <span class="np-toolbar__status" [class.is-error]="!draft.saving && draft.error" [class.has-saved]="!draft.saving && !draft.error && draft.savedAt" [attr.title]="draft.error || null" role="status" aria-live="polite">
+      <span class="np-toolbar__status" [class.is-error]="!draft.saving && draft.error" [class.is-unsaved]="!draft.saving && !draft.error && cal.unsaved" [class.has-saved]="!draft.saving && !draft.error && !cal.unsaved && draft.savedAt" [attr.title]="draft.error || null" role="status" aria-live="polite">
         <ng-container *ngIf="draft.saving">{{ 'SAVING' | translate }}</ng-container>
         <ng-container *ngIf="!draft.saving && draft.error">{{ draft.error }}</ng-container>
-        <ng-container *ngIf="!draft.saving && !draft.error && draft.savedAt"><svg class="np-toolbar__ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg><span class="np-toolbar__savedlabel">{{ 'WORKOUT_SAVED' | translate }}</span> {{ draft.savedAt | date:'HH:mm' }}</ng-container>
+        <!-- Un changement pas encore enregistré : on le dit tant que le coach n'a pas cliqué sur Enregistrer. -->
+        <ng-container *ngIf="!draft.saving && !draft.error && cal.unsaved"><span class="np-unsaved-dot" aria-hidden="true"></span><span class="np-unsaved-long">{{ cal.ht('Unsaved changes', 'Modifications non enregistrées') }}</span><span class="np-unsaved-short">{{ cal.ht('Not saved', 'Non enregistré') }}</span></ng-container>
+        <ng-container *ngIf="!draft.saving && !draft.error && !cal.unsaved && draft.savedAt"><svg class="np-toolbar__ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg><span class="np-toolbar__savedlabel">{{ 'WORKOUT_SAVED' | translate }}</span> {{ draft.savedAt | date:'HH:mm' }}</ng-container>
       </span>
-      <button type="button" class="np-toolbar__savebtn" [class.is-busy]="draft.saving" [attr.aria-busy]="draft.saving" (click)="draft.saveDraft(days, savePlanFn)" [disabled]="draft.saving" [attr.aria-label]="'SAVE' | translate">
+      <button type="button" class="np-toolbar__savebtn" [class.has-changes]="cal.unsaved && !draft.saving" [class.is-busy]="draft.saving" [attr.aria-busy]="draft.saving" (click)="draft.saveDraft(days, savePlanFn)" [disabled]="draft.saving" [attr.aria-label]="'SAVE' | translate">
         <span class="np-toolbar__spinner" *ngIf="draft.saving" aria-hidden="true"></span>
         <svg *ngIf="!draft.saving" viewBox="0 0 24 24" class="np-ico" aria-hidden="true">
           <path d="M5 4h12l2 2v14H5zM8 4v6h8V4M8 20v-6h8v6" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round" />
@@ -53,7 +56,7 @@
         </button>
       </div>
       <div class="np-aside__body" cdkDropList [cdkDropListData]="days" [cdkDropListDisabled]="draft.readOnly" (cdkDropListDropped)="onDropDay($event)">
-        <div class="np-week-card" *ngFor="let week of nutritionWeeks; trackBy: trackByWeek">
+        <div class="np-week-card" *ngFor="let week of nutritionWeeks; trackBy: trackByWeek" [class.has-active]="weekHasSelectedDay(week)">
           <button type="button" class="np-week-card__head" (click)="draft.toggleWeek(week.weekNumber)" [attr.aria-expanded]="!draft.collapsedWeeks.has(week.weekNumber)">
             <div class="np-week-card__head-top">
               <i-feather [name]="draft.collapsedWeeks.has(week.weekNumber) ? 'chevron-right' : 'chevron-down'" class="np-week-card__chevron"></i-feather>
@@ -76,7 +79,7 @@
           <ng-container *ngIf="!draft.collapsedWeeks.has(week.weekNumber)">
             <ng-container *ngFor="let item of week.days; trackBy: trackByWeekDay">
               <div class="np-dayrow" cdkDrag [class.is-active]="selectedDay?.id === item.day.id">
-                <button type="button" class="np-day" [class.is-active]="selectedDay?.id === item.day.id" (click)="selectDay(item.day); mobileStructureOpen = false">
+                <button type="button" class="np-day" [class.is-active]="selectedDay?.id === item.day.id" [attr.aria-current]="selectedDay === item.day ? 'true' : null" (click)="selectDay(item.day); mobileStructureOpen = false">
                   <ng-container *ngIf="draft.dayRailState(days, item.day) as state"><span class="np-day-state" [class.ready]="state === 'FILLED'" [class.rest]="state === 'REST'" [class.invalid]="state === 'INVALID'" [class.gap]="state === 'GAP'"><i-feather [name]="state === 'FILLED' ? 'check-circle' : state === 'REST' ? 'moon' : state === 'INVALID' || state === 'GAP' ? 'alert-circle' : 'circle'"></i-feather></span></ng-container>
                   <span class="np-day__topline">
                     <span class="np-day__title">{{ 'DAY_NUMBER' | translate:{ number: item.index % 7 + 1 } }}</span>
@@ -90,13 +93,14 @@
             </ng-container>
           </ng-container>
         </div>
-        <button class="np-btn np-btn--dash np-btn--ghost np-btn--full" *ngIf="!draft.readOnly" (click)="addDay()">
+        <button class="np-btn np-btn--dash np-btn--ghost np-btn--full" *ngIf="!draft.readOnly" [disabled]="cal.weekCount >= cal.maxWeeks && !(days.length % 7)" (click)="cal.addWeek()">
           <i-feather name="plus" class="np-ico"></i-feather>
-          {{ 'ADD_DAY' | translate }}
+          {{ cal.ht('Add a week', 'Ajouter une semaine') }}
         </button>
         <div class="np-stack" *ngIf="!draft.readOnly">
-          <button class="np-rowbtn" (click)="duplicateSelectedDay()">
-            <span>{{ 'DUPLICATE_DAY' | translate }}</span>
+          <!-- « Copier ce jour » vers les jours choisis (avant : une copie ajoutée à la fin, qui créait une semaine à moitié). -->
+          <button class="np-rowbtn" [disabled]="!copy.canCopyDay" (click)="copy.openDay()">
+            <span>{{ 'COPY_DAYS.BUTTON_COPY_DAY' | translate }}</span>
             <i-feather name="copy" class="np-ico"></i-feather>
           </button>
         </div>
@@ -233,7 +237,49 @@
       </section>
 
 
-      <section class="np-card np-card--day" [attr.inert]="draft.readOnly ? '' : null" [class.np-card--readonly]="draft.readOnly">
+      <!-- Mode Calendrier (shared/program-calendar) : une ligne par semaine ; un clic ouvre la fenêtre du jour. -->
+      <app-program-calendar
+        *ngIf="cal.viewMode === 'calendar' && !cal.embedded"
+        class="np-card pc-card"
+        kind="NUTRITION"
+        [legend]="clientMode.active"
+        [weeks]="cal.weeks"
+        [columns]="cal.columns"
+        [todayColumn]="cal.todayColumn"
+        [readOnly]="draft.readOnly"
+        [detailed]="cal.detailed"
+        [selected]="selectedDay"
+        [highlight]="cal.win.opened"
+        [weekCount]="cal.weekCount"
+        [maxWeeks]="cal.maxWeeks"
+        [canCopy]="!copy.readOnly"
+        [canClear]="false"
+        (openDay)="cal.win.openDay($event)"
+        (swap)="cal.onSwap($event)"
+        (addWeek)="cal.addWeek()"
+        (deleteWeek)="cal.deleteWeek($event)"
+        (duplicateWeek)="cal.onDuplicateWeek($event)"
+        (dayAction)="cal.onDayAction($event)"
+        (detailedChange)="cal.setDetailed($event)"
+      ></app-program-calendar>
+
+      <button type="button" class="pc-backdrop" *ngIf="cal.editing || cal.embedded" tabindex="-1" [attr.aria-label]="cal.ht('Close', 'Fermer')"
+              (click)="cal.win.open ? cal.win.requestClose() : cal.closeEmbedded()"></button>
+      <!-- Ouvert par-dessus la fiche du client : la fenêtre du jour seule ; pendant la lecture du programme, son cadre. -->
+      <div class="pc-embed-loading" *ngIf="cal.embedded && !cal.win.open" role="status" aria-live="polite">
+        <ng-container *ngIf="!false; else embedError">
+          <span class="pc-embed-loading__spin" aria-hidden="true"></span>
+          <span>{{ cal.ht('Opening the day…', 'Ouverture du jour…') }}</span>
+        </ng-container>
+        <ng-template #embedError>
+          <span>{{ cal.ht('This day could not be opened.', "Ce jour n'a pas pu être ouvert.") }}</span>
+          <button type="button" class="pc-embed-loading__close" (click)="cal.closeEmbedded()">{{ cal.ht('Close', 'Fermer') }}</button>
+        </ng-template>
+      </div>
+
+      <section class="np-card np-card--day" [attr.inert]="draft.readOnly ? '' : null" [class.np-card--readonly]="draft.readOnly"
+               [attr.role]="cal.editing ? 'dialog' : null" [attr.aria-modal]="cal.editing ? 'true' : null" [attr.aria-label]="cal.editing ? cal.win.title : null">
+        <app-day-window-head *ngIf="cal.editing" [win]="cal.win"></app-day-window-head>
         <div class="np-mobile-days">
           <ng-container *ngFor="let d of days; trackBy: trackByDay; let i = index">
             <button
@@ -339,6 +385,10 @@
             <div class="wk-restbox__icon"><i-feather name="coffee"></i-feather></div>
             <h3 class="wk-restbox__title">{{ 'CHEAT_MEAL' | translate }}</h3>
             <p class="wk-restbox__text">{{ 'CHEAT_MEAL_DESCRIPTION' | translate }}</p>
+            <!-- Le jour libre redevient un jour avec des repas d'un clic (avant : seulement le bouton du haut). -->
+            <button type="button" class="np-rest-turn" *ngIf="!draft.readOnly" (click)="toggleCheatMeal()">
+              <i-feather name="coffee" class="np-rest-turn__ico"></i-feather>{{ cal.ht('Put meals back', 'Remettre des repas') }}
+            </button>
             <button type="button" class="np-link wk-restbox__notes" (click)="toggleDayDescription()">
               <i-feather name="plus" class="np-ico"></i-feather>
               {{ 'ADD_NOTES' | translate }}
@@ -705,6 +755,8 @@
           </button>
         </div>
         </div>
+        <app-day-window-foot *ngIf="cal.editing" [win]="cal.win" [saving]="draft.saving" [error]="draft.error"
+                             [unsaved]="cal.unsaved" [savedAt]="draft.savedAt"></app-day-window-foot>
       </section>
 
       <app-meal-template-picker

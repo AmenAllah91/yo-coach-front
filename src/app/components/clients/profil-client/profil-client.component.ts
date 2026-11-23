@@ -1583,10 +1583,17 @@ export class ProfilClientComponent {
       const max = Math.max(...known);
       return min === max ? `${min}` : `${min}–${max}`;
     };
-    const reps = range(sets.map((set) => set?.reps));
-    if (reps && String(exercise?.measure || '').toUpperCase() !== 'TIME') return `${sets.length} × ${reps}`;
-    const seconds = range(sets.map((set) => set?.duration));
-    if (seconds) return `${sets.length} × ${seconds} s`;
+    const timed = String(exercise?.measure || '').toUpperCase() === 'TIME';
+    if (timed) {
+      const seconds = range(sets.map((set) => set?.durationSec));
+      if (seconds) return `${sets.length} × ${seconds} s`;
+    } else if (exercise?.type === 'CARDIO') {
+      const minutes = range(sets.map((set) => set?.duration));
+      if (minutes) return sets.length > 1 ? `${sets.length} × ${minutes} min` : `${minutes} min`;
+    } else {
+      const reps = range(sets.map((set) => parseInt(String(set?.reps ?? ''), 10)));
+      if (reps) return `${sets.length} × ${reps}`;
+    }
     return `${sets.length} ${this.heroFr ? (sets.length > 1 ? 'séries' : 'série') : (sets.length > 1 ? 'sets' : 'set')}`;
   }
 

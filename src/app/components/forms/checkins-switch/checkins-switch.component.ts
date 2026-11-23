@@ -6,8 +6,8 @@ import { map } from 'rxjs';
 import { CheckinInboxService } from '../../../service/checkin-inbox.service';
 
 /**
- * « Client check-ins | Templates » on top of both check-in pages (2026-11-19): the menu has a single « Check-ins »
- * entry, the coach switches here between the answers to read and the templates.
+ * « Templates | Client check-ins » on top of both check-in pages (2026-11-19): the menu has a single « Check-ins »
+ * entry, the coach switches here between the templates (first, where the menu lands) and the answers to read.
  */
 @Component({
   selector: 'app-checkins-switch',
@@ -15,14 +15,14 @@ import { CheckinInboxService } from '../../../service/checkin-inbox.service';
   imports: [CommonModule, RouterModule, TranslateModule],
   template: `
     <nav class="ck-switch" [attr.aria-label]="'CHECK_INS' | translate">
+      <a class="ck-switch__btn" routerLink="/forms" routerLinkActive="ck-switch__btn--active"
+         [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page">
+        {{ 'CHK_NAV_TEMPLATES' | translate }}
+      </a>
       <a class="ck-switch__btn" routerLink="/forms/manage-checkins" routerLinkActive="ck-switch__btn--active"
          [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page">
         {{ 'CHK_NAV_INBOX' | translate }}
         <span *ngIf="(toReview$ | async) as n" class="ck-switch__badge">{{ n > 99 ? '99+' : n }}</span>
-      </a>
-      <a class="ck-switch__btn" routerLink="/forms" routerLinkActive="ck-switch__btn--active"
-         [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page">
-        {{ 'CHK_NAV_TEMPLATES' | translate }}
       </a>
     </nav>
   `,

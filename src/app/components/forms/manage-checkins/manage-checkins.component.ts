@@ -41,14 +41,6 @@ export type CheckinTab = 'to_review' | 'overdue' | 'pending' | 'reviewed';
 /** missed = late by more than MISSED_AFTER_DAYS days: folded under the late list (CE CheckinInboxService). */
 export type RowStatus = 'to_review' | 'overdue' | 'missed' | 'due_today' | 'upcoming' | 'no_due' | 'reviewed';
 
-/** One client's check-ins in the current list: a client who sent three answers shows once, not three times. */
-export interface ClientGroup {
-  clientId: string;
-  name: string;
-  avatar?: string;
-  rows: CheckinRow[];
-}
-
 export interface CheckinRow {
   id: string;
   clientId: string;
@@ -76,14 +68,21 @@ interface CheckinDetail {
   orphanAnswers: Answer[];
 }
 
-/** Clients per page (each with all their check-ins of the list). */
-const GROUPS_PER_PAGE = 10;
+/** Check-ins per page: each line says who sent it (photo + name) and which check-in it is. */
+const ROWS_PER_PAGE = 25;
+/** From two weeks on, a wait reads in weeks, months or years (« 9 months », not « 272 days »). */
+const LONG_WAIT_DAYS = 14;
 /** Same rule as CE CheckinInboxService.MISSED_AFTER_DAYS. */
 export const MISSED_AFTER_DAYS = 7;
 /** Open check-ins read at once per status: beyond, the page says the list is cut. */
 const OPEN_LIMIT = 500;
 const REVIEWED_LIMIT = 100;
 const DAY = 24 * 60 * 60 * 1000;
+/** An answer waiting this many days reads orange, then red: the coach sees who is kept waiting. */
+const WAIT_WARN_DAYS = 2;
+const WAIT_LATE_DAYS = 5;
+/** Answers shown on a line: the alerts and the changes first. */
+const PREVIEW_CHIPS = 3;
 
 @Component({
   selector: 'app-manage-checkins',
@@ -99,6 +98,7 @@ export class ManageCheckinsComponent implements OnInit {
   searchQuery = '';
   formFilter = '';
   currentPage = 1;
+  readonly rowsPerPage = ROWS_PER_PAGE;
 
   tabs: { id: CheckinTab; labelKey: string; hintKey: string }[] = [
     { id: 'to_review', labelKey: 'CHK_TAB_TO_REVIEW', hintKey: 'CHK_TAB_TO_REVIEW_HINT' },
@@ -395,67 +395,35 @@ export class ManageCheckinsComponent implements OnInit {
     return this.sortRows(this.matchingRows.filter(r => r.tab === this.activeTab && r.status !== 'missed'), this.activeTab);
   }
 
-  /** The tab's rows, one card per client, in the order of each client's most urgent check-in. */
-  get groups(): ClientGroup[] {
-    return this.groupByClient(this.filteredRows);
-  }
-
-  get missedGroups(): ClientGroup[] {
-    const time = (iso?: string) => (iso ? new Date(iso).getTime() : 0);
-    return this.groupByClient(this.missedRows.sort((a, b) => time(b.dueAt) - time(a.dueAt)));
-  }
-
+  /** Missed check-ins, most recent lateness first. */
   get missedRows(): CheckinRow[] {
-    return this.matchingRows.filter(r => r.status === 'missed');
+    const time = (iso?: string) => (iso ? new Date(iso).getTime() : 0);
+    return this.matchingRows.filter(r => r.status === 'missed').sort((a, b) => time(b.dueAt) - time(a.dueAt));
   }
 
-  private groupByClient(rows: CheckinRow[]): ClientGroup[] {
-    const groups = new Map<string, ClientGroup>();
-    rows.forEach(row => {
-      const key = row.clientId || row.id;
-      let group = groups.get(key);
-      if (!group) {
-        group = { clientId: row.clientId, name: row.name, avatar: row.avatar, rows: [] };
-        groups.set(key, group);
-      }
-      group.rows.push(row);
-    });
-    return Array.from(groups.values());
-  }
-
-  /** The order « Next » follows in the opened check-in: client by client, like the list. */
+  /** The order « Next » follows in the opened check-in: the list's order. */
   private get queueRows(): CheckinRow[] {
-    if (this.selected?.status === 'missed') return this.missedGroups.flatMap(g => g.rows);
-    return this.groups.flatMap(g => g.rows);
+    return this.selected?.status === 'missed' ? this.missedRows : this.filteredRows;
   }
 
   get totalPages(): number {
-    return Math.max(1, Math.ceil(this.groups.length / GROUPS_PER_PAGE));
+    return Math.max(1, Math.ceil(this.filteredRows.length / ROWS_PER_PAGE));
   }
 
   get safePage(): number {
     return Math.min(this.currentPage, this.totalPages);
   }
 
-  get paginatedGroups(): ClientGroup[] {
-    const start = (this.safePage - 1) * GROUPS_PER_PAGE;
-    return this.groups.slice(start, start + GROUPS_PER_PAGE);
+  get paginatedRows(): CheckinRow[] {
+    const start = (this.safePage - 1) * ROWS_PER_PAGE;
+    return this.filteredRows.slice(start, start + ROWS_PER_PAGE);
   }
 
   get pages(): number[] {
     return Array.from({ length: this.totalPages }, (_, i) => i + 1);
   }
 
-  trackGroup(_: number, group: ClientGroup): string { return group.clientId || group.rows[0]?.id; }
   trackRow(_: number, row: CheckinRow): string { return row.id; }
-
-  /** « 3 check-ins à traiter » on a client's card. */
-  groupSummary(group: ClientGroup, missed = false): string {
-    const keys: Record<CheckinTab, string> = {
-      to_review: 'CHK_GROUP_TO_REVIEW', overdue: 'CHK_GROUP_OVERDUE', pending: 'CHK_GROUP_PENDING', reviewed: 'CHK_GROUP_REVIEWED',
-    };
-    return this.translate.instant(missed ? 'CHK_GROUP_MISSED' : keys[this.activeTab], { n: group.rows.length });
-  }
 
   /** The menu badge follows the page at once (answers to read, whatever the filters). */
   private publishCounts(): void {
@@ -508,10 +476,30 @@ export class ManageCheckinsComponent implements OnInit {
     return this.previews.get(row.id) ?? null;
   }
 
+  /** At most three answers on a line: low ratings first, then what changed since last time. */
+  previewChips(p: CheckinPreview): CheckinPreviewItem[] {
+    const rank = (i: CheckinPreviewItem) => (i.alert ? 0 : i.number != null && i.previous != null ? 1 : 2);
+    return (p.items ?? [])
+      .map((item, index) => ({ item, index }))
+      .sort((a, b) => rank(a.item) - rank(b.item) || a.index - b.index)
+      .slice(0, PREVIEW_CHIPS)
+      .map(x => x.item);
+  }
+
+  /** « +2 » after the chips when the check-in has more answers. */
+  previewMore(p: CheckinPreview): number {
+    return Math.max(0, (p.items?.length ?? 0) - PREVIEW_CHIPS);
+  }
+
+  /** The question as a short label: « Sommeil ? » reads « Sommeil ». */
+  chipLabel(item: CheckinPreviewItem): string {
+    return (item.label || '').replace(/[\s?:؟？]+$/u, '').trim();
+  }
+
   /** The answers to read on screen get their preview (a few numbers, a low rating, the client's note). */
   loadVisiblePreviews(): void {
     if (this.previewsUnavailable || this.activeTab !== 'to_review') return;
-    const ids = this.paginatedGroups.flatMap(g => g.rows).map(r => r.id)
+    const ids = this.paginatedRows.map(r => r.id)
       .filter(id => !this.previews.has(id) && !this.previewsLoading.has(id));
     this.fetchPreviews(ids);
   }
@@ -584,20 +572,6 @@ export class ManageCheckinsComponent implements OnInit {
     this.bulkMessage = null;
   }
 
-  groupState(group: ClientGroup): 'all' | 'some' | 'none' {
-    const n = group.rows.filter(r => this.selectedIds.has(r.id)).length;
-    return n === 0 ? 'none' : n === group.rows.length ? 'all' : 'some';
-  }
-
-  toggleGroup(group: ClientGroup, event?: Event): void {
-    event?.stopPropagation();
-    const next = new Set(this.selectedIds);
-    const all = this.groupState(group) === 'all';
-    group.rows.forEach(r => (all ? next.delete(r.id) : next.add(r.id)));
-    this.selectedIds = next;
-    this.bulkMessage = null;
-  }
-
   /** « Select all » ticks the whole list of the tab (every page), not the missed fold. */
   get allState(): 'all' | 'some' | 'none' {
     const rows = this.filteredRows;
@@ -632,7 +606,7 @@ export class ManageCheckinsComponent implements OnInit {
     void this.confirmBulk('cancel', ids);
   }
 
-  /** « Remove all » on a late client's card, or on the missed fold. */
+  /** « Remove all » on the missed fold. */
   removeRows(rows: CheckinRow[], event?: Event): void {
     event?.stopPropagation();
     void this.confirmBulk('cancel', rows.filter(r => r.status === 'overdue' || r.status === 'missed').map(r => r.id));
@@ -709,15 +683,34 @@ export class ManageCheckinsComponent implements OnInit {
   /** What the coach reads first on a row: how long it waits, how late it is, when it is due. */
   timing(row: CheckinRow): string {
     const t = (key: string, n?: number) => this.translate.instant(key, { n });
+    const long = (key: string) => this.translate.instant(key, { d: this.longDuration(row.days) });
     switch (row.status) {
-      case 'to_review': return row.days <= 0 ? t('CHK_SUBMITTED_TODAY') : row.days === 1 ? t('CHK_SUBMITTED_YESTERDAY') : t('CHK_SUBMITTED_DAYS_AGO', row.days);
+      case 'to_review':
+        if (row.days >= LONG_WAIT_DAYS) return long('CHK_WAITING_LONG');
+        return row.days <= 0 ? t('CHK_SUBMITTED_TODAY') : row.days === 1 ? t('CHK_WAITING_YESTERDAY') : t('CHK_WAITING_DAYS', row.days);
       case 'overdue':
-      case 'missed': return row.days === 1 ? t('CHK_LATE_ONE_DAY') : t('CHK_LATE_DAYS', row.days);
+      case 'missed':
+        if (row.days >= LONG_WAIT_DAYS) return long('CHK_LATE_LONG');
+        return row.days === 1 ? t('CHK_LATE_ONE_DAY') : t('CHK_LATE_DAYS', row.days);
       case 'due_today': return t('CHK_DUE_TODAY');
       case 'upcoming': return row.days === 1 ? t('CHK_DUE_TOMORROW') : t('CHK_DUE_IN_DAYS', row.days);
       case 'no_due': return t('CHK_NO_DUE_DATE');
       case 'reviewed': return this.translate.instant('CHK_REVIEWED_ON', { date: this.formatDate(row.reviewedAt ?? row.submittedAt) });
     }
+  }
+
+  /** « 9 months », « 3 semaines »: full weeks under two months, full months under a year, then years. */
+  private longDuration(days: number): string {
+    const [value, unit] = days < 60 ? [Math.floor(days / 7), 'week']
+      : days < 365 ? [Math.floor(days / 30), 'month']
+      : [Math.floor(days / 365), 'year'];
+    return new Intl.NumberFormat(this.locale, { style: 'unit', unit, unitDisplay: 'long' } as Intl.NumberFormatOptions).format(value as number);
+  }
+
+  /** How long an answer waits: grey, orange from 2 days, red from 5 days. */
+  waitLevel(row: CheckinRow): 'ok' | 'warn' | 'late' | '' {
+    if (row.status !== 'to_review') return '';
+    return row.days >= WAIT_LATE_DAYS ? 'late' : row.days >= WAIT_WARN_DAYS ? 'warn' : 'ok';
   }
 
   /** The date under the timing: the real date of the event the timing counts from. */

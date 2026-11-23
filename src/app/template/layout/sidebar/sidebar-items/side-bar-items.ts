@@ -171,20 +171,10 @@ export const items: RouteInfo[] = [
       {
         path: '/workout/program-library',
         title: 'SIDEBAR_PROGRAMS',
+        // The ready-made programs of YoCoach are a tab of this page (2026-11-20).
+        activeOn: ['/workout/public-templates'],
         iconType: 'feather',
         icon: 'folder',
-        class: '',
-        groupTitle: false,
-        badge: '',
-        badgeClass: '',
-        submenu: [],
-      },
-      {
-        // Ready-made programs of the admin, for every coach (2026-11-18).
-        path: '/workout/public-templates',
-        title: 'SIDEBAR_PUBLIC_TEMPLATES',
-        iconType: 'feather',
-        icon: 'layers',
         class: '',
         groupTitle: false,
         badge: '',
@@ -218,6 +208,8 @@ export const items: RouteInfo[] = [
       {
         path: '/nutrition/plans',
         title: 'SIDEBAR_MEAL_PLANS',
+        // The YoCoach templates are a tab of this page (2026-11-20).
+        activeOn: ['/nutrition/public-templates'],
         iconType: 'feather',
         icon: 'clipboard-list',
         class: '',
@@ -275,6 +267,8 @@ export const items: RouteInfo[] = [
       {
         path: '/nutrition/plans',
         title: 'SIDEBAR_MEAL_PLANS',
+        // The YoCoach templates are a tab of this page (2026-11-20).
+        activeOn: ['/nutrition/public-templates'],
         iconType: 'feather',
         icon: 'clipboard-list',
         class: '',
@@ -291,8 +285,9 @@ export const items: RouteInfo[] = [
     ],
   },
   {
-    // One entry (2026-11-19): the page opens on the answers to read; its « Templates » tab is the /forms page.
-    path: '/forms/manage-checkins',
+    // One entry (2026-11-19). It opens on the templates (2026-11-20, user's choice); the answers to read are the
+    // « Client check-ins » tab (/forms/manage-checkins), lit by this entry too since its path starts with /forms.
+    path: '/forms',
     title: 'SIDEBAR_CHECK_INS',
     iconType: 'feather',
     icon: 'clipboard-list',
@@ -302,7 +297,6 @@ export const items: RouteInfo[] = [
     badgeClass: '',
     submenu: [],
     roles: ['ROLE_COACH'],
-    activeOn: ['/forms'],
   },
   {
     path: '/configuration',

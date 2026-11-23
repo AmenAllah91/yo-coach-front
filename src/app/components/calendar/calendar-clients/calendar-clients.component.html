@@ -74,16 +74,16 @@
 
   <!-- What the coach does (C4): the detail of the days and drag in the week, copy a week. -->
   <div class="week-tools" *ngIf="hasSelectedClient() && programsLoaded">
-    <button
-      type="button"
-      *ngIf="currentView === 'week' || (currentView === 'month' && !narrow)"
-      class="dp-button"
-      [class.is-on]="weekDetailed"
-      [attr.aria-pressed]="weekDetailed"
-      (click)="toggleWeekDetail()"
-    >
-      <span class="material-icons" aria-hidden="true">{{ weekDetailed ? 'view_agenda' : 'view_week' }}</span>{{ 'CALENDAR_DETAIL' | translate }}
-    </button>
+    <!-- « Cartes : Détail | Résumé »: the same control as the editors' calendar (_calendar-cards.scss). -->
+    <div class="wcal__density" role="group" *ngIf="currentView === 'week' || (currentView === 'month' && !narrow)"
+         [attr.aria-label]="'CALENDAR_DETAIL' | translate">
+      <button type="button" class="wcal__densitybtn" [class.is-on]="weekDetailed" [attr.aria-pressed]="weekDetailed" (click)="setWeekDetail(true)">
+        <span class="material-icons wcal__densityico" aria-hidden="true">view_agenda</span>{{ 'CALENDAR_DETAIL' | translate }}
+      </button>
+      <button type="button" class="wcal__densitybtn" [class.is-on]="!weekDetailed" [attr.aria-pressed]="!weekDetailed" (click)="setWeekDetail(false)">
+        <span class="material-icons wcal__densityico" aria-hidden="true">view_week</span>{{ ht('Summary', 'Résumé') }}
+      </button>
+    </div>
     <!-- The month: what it shows (everything at once is too much to read). -->
     <div class="month-show" *ngIf="currentView === 'month'" role="group" [attr.aria-label]="'CALENDAR_SHOW' | translate">
       <span class="month-show__label">{{ 'CALENDAR_SHOW' | translate }}</span>
@@ -129,6 +129,10 @@
       </div>
     </div>
 
+    <div class="cal-pick" *ngIf="pick" role="status">
+      <span class="material-icons" aria-hidden="true">touch_app</span><span class="cal-pick__text">{{ pickText }}</span>
+      <button type="button" class="cal-pick__cancel" (click)="pick = null">{{ 'CANCEL' | translate }}</button>
+    </div>
     <div class="month-weeks">
       <!-- One row per week: the day numbers, the PDF / Excel programs as continuous bands (K4), then the days. -->
       <div class="month-week" *ngFor="let week of monthWeeks; trackBy: trackWeek" [style.grid-template-rows]="week.rows">
@@ -156,11 +160,22 @@
             </div>
 
             <div class="cell-content" *ngIf="!narrow && day.plan as plan">
-              <div class="wr-card" *ngFor="let cell of plan.workout" [ngClass]="'st-' + cell.status.tone">
-                <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: cell, icon: monthShow.length > 1 ? 'fitness_center' : null, detailed: weekDetailed }"></ng-container>
+              <!-- The same as the week: a card opens its window, its ⋮ carries the quick changes; beside the cards: the day. -->
+              <div class="wr-cardwrap" *ngFor="let cell of plan.workout" [ngClass]="pickState(cell.item) ? 'is-pick-' + pickState(cell.item) : ''">
+                <div class="wr-card" role="button" tabindex="0" [ngClass]="'st-' + cell.status.tone"
+                     (click)="$event.stopPropagation(); onCardClick('workout', day.dateString, cell.item)"
+                     (keydown.enter)="$event.stopPropagation(); onCardClick('workout', day.dateString, cell.item)">
+                  <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: cell, icon: monthShow.length > 1 ? 'fitness_center' : null, detailed: weekDetailed }"></ng-container>
+                </div>
+                <ng-container *ngTemplateOutlet="cardKebab; context: { kind: 'workout', date: day.dateString, item: cell.item }"></ng-container>
               </div>
-              <div class="wr-card" *ngFor="let cell of plan.nutrition" [ngClass]="'st-' + cell.status.tone">
-                <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: cell, icon: monthShow.length > 1 ? 'restaurant' : null, detailed: weekDetailed }"></ng-container>
+              <div class="wr-cardwrap" *ngFor="let cell of plan.nutrition" [ngClass]="pickState(cell.item, 'nutrition') ? 'is-pick-' + pickState(cell.item, 'nutrition') : ''">
+                <div class="wr-card" role="button" tabindex="0" [ngClass]="'st-' + cell.status.tone"
+                     (click)="$event.stopPropagation(); onCardClick('nutrition', day.dateString, cell.item)"
+                     (keydown.enter)="$event.stopPropagation(); onCardClick('nutrition', day.dateString, cell.item)">
+                  <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: cell, icon: monthShow.length > 1 ? 'restaurant' : null, detailed: weekDetailed }"></ng-container>
+                </div>
+                <ng-container *ngTemplateOutlet="cardKebab; context: { kind: 'nutrition', date: day.dateString, item: cell.item }"></ng-container>
               </div>
               <span class="wr-chip" *ngIf="plan.tasks.length" [ngClass]="'st-' + plan.tasksTone" [attr.title]="tasksHint(plan.tasks)">
                 <span class="material-icons st-icon" aria-hidden="true">{{ statusIcon(plan.tasksTone) }}</span>{{ 'CALENDAR_TASKS_DONE' | translate: { done: plan.tasksDone, total: plan.tasks.length } }}
@@ -209,12 +224,18 @@
     <button type="button" class="wl-file" *ngFor="let file of plan.files" (click)="openFileProgram(file, file.kind)">
       <span class="material-icons" aria-hidden="true">{{ file.resourceType === 'EXCEL' ? 'table_chart' : 'picture_as_pdf' }}</span>{{ file.name }}
     </button>
-    <button type="button" class="wr-card" *ngFor="let cell of plan.workout" [ngClass]="'st-' + cell.status.tone" (click)="openDayView(monthDay!.dateString)">
-      <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: cell, icon: 'fitness_center', detailed: weekDetailed }"></ng-container>
-    </button>
-    <button type="button" class="wr-card" *ngFor="let cell of plan.nutrition" [ngClass]="'st-' + cell.status.tone" (click)="openDayView(monthDay!.dateString)">
-      <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: cell, icon: 'restaurant', detailed: weekDetailed }"></ng-container>
-    </button>
+    <div class="wr-cardwrap" *ngFor="let cell of plan.workout" [ngClass]="pickState(cell.item) ? 'is-pick-' + pickState(cell.item) : ''">
+      <button type="button" class="wr-card" [ngClass]="'st-' + cell.status.tone" (click)="onCardClick('workout', monthDay!.dateString, cell.item)">
+        <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: cell, icon: 'fitness_center', detailed: weekDetailed }"></ng-container>
+      </button>
+      <ng-container *ngTemplateOutlet="cardKebab; context: { kind: 'workout', date: monthDay!.dateString, item: cell.item }"></ng-container>
+    </div>
+    <div class="wr-cardwrap" *ngFor="let cell of plan.nutrition" [ngClass]="pickState(cell.item, 'nutrition') ? 'is-pick-' + pickState(cell.item, 'nutrition') : ''">
+      <button type="button" class="wr-card" [ngClass]="'st-' + cell.status.tone" (click)="onCardClick('nutrition', monthDay!.dateString, cell.item)">
+        <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: cell, icon: 'restaurant', detailed: weekDetailed }"></ng-container>
+      </button>
+      <ng-container *ngTemplateOutlet="cardKebab; context: { kind: 'nutrition', date: monthDay!.dateString, item: cell.item }"></ng-container>
+    </div>
     <div class="month-day__chips" *ngIf="plan.tasks.length || plan.checkIns.length">
               <span class="wr-chip" *ngIf="plan.tasks.length" [ngClass]="'st-' + plan.tasksTone" [attr.title]="tasksHint(plan.tasks)">
                 <span class="material-icons st-icon" aria-hidden="true">{{ statusIcon(plan.tasksTone) }}</span>{{ 'CALENDAR_TASKS_DONE' | translate: { done: plan.tasksDone, total: plan.tasks.length } }}
@@ -242,9 +263,16 @@
       >
         <span class="wr-weekday">{{ day.weekdayLabel }}</span>
         <span class="wr-daynum" [class.is-today]="day.isToday">{{ day.dayNumber }}</span>
+        <span class="wcal__todaytag" *ngIf="day.isToday">{{ ht('Today', "Aujourd'hui") }}</span>
         <span class="new-note-dot" *ngIf="day.unreadNote" [attr.title]="'CALENDAR_NEW_NOTE' | translate"
           [attr.aria-label]="'CALENDAR_NEW_NOTE' | translate"></span>
       </button>
+    </div>
+
+    <!-- « Déplacer », « Copier vers… », « Copier un jour ici »: the next day clicked (the same as the client's profile). -->
+    <div class="cal-pick" *ngIf="pick" role="status">
+      <span class="material-icons" aria-hidden="true">touch_app</span><span class="cal-pick__text">{{ pickText }}</span>
+      <button type="button" class="cal-pick__cancel" (click)="pick = null">{{ 'CANCEL' | translate }}</button>
     </div>
 
     <!-- Entraînement -->
@@ -253,30 +281,33 @@
       <div
         *ngFor="let day of weekPlan.days; let col = index; trackBy: trackDay"
         class="wr-cell"
+        [class.is-past]="day.dateString < todayString"
         [style.grid-column]="col + 2"
         style="grid-row: -2 / -1"
         [class.is-today]="day.isToday"
         [class.is-selected]="selectedDate === day.dateString"
-        [class.is-drop-target]="dropDate === day.dateString"
-        (dragover)="onDayDragOver($event, day)"
+        [class.is-drop-target]="dropDate === day.dateString && dropKind === 'workout'"
+        (dragover)="onDayDragOver($event, day, 'workout')"
         (dragleave)="onDayDragLeave(day)"
-        (drop)="onDayDrop($event, day)"
+        (drop)="onDayDrop($event, day, 'workout')"
       >
+        <div class="wr-cardwrap" *ngFor="let cell of day.workout" [ngClass]="pickState(cell.item) ? 'is-pick-' + pickState(cell.item) : ''">
         <button
           type="button"
-          *ngFor="let cell of day.workout"
           class="wr-card"
           [ngClass]="'st-' + cell.status.tone"
           [class.is-movable]="cell.movable"
           [class.is-dragging]="dragging === cell.item"
-          [attr.draggable]="cell.movable ? 'true' : null"
+          [attr.draggable]="cell.movable && !pick ? 'true' : null"
           (dragstart)="onDayDragStart($event, cell)"
           (dragend)="onDayDragEnd()"
           [class.is-focused]="selectedDate === day.dateString && dayFocus === 'workout'"
-          (click)="selectDay(day.dateString, 'workout')"
+          (click)="onCardClick('workout', day.dateString, cell.item)"
         >
           <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: cell, detailed: weekDetailed }"></ng-container>
         </button>
+        <ng-container *ngTemplateOutlet="cardKebab; context: { kind: 'workout', date: day.dateString, item: cell.item }"></ng-container>
+        </div>
         <button
           type="button"
           *ngIf="!day.workout.length && !day.workoutCovered"
@@ -294,21 +325,33 @@
       <div
         *ngFor="let day of weekPlan.days; let col = index; trackBy: trackDay"
         class="wr-cell"
+        [class.is-past]="day.dateString < todayString"
         [style.grid-column]="col + 2"
         style="grid-row: -2 / -1"
         [class.is-today]="day.isToday"
         [class.is-selected]="selectedDate === day.dateString"
+        [class.is-drop-target]="dropDate === day.dateString && dropKind === 'nutrition'"
+        (dragover)="onDayDragOver($event, day, 'nutrition')"
+        (dragleave)="onDayDragLeave(day)"
+        (drop)="onDayDrop($event, day, 'nutrition')"
       >
+        <div class="wr-cardwrap" *ngFor="let cell of day.nutrition" [ngClass]="pickState(cell.item, 'nutrition') ? 'is-pick-' + pickState(cell.item, 'nutrition') : ''">
         <button
           type="button"
-          *ngFor="let cell of day.nutrition"
           class="wr-card"
           [ngClass]="'st-' + cell.status.tone"
+          [class.is-movable]="cell.movable"
+          [class.is-dragging]="dragging === cell.item"
+          [attr.draggable]="cell.movable && !pick ? 'true' : null"
+          (dragstart)="onDayDragStart($event, cell, 'nutrition')"
+          (dragend)="onDayDragEnd()"
           [class.is-focused]="selectedDate === day.dateString && dayFocus === 'nutrition'"
-          (click)="selectDay(day.dateString, 'nutrition')"
+          (click)="onCardClick('nutrition', day.dateString, cell.item)"
         >
           <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: cell, detailed: weekDetailed }"></ng-container>
         </button>
+        <ng-container *ngTemplateOutlet="cardKebab; context: { kind: 'nutrition', date: day.dateString, item: cell.item }"></ng-container>
+        </div>
         <button
           type="button"
           *ngIf="!day.nutrition.length && !day.nutritionCovered"
@@ -374,6 +417,10 @@
 
   <!-- A narrow window: the week as a list of days, each with its cards (the same as the grid's). -->
   <div class="week-list" *ngIf="narrow && hasSelectedClient() && programsLoaded && currentView === 'week' && weekPlan">
+    <div class="cal-pick" *ngIf="pick" role="status">
+      <span class="material-icons" aria-hidden="true">touch_app</span><span class="cal-pick__text">{{ pickText }}</span>
+      <button type="button" class="cal-pick__cancel" (click)="pick = null">{{ 'CANCEL' | translate }}</button>
+    </div>
     <section
       *ngFor="let day of weekPlan.days; trackBy: trackDay"
       class="wl-day"
@@ -390,26 +437,31 @@
       <button type="button" class="wl-file" *ngFor="let file of day.files" (click)="openFileProgram(file, file.kind)">
         <span class="material-icons" aria-hidden="true">{{ file.resourceType === 'EXCEL' ? 'table_chart' : 'picture_as_pdf' }}</span>{{ file.name }}
       </button>
-      <button
-        type="button"
-        *ngFor="let cell of day.workout"
-        class="wr-card"
-        [ngClass]="'st-' + cell.status.tone"
-        [class.is-focused]="selectedDate === day.dateString && dayFocus === 'workout'"
-        (click)="selectDay(day.dateString, 'workout')"
-      >
-        <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: cell, icon: 'fitness_center', detailed: weekDetailed }"></ng-container>
-      </button>
-      <button
-        type="button"
-        *ngFor="let cell of day.nutrition"
-        class="wr-card"
-        [ngClass]="'st-' + cell.status.tone"
-        [class.is-focused]="selectedDate === day.dateString && dayFocus === 'nutrition'"
-        (click)="selectDay(day.dateString, 'nutrition')"
-      >
-        <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: cell, icon: 'restaurant', detailed: weekDetailed }"></ng-container>
-      </button>
+      <!-- The same actions as the wide week: a click opens the day's window, the ⋮ carries the quick changes. -->
+      <div class="wr-cardwrap" *ngFor="let cell of day.workout" [ngClass]="pickState(cell.item) ? 'is-pick-' + pickState(cell.item) : ''">
+        <button
+          type="button"
+          class="wr-card"
+          [ngClass]="'st-' + cell.status.tone"
+          [class.is-focused]="selectedDate === day.dateString && dayFocus === 'workout'"
+          (click)="onCardClick('workout', day.dateString, cell.item)"
+        >
+          <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: cell, icon: 'fitness_center', detailed: weekDetailed }"></ng-container>
+        </button>
+        <ng-container *ngTemplateOutlet="cardKebab; context: { kind: 'workout', date: day.dateString, item: cell.item }"></ng-container>
+      </div>
+      <div class="wr-cardwrap" *ngFor="let cell of day.nutrition" [ngClass]="pickState(cell.item, 'nutrition') ? 'is-pick-' + pickState(cell.item, 'nutrition') : ''">
+        <button
+          type="button"
+          class="wr-card"
+          [ngClass]="'st-' + cell.status.tone"
+          [class.is-focused]="selectedDate === day.dateString && dayFocus === 'nutrition'"
+          (click)="onCardClick('nutrition', day.dateString, cell.item)"
+        >
+          <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: cell, icon: 'restaurant', detailed: weekDetailed }"></ng-container>
+        </button>
+        <ng-container *ngTemplateOutlet="cardKebab; context: { kind: 'nutrition', date: day.dateString, item: cell.item }"></ng-container>
+      </div>
       <div class="wl-day__chips" *ngIf="day.tasks.length || day.checkIns.length">
         <button
           type="button"
@@ -558,6 +610,7 @@
         <button type="button" class="dp-button dp-button--main" (click)="openWorkoutEditor(entry.item)">
           {{ (entry.locked ? 'CALENDAR_SEE_IN_EDITOR' : 'CALENDAR_OPEN_EDITOR') | translate }}
         </button>
+        <span class="dp-kebab"><ng-container *ngTemplateOutlet="cardKebab; context: { kind: 'workout', date: detail.date, item: entry.item, inDay: true }"></ng-container></span>
         <button type="button" class="dp-button" *ngIf="canShift(entry.item)" (click)="shiftFrom('workout', entry.item)">
           {{ 'CALENDAR_SHIFT' | translate }}
         </button>
@@ -601,6 +654,7 @@
 
       <div class="dp-actions">
         <button type="button" class="dp-button dp-button--main" (click)="viewNutrition(entry.item)">{{ 'CALENDAR_OPEN_EDITOR' | translate }}</button>
+        <span class="dp-kebab"><ng-container *ngTemplateOutlet="cardKebab; context: { kind: 'nutrition', date: detail.date, item: entry.item, inDay: true }"></ng-container></span>
         <button type="button" class="dp-button" *ngIf="canShift(entry.item)" (click)="shiftFrom('nutrition', entry.item)">
           {{ 'CALENDAR_SHIFT' | translate }}
         </button>
@@ -719,9 +773,31 @@
   A day card's body, the same in the week and the month: its title (with the type's icon in the month, where both types
   share the day), one line, the exercises or meals when the week is detailed, its state with its symbol.
 -->
+<!-- The ⋮ of a card: the same actions as the editors' calendar and the client's profile. -->
+<ng-template #cardKebab let-kind="kind" let-date="date" let-item="item" let-inDay="inDay">
+  <div class="wr-menu" *ngIf="!pick && cardMenuItems(kind, item, inDay).length" (click)="$event.stopPropagation()">
+    <button type="button" class="wr-kebab" [class.is-open]="isMenuOpen(item)" [attr.aria-label]="'DAY_OPTIONS' | translate"
+            [title]="'DAY_OPTIONS' | translate" aria-haspopup="menu" [attr.aria-expanded]="isMenuOpen(item)"
+            (click)="toggleCardMenu(kind, item, $event)">
+      <span class="material-icons" aria-hidden="true">more_vert</span>
+    </button>
+    <div class="wr-menu__list" role="menu" *ngIf="isMenuOpen(item)">
+      <button type="button" role="menuitem" class="wr-menu__item" *ngFor="let entry of cardMenuItems(kind, item, inDay)" (click)="cardAction(entry.type, kind, date, item)">
+        <span class="material-icons wr-menu__ico" aria-hidden="true">{{ entry.icon }}</span>{{ entry.label }}
+      </button>
+    </div>
+  </div>
+</ng-template>
+
 <ng-template #cardBody let-cell let-detailed="detailed" let-icon="icon">
+  <!-- An empty day: « + À remplir » in the middle (the same card as the editors' calendar), the program day under it. -->
+  <ng-container *ngIf="cell.status?.tone === 'empty'; else fullCard">
+    <span class="wr-card__title"><span class="material-icons wr-card__plusm" aria-hidden="true">add</span>{{ cell.status.text }}</span>
+    <span class="wr-card__meta">{{ cell.title }}</span>
+  </ng-container>
+  <ng-template #fullCard>
   <span class="wr-card__title">
-    <span class="material-icons wr-card__kind" *ngIf="icon" aria-hidden="true">{{ icon }}</span>{{ cell.title }}
+    <span class="material-icons wr-card__kind" *ngIf="icon" aria-hidden="true">{{ icon }}</span><span class="material-icons wr-card__kindm" *ngIf="!icon" aria-hidden="true">{{ cell.status?.tone === 'rest' ? 'bedtime' : cell.exercises ? 'fitness_center' : 'restaurant' }}</span>{{ cell.title }}
   </span>
   <span class="wr-card__meta" *ngIf="cell.meta">{{ cell.meta }}</span>
   <ng-container *ngIf="detailed">
@@ -757,6 +833,7 @@
     </span>
   </span>
   <span class="wr-card__status"><span class="material-icons st-icon" aria-hidden="true">{{ statusIcon(cell.status.tone) }}</span>{{ cell.status.text }}</span>
+  </ng-template>
 </ng-template>
 
 <!-- The client's small round photo (their initials without one), next to what they wrote. -->

@@ -73,6 +73,12 @@ export interface CalendarSwapResult {
 }
 
 /** Days copied (day numbers) and the ones that received nothing, with why (OUTSIDE, DONE, PAST, TAKEN, EMPTY_SOURCE). */
+export interface CalendarRestResult {
+  rested: number[];
+  skipped: { day: number; reason: string }[];
+  undoId: string | null;
+}
+
 export interface CalendarCopyResult {
   copied: number[];
   skipped: { day: number; reason: string }[];
@@ -327,6 +333,12 @@ export class ProgramScheduleService {
   /** Days of the program copied onto its empty days (`from` / `to`: day numbers); `dryRun`: what would be copied. */
   copyDays(programId: string, copies: { from: number; to: number }[], dryRun = false): Observable<CalendarCopyResult> {
     return this.http.post<CalendarCopyResult>(`${this.url}/calendar/copy-days`, { programId, copies, dryRun },
+      { headers: { ...SKIP_LOADER, 'X-Skip-Toast': 'true' } });
+  }
+
+  /** Empty days of the program made rest days (`dayNumbers`: day numbers); a day planned, done or past stays. */
+  restDays(programId: string, dayNumbers: number[]): Observable<CalendarRestResult> {
+    return this.http.post<CalendarRestResult>(`${this.url}/calendar/rest-days`, { programId, dayNumbers },
       { headers: { ...SKIP_LOADER, 'X-Skip-Toast': 'true' } });
   }
 

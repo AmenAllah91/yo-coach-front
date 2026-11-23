@@ -28,14 +28,6 @@
           [(ngModel)]="searchTerm"
           (input)="onSearch()">
       </div>
-
-      <!-- Filter on the coach's labels (shown once he has some). -->
-      <select class="tag-filter" *ngIf="knownTags.length || tagFilter" [ngModel]="tagFilter" (ngModelChange)="setTagFilter($event)"
-              [attr.aria-label]="'CLIENT_TAGS_FILTER' | translate">
-        <option [ngValue]="null">{{ 'CLIENT_TAGS_ALL' | translate }}</option>
-        <option *ngFor="let tag of knownTags" [ngValue]="tag">{{ tag }}</option>
-      </select>
-
     </div>
 
     <div class="status-tabs">
@@ -62,7 +54,8 @@
 
     <div class="helper-line">
       <i-feather name="info"></i-feather>
-      {{ (showRequests ? 'JOIN.REQUESTS_TAB_HINT' : showInvited ? 'INVITED_TAB_HINT' : 'CLIENT_STATUS_TABS_HINT') | translate }}
+      {{ (showRequests ? 'JOIN.REQUESTS_TAB_HINT' : showInvited ? 'INVITED_TAB_HINT'
+          : statusFilter === 'ARCHIVED' ? 'CLIENT_ARCHIVED_TAB_HINT' : 'CLIENT_ACTIVE_TAB_HINT') | translate }}
     </div>
 
     <!-- "Waiting" tab: requests received (sign-up link, waiting list) and invitations sent, not accepted yet -->
@@ -308,7 +301,7 @@
       <div class="no-clients" *ngIf="filteredClients.length === 0 && !isLoading">
         <!-- No client yet (no search, active ones): say what to do instead of « Aucun client trouvé ». -->
         <app-empty-state
-          *ngIf="!searchTerm.trim() && !tagFilter && statusFilter === 'ACTIVE'; else noClientFound"
+          *ngIf="!searchTerm.trim() && statusFilter === 'ACTIVE'; else noClientFound"
           icon="users"
           title="EMPTY_CLIENTS_TITLE"
           text="EMPTY_CLIENTS_TEXT"

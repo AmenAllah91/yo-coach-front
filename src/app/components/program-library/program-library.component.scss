@@ -1837,6 +1837,56 @@
 }
 
 
+/* Tabs « Mes programmes » / « Modèles YoCoach » (2026-11-20) */
+.library-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid light-dark(#e2e8f0, #34393f);
+  overflow-x: auto;
+}
+
+.library-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  margin-bottom: -1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: light-dark(#64748b, #9aa1ab);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.library-tab:hover {
+  color: light-dark(#0f172a, #e8ecf6);
+}
+
+.library-tab.active {
+  color: light-dark(#0ea5e9, #29b1f6);
+  border-bottom-color: currentColor;
+}
+
+.library-tab__count {
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: light-dark(#f1f5f9, #262b31);
+  color: light-dark(#475569, #bfc5ce);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.library-tab.active .library-tab__count {
+  background: light-dark(#eaf8ff, #1a323c);
+  color: inherit;
+}
+
 /* CAP-style Program Library: one unified list for App / PDF / Excel */
 .program-toolbar {
   display: flex;

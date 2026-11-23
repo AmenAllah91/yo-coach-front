@@ -62,9 +62,6 @@ $error: #c0344a;
 
 .cf-button--small { min-height: 36px; padding: 0 12px; font-size: 13px; }
 
-/* The header's own button keeps the page-header look of the other pages. */
-.page-header-actions .cf-button--primary { min-height: 38px; border-radius: 7px; font-size: 13px; }
-
 .cf-state {
   padding: 40px;
   display: flex;
@@ -102,6 +99,62 @@ $error: #c0344a;
 
 .cf-alert--inline { margin-top: 14px; }
 
+/* How it works: three plain steps above everything, so the page explains itself. */
+.cf-how {
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid $line;
+  border-radius: 12px;
+  background: light-dark(#fff, #1d2125);
+  counter-reset: how;
+}
+
+.cf-how__step {
+  min-width: 0;
+  padding: 14px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  counter-increment: how;
+
+  & + & { border-left: 1px solid $line; }
+
+  > div { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+
+  strong { font-size: 14px; font-weight: 600; line-height: 1.35; }
+  strong::before { content: counter(how) ". "; color: $brand-strong; }
+  span { color: $muted; font-size: 13px; line-height: 1.45; }
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: $brand-strong;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+
+    i-feather { width: 14px; height: 14px; }
+    &:hover { text-decoration: underline; }
+  }
+}
+
+.cf-how__icon {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: $brand-soft;
+  color: $brand-strong;
+
+  i-feather { width: 17px; height: 17px; }
+}
+
 .cf-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 440px);
@@ -120,88 +173,84 @@ $error: #c0344a;
   text-decoration: none;
 }
 
-.cf-card__head {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  margin-bottom: 18px;
-}
-
 .cf-card__title {
-  flex: 1;
   min-width: 0;
+  margin-bottom: 16px;
 
   h2 { margin: 0; font-size: 16.5px; font-weight: 600; line-height: 1.3; }
   p { margin: 4px 0 0; color: $muted; font-size: 13.5px; line-height: 1.5; }
 }
 
-/* Step number, in the brand blue like the Clients page's counters. */
-.cf-step {
-  flex: none;
-  width: 30px;
-  height: 30px;
-  border: 1px solid $brand-line;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: $brand-soft;
-  color: $brand-strong;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1;
+/* Title on the left, online switch on the right. */
+.cf-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-/* Online / offline. */
+/* Online / offline: a plain switch with its word, no box around it. */
 .status-switch {
   flex: none;
-  height: 34px;
-  padding: 0 12px 0 6px;
-  border: 1px solid light-dark(#cfd7e1, #373d45);
-  border-radius: 999px;
-  background: $soft;
-  color: $muted;
+  margin-top: 1px;
+  padding: 2px 0;
+  border: 0;
+  background: none;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 600;
+  gap: 10px;
+  font: inherit;
   cursor: pointer;
 
   &:disabled { opacity: .6; cursor: wait; }
-  &:focus-visible { outline: 2px solid $brand; outline-offset: 2px; }
-  &.is-on { background: light-dark(#ecfbf3, #1b3428); border-color: light-dark(#bfead3, #2a513e); color: light-dark(#127a4c, #6cc694); }
+  &:focus-visible { outline: 2px solid $brand; outline-offset: 3px; border-radius: 999px; }
+}
+
+.status-switch__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: $muted;
+  font-size: 13px;
+  font-weight: 600;
+
+  /* Status dot: green online, grey offline. */
+  &::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: light-dark(#a7b4c2, #5b636c); }
+  .is-on & { color: light-dark(#127a4c, #6cc694); }
+  .is-on &::before { background: #22a06b; box-shadow: 0 0 0 3px light-dark(rgba(34, 160, 107, .15), rgba(34, 160, 107, .25)); }
 }
 
 .status-switch__track {
-  width: 34px;
-  height: 20px;
+  width: 40px;
+  height: 22px;
   padding: 2px;
   border-radius: 999px;
-  background: light-dark(#c7d2de, #333c45);
+  background: light-dark(#cbd5e1, #3a424b);
   display: inline-flex;
-  transition: background-color .15s ease;
+  transition: background-color .2s ease;
 
   .is-on & { background: #22a06b; }
+  .status-switch:hover:not(:disabled) & { filter: brightness(.95); }
 }
 
 .status-switch__thumb {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  background: light-dark(#fff, #1d2125);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, .2);
-  transition: transform .15s ease;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .25);
+  transition: transform .2s ease;
 
-  .is-on & { transform: translateX(14px); }
+  .is-on & { transform: translateX(18px); }
 }
 
 .cf-offline-note {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
-  padding: 10px 12px;
-  border-radius: 10px;
+  margin: -4px 0 14px;
+  padding: 9px 12px;
+  border-radius: 8px;
   background: light-dark(#fff7e8, #382b12);
   color: light-dark(#8a5a00, #daa65f);
   font-size: 13px;
@@ -230,98 +279,83 @@ $error: #c0344a;
   &.is-muted { color: light-dark(#8193a8, #9298a0); background: $soft; }
 }
 
-.share-row {
-  margin-top: 14px;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-
-  > span { color: $muted; font-size: 13px; margin-right: 2px; }
-}
-
-.share-chip {
-  height: 34px;
-  padding: 0 13px;
-  border: 1px solid $brand-line;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  background: $brand-soft;
-  color: $brand-strong;
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-
-  i-feather { width: 15px; height: 15px; }
-  &:hover { background: light-dark(#dff3fc, #0f3543); }
-}
-
-.cf-tip {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin: 14px 0 0;
-  color: $muted;
-  font-size: 13px;
-  line-height: 1.5;
-
-  i-feather { width: 15px; height: 15px; flex: none; margin-top: 2px; color: $brand; }
-}
-
 /* Editing. */
 .cf-field + .cf-field { margin-top: 20px; }
 
 .cf-label { display: block; margin-bottom: 8px; font-size: 13.5px; font-weight: 600; }
 
-/* Banner picker, like the cover on top of the public form. */
-.cover-picker {
-  height: 150px;
-  border: 1px dashed light-dark(#c3cfdc, #373f49);
-  border-radius: 10px;
-  background: linear-gradient(135deg, light-dark(#dff2fa, #123542) 0%, light-dark(#c9e8f5, #033a4b) 100%) center / cover no-repeat;
-  overflow: hidden;
+/* "Optional" tag next to the card title. */
+.cf-badge {
+  margin-left: 6px;
+  padding: 2px 8px;
+  border: 1px solid $line;
+  border-radius: 999px;
+  background: $soft;
+  color: $muted;
+  font-size: 11.5px;
+  font-weight: 600;
+  vertical-align: 2px;
+}
+
+/* One setting: a sketch of the page on the left, the control on the right. */
+.look-item {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 0;
+  border-top: 1px solid $line;
+}
+
+.look-item__body { flex: 1; min-width: 0; }
+.look-item__hint { margin: -4px 0 10px; color: $muted; font-size: 13px; line-height: 1.5; }
+
+/* Mini page: cover, avatar, title, two fields; the part this setting changes is in the brand blue. */
+$sketch: light-dark(#dbe3eb, #3a424b);
+
+.look-where {
+  flex: none;
+  position: relative;
+  width: 46px;
+  height: 60px;
+  border: 1px solid $line;
+  border-radius: 7px;
+  background: light-dark(#fff, #1d2125);
+  overflow: hidden;
+
+  i { position: absolute; display: block; background: $sketch; }
+}
+
+.look-where__cover { inset: 0 0 auto 0; height: 17px; }
+.look-where__avatar { top: 11px; left: 50%; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; border: 2px solid light-dark(#fff, #1d2125); }
+.look-where__title { top: 28px; left: 9px; right: 9px; height: 4px; border-radius: 2px; }
+.look-where__field { top: 37px; left: 7px; right: 7px; height: 6px; border-radius: 2px; opacity: .6; }
+.look-where__field + .look-where__field { top: 47px; }
+
+.look-where--cover .look-where__cover,
+.look-where--title .look-where__title { background: $brand; }
+.look-where--title .look-where__title { height: 5px; box-shadow: 0 0 0 3px light-dark(rgba(68, 180, 223, .2), rgba(68, 180, 223, .3)); }
+
+/* Cover thumbnail, the preview shows it full size. */
+.cover-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+
+.cover-thumb {
+  flex: none;
+  width: 128px;
+  height: 64px;
+  border: 1px dashed light-dark(#c3cfdc, #373f49);
+  border-radius: 8px;
+  background: $soft center / cover no-repeat;
+  display: grid;
+  place-items: center;
+  color: $muted;
+  font-size: 12px;
 
   &.has-image { border: 1px solid $line; }
 }
 
-.cover-picker__empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 0 16px;
-  color: $brand-strong;
-  font-size: 13px;
-  text-align: center;
+.cover-row__actions { display: flex; flex-wrap: wrap; gap: 8px; }
 
-  i-feather { width: 24px; height: 24px; }
-}
-
-.cover-picker__busy {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: light-dark(rgba(255, 255, 255, .9), rgba(29, 33, 37, 0.9));
-  color: $muted;
-  font-size: 13px;
-}
-
-.cover-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 10px;
-}
-
-.cover-foot__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.cf-button--ghost { border-color: transparent; background: transparent; color: $muted; }
 
 textarea {
   width: 100%;
@@ -346,7 +380,7 @@ textarea {
 .field-error { margin-top: 8px; color: $error; font-size: 13px; }
 
 .cf-savebar {
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -356,7 +390,6 @@ textarea {
   border-radius: 0 0 12px 12px;
   background: light-dark(#fbfcfe, #1c2024);
 
-  &.is-visible { display: flex; }
 }
 
 .cf-savebar__status {
@@ -371,39 +404,6 @@ textarea {
 }
 
 .cf-savebar__actions { display: flex; gap: 8px; }
-
-/* Leads link. */
-.cf-card--link {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  transition: border-color .15s ease, box-shadow .15s ease;
-
-  &:hover { border-color: rgba(68, 180, 223, .5); box-shadow: 0 4px 14px rgba(18, 33, 61, .05); }
-  &:focus-visible { outline: 2px solid $brand; outline-offset: 2px; }
-}
-
-.leads-stat {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-
-  h2 { margin: 0; font-size: 16.5px; font-weight: 600; }
-  p { margin: 3px 0 0; color: $muted; font-size: 13.5px; }
-}
-
-.cf-card__arrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: $brand-strong;
-  font-size: 13.5px;
-  font-weight: 600;
-  white-space: nowrap;
-
-  i-feather { width: 16px; height: 16px; }
-}
 
 /* Live preview: the public component with the draft. */
 .cf-preview { position: sticky; top: 84px; min-width: 0; }
@@ -527,6 +527,11 @@ textarea {
   app-public-contact-form { display: block; border-radius: 26px; overflow: hidden; background: light-dark(#fff, #1d2125); }
 }
 
+@container (max-width: 760px) {
+  .cf-how { grid-template-columns: 1fr; }
+  .cf-how__step + .cf-how__step { border-left: 0; border-top: 1px solid $line; }
+}
+
 @container (max-width: 900px) {
   .cf-layout { grid-template-columns: 1fr; }
   .cf-preview { position: static; }
@@ -537,15 +542,10 @@ textarea {
   .cf-page { padding: 0 14px 32px; }
   .page-header { margin: 0 -14px 16px !important; }
   .cf-card { padding: 16px; }
-  .cf-card__head { flex-wrap: wrap; }
-  .status-switch { margin-left: 44px; }
   .link-row { flex-direction: column; }
-  .cover-picker { height: 130px; }
-  .cover-foot { flex-direction: column; align-items: stretch; }
-  .cover-foot__actions .cf-button { flex: 1; }
+  .look-where { display: none; }
   .cf-savebar { margin: 16px -16px -16px; padding: 12px 16px; flex-direction: column; align-items: stretch; }
   .cf-savebar__actions .cf-button { flex: 1; }
-  .cf-card--link { flex-direction: column; align-items: flex-start; }
   .cf-overlay__bar { padding: 0 10px; gap: 8px; }
   .cf-overlay__title span, .cf-overlay__close { font-size: 0; gap: 0; }
   .cf-overlay__body { padding: 16px 10px; }

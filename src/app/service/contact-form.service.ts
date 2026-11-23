@@ -12,6 +12,8 @@ export interface CoachContactForm {
   coverImage?: string;
   message: string;
   published: boolean;
+  /** Public form only: the Meta Pixel set in the coach's website builder. */
+  metaPixelId?: string | null;
 }
 
 export interface CoachContactFormPayload {

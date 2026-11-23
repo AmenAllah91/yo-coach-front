@@ -1,4 +1,6 @@
 import { ProgramDaysBadgeComponent } from '@shared/components/program-days-badge/program-days-badge.component';
+import { openDayOutlet } from '@shared/program-calendar/day-outlet';
+import { dayWindowPlan } from '@shared/program-calendar/day-window-prefetch';
 import { nutritionPlanKind } from '@shared/models/nutrition-plan-kind';
 import { ChangeDatesModalComponent } from '@shared/components/change-dates-modal/change-dates-modal.component';
 import { ProgramShiftModalComponent } from '@shared/components/program-shift-modal/program-shift-modal.component';
@@ -40,6 +42,8 @@ export class NutritionClientTabComponent implements OnInit {
   @Output() assignNew = new EventEmitter<string | null>();
   /** « Voir le suivi » / a past day: the client's calendar. */
   @Output() openCalendar = new EventEmitter<string | null>();
+  /** « Envoyer un message » from a day shown in the tab: the profile opens its chat. */
+  @Output() message = new EventEmitter<void>();
   @ViewChild(ClientProgramsComponent) programs?: ClientProgramsComponent;
   /** The program the coach asked to remove (P10). */
   removeTarget: OverviewItem | null = null;
@@ -102,6 +106,9 @@ export class NutritionClientTabComponent implements OnInit {
   onProgramAction(action: ClientProgramAction): void {
     const id = action.programId || action.item?.id;
     switch (action.type) {
+      case 'message':
+        this.message.emit();
+        return;
       case 'assign':
         this.assignNew.emit(action.date || null);
         return;
@@ -124,10 +131,12 @@ export class NutritionClientTabComponent implements OnInit {
         break;
     }
     if (!id) return;
-    // The windows and the editor work on the whole plan: it is read when the coach asks.
-    this.nutritionService.getNutritionPlanById(id, true).subscribe({
+    // The windows and the editor work on the whole plan: it is read when the coach asks (a day's window: the plan the
+    // week card already read, so that it opens at once).
+    const read = () => this.nutritionService.getNutritionPlanById(id, true);
+    (action.open ? dayWindowPlan(id, read) : read()).subscribe({
       next: plan => {
-        if (action.type === 'edit' || action.type === 'view') this.editPlan(plan, action.dayNumber);
+        if (action.type === 'edit' || action.type === 'view') this.editPlan(plan, action.dayNumber, action.open);
         else if (action.type === 'dates') this.changeDates(plan);
         else if (action.type === 'duplicate') this.duplicateToLibrary(plan);
         else if (action.type === 'open') this.previewFile(plan);
@@ -1100,10 +1109,17 @@ export class NutritionClientTabComponent implements OnInit {
     });
   }
 
-  editPlan(plan: any, dayNumber?: number | null) {
+  /** `open`: the day opens in its window over the editor's calendar, « Fermer » comes back to this tab. */
+  editPlan(plan: any, dayNumber?: number | null, open?: boolean) {
     this.closeActions();
     if (this.isFilePlan(plan)) {
       this.previewFile(plan);
+      return;
+    }
+    // A day: its window over this page (the profile stays underneath, read again after a save).
+    if (dayNumber && open && plan?.client?.id && plan?.id) {
+      const outletKind = nutritionPlanKind(plan) === 'DAY_MACROS' ? 'macro-day' : nutritionPlanKind(plan) === 'MEAL_MACROS' ? 'macro-plan' : 'full-plan';
+      openDayOutlet(this.router, outletKind, plan.client.id, plan.id, dayNumber);
       return;
     }
     const extras = dayNumber ? { queryParams: { day: dayNumber } } : {};

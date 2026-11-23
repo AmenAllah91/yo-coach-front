@@ -1,4 +1,4 @@
-<div class="np-root np-layout" [class.plan-loading]="planLoading || planLoadError" [class.editing]="isEditMode" [class.exercise-drawer-open]="showExerciseSelector" [class.settings-collapsed]="planSettingsCollapsed" [class.mobile-structure-open]="mobileStructureOpen" [class.is-client]="isClientMode" [class.is-readonly]="readOnly">
+<div class="np-root np-layout" [class.plan-loading]="planLoading || planLoadError" [class.editing]="isEditMode" [class.exercise-drawer-open]="showExerciseSelector" [class.settings-collapsed]="planSettingsCollapsed" [class.mobile-structure-open]="mobileStructureOpen" [class.is-client]="isClientMode" [class.is-readonly]="readOnly" [class.is-calendar]="viewMode === 'calendar'" [class.is-cal-editing]="viewMode === 'calendar' && win.open" [class.pc-embedded]="embedded">
   <!-- One compact toolbar for every screen size: back, title, structure (small screens), save. -->
   <header class="np-toolbar">
     <button type="button" class="np-toolbar__back app-page-back" [attr.aria-label]="'BACK' | translate" (click)="goBack()">
@@ -15,6 +15,8 @@
         <ng-template #libraryCount><span>{{ 'WEEKS_DAYS_COUNT' | translate:{ weeks: workoutWeeks.length, days: days.length } }}</span></ng-template>
       </p>
     </div>
+    <!-- Deux façons de voir le programme : la liste (remplir un jour) ou le calendrier (tout voir, ranger les jours). -->
+    <app-view-switch *ngIf="!planLoading && !planLoadError" [mode]="viewMode" (modeChange)="setViewMode($event)"></app-view-switch>
     <!-- Programme déjà créé : ses informations (nom, description, durée, dates) se modifient ici, plus dans une carte. -->
     <button
       type="button"
@@ -32,13 +34,15 @@
       <span>{{ 'PROGRAM_STRUCTURE' | translate }}</span>
     </button>
     <div class="np-toolbar__save" *ngIf="!readOnly">
-      <span class="np-toolbar__status" [class.is-error]="!savingDraft && saveError" [class.has-saved]="!savingDraft && !saveError && savedAt" [attr.title]="saveError || null" role="status" aria-live="polite">
+      <span class="np-toolbar__status" [class.is-error]="!savingDraft && saveError" [class.is-unsaved]="!savingDraft && !saveError && unsaved" [class.has-saved]="!savingDraft && !saveError && !unsaved && savedAt" [attr.title]="saveError || null" role="status" aria-live="polite">
         <ng-container *ngIf="savingDraft">{{ 'SAVING' | translate }}</ng-container>
         <ng-container *ngIf="!savingDraft && saveError">{{ saveError }}</ng-container>
-        <ng-container *ngIf="!savingDraft && !saveError && savedAt"><svg class="np-toolbar__ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg><span class="np-toolbar__savedlabel">{{ 'WORKOUT_SAVED' | translate }}</span> {{ savedAt | date:'HH:mm' }}</ng-container>
-        <ng-container *ngIf="!savingDraft && !saveError && !savedAt && !workoutPlan.id && !planLoading">{{ 'UNSAVED' | translate }}</ng-container>
+        <!-- Un changement pas encore enregistré : on le dit tant que le coach n'a pas cliqué sur Enregistrer. -->
+        <ng-container *ngIf="!savingDraft && !saveError && unsaved"><span class="np-unsaved-dot" aria-hidden="true"></span><span class="np-unsaved-long">{{ ht('Unsaved changes', 'Modifications non enregistrées') }}</span><span class="np-unsaved-short">{{ ht('Not saved', 'Non enregistré') }}</span></ng-container>
+        <ng-container *ngIf="!savingDraft && !saveError && !unsaved && savedAt"><svg class="np-toolbar__ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg><span class="np-toolbar__savedlabel">{{ 'WORKOUT_SAVED' | translate }}</span> {{ savedAt | date:'HH:mm' }}</ng-container>
+        <ng-container *ngIf="!savingDraft && !saveError && !unsaved && !savedAt && !workoutPlan.id && !planLoading">{{ 'UNSAVED' | translate }}</ng-container>
       </span>
-      <button type="button" class="np-toolbar__savebtn" [class.is-busy]="savingDraft" [attr.aria-busy]="savingDraft" (click)="savePlan()" [disabled]="savingDraft || planLoading || planLoadError" [attr.aria-label]="'SAVE' | translate">
+      <button type="button" class="np-toolbar__savebtn" [class.has-changes]="unsaved && !savingDraft" [class.is-busy]="savingDraft" [attr.aria-busy]="savingDraft" (click)="savePlan()" [disabled]="savingDraft || planLoading || planLoadError" [attr.aria-label]="'SAVE' | translate">
         <span class="np-toolbar__spinner" *ngIf="savingDraft" aria-hidden="true"></span>
         <svg *ngIf="!savingDraft" viewBox="0 0 24 24" class="np-ico" aria-hidden="true">
           <path d="M5 4h12l2 2v14H5zM8 4v6h8V4M8 20v-6h8v6" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round" />
@@ -67,7 +71,7 @@
         [cdkDropListDisabled]="readOnly"
         (cdkDropListDropped)="onDropDay($event)"
       >
-        <div class="np-week-card" *ngFor="let week of workoutWeeks; trackBy: trackByWeek; let wi = index">
+        <div class="np-week-card" *ngFor="let week of workoutWeeks; trackBy: trackByWeek; let wi = index" [class.has-active]="weekHasSelectedDay(week)">
           <button
             type="button"
             class="np-week-card__head"
@@ -107,6 +111,7 @@
                 type="button"
                 class="np-day"
                 [class.is-active]="selectedDay?.id === d.id"
+                [attr.aria-current]="selectedDay?.id === d.id ? 'true' : null"
                 (click)="selectDay(d); closeMobileStructure()"
               >
                 <ng-container *ngIf="dayRailState(d) as state">
@@ -128,14 +133,15 @@
           </ng-container>
         </div>
 
-        <button class="np-btn np-btn--dash np-btn--ghost np-btn--full" *ngIf="!readOnly" (click)="addDay()">
+        <button class="np-btn np-btn--dash np-btn--ghost np-btn--full" *ngIf="!readOnly" [disabled]="weekCount >= maxWeeks && !(days.length % 7)" (click)="addWeek()">
           <i-feather name="plus" class="np-ico"></i-feather>
-          {{ 'ADD_DAY' | translate }}
+          {{ ht('Add a week', 'Ajouter une semaine') }}
         </button>
 
         <div class="np-stack" *ngIf="!readOnly">
-          <button class="np-rowbtn" (click)="duplicateSelectedDay()">
-            <span>{{ 'DUPLICATE_DAY' | translate }}</span>
+          <!-- « Copier ce jour » vers les jours choisis (avant : une copie ajoutée à la fin, qui créait une semaine à moitié). -->
+          <button class="np-rowbtn" [disabled]="!copy.canCopyDay" (click)="copy.openDay()">
+            <span>{{ 'COPY_DAYS.BUTTON_COPY_DAY' | translate }}</span>
             <i-feather name="copy" class="np-ico"></i-feather>
           </button>
         </div>
@@ -287,7 +293,51 @@
       </section>
 
 
-      <section class="np-card np-card--day" [attr.inert]="readOnly ? '' : null" [class.np-card--readonly]="readOnly">
+      <!-- Mode Calendrier (shared/program-calendar) : une ligne par semaine ; un clic ouvre la fenêtre du jour. -->
+      <app-program-calendar
+        *ngIf="viewMode === 'calendar' && !embedded"
+        class="np-card pc-card"
+        kind="WORKOUT"
+        [legend]="isClientMode"
+        [weeks]="calendarWeeks"
+        [columns]="calendarColumns"
+        [todayColumn]="calendarTodayColumn"
+        [readOnly]="readOnly"
+        [detailed]="calendarDetailed"
+        [selected]="selectedDay"
+        [highlight]="win.opened"
+        [weekCount]="weekCount"
+        [maxWeeks]="maxWeeks"
+        [canCopy]="!copy.readOnly"
+        (openDay)="win.openDay($event)"
+        (swap)="onCalendarSwap($event)"
+        (addWeek)="addWeek()"
+        (deleteWeek)="deleteWeek($event)"
+        (duplicateWeek)="onCalendarDuplicateWeek($event)"
+        (dayAction)="onCalendarDayAction($event)"
+        (detailedChange)="setCalendarDetailed($event)"
+      ></app-program-calendar>
+
+      <!-- Mode Calendrier : l'éditeur du jour (le même que la liste) s'ouvre en fenêtre par-dessus le calendrier. -->
+      <button type="button" class="pc-backdrop" *ngIf="(viewMode === 'calendar' && win.open) || embedded" tabindex="-1"
+              [attr.aria-label]="ht('Close', 'Fermer')" (click)="win.open ? win.requestClose() : goBack()"></button>
+      <!-- Ouvert par-dessus la fiche du client : la fenêtre du jour seule ; pendant la lecture du programme, son cadre. -->
+      <div class="pc-embed-loading" *ngIf="embedded && !win.open" role="status" aria-live="polite">
+        <ng-container *ngIf="!planLoadError; else embedError">
+          <span class="pc-embed-loading__spin" aria-hidden="true"></span>
+          <span>{{ ht('Opening the day…', 'Ouverture du jour…') }}</span>
+        </ng-container>
+        <ng-template #embedError>
+          <span>{{ ht('This day could not be opened.', "Ce jour n'a pas pu être ouvert.") }}</span>
+          <button type="button" class="pc-embed-loading__close" (click)="goBack()">{{ ht('Close', 'Fermer') }}</button>
+        </ng-template>
+      </div>
+
+      <section class="np-card np-card--day" [attr.inert]="readOnly ? '' : null" [class.np-card--readonly]="readOnly"
+               [attr.role]="viewMode === 'calendar' && win.open ? 'dialog' : null"
+               [attr.aria-modal]="viewMode === 'calendar' && win.open ? 'true' : null"
+               [attr.aria-label]="viewMode === 'calendar' && win.open ? win.title : null">
+        <app-day-window-head *ngIf="viewMode === 'calendar' && win.open" [win]="win"></app-day-window-head>
 
         <div class="np-sep"></div>
         <!-- Mobile days tabs: shown only on mobile, placed just above selected Day -->
@@ -442,6 +492,11 @@
 
           <h3 class="wk-restbox__title">{{ 'REST_DAY' | translate }}</h3>
           <p class="wk-restbox__text">{{ 'REST_DAY_DESCRIPTION' | translate }}</p>
+          <!-- Le jour de repos redevient une séance d'un clic (avant : seulement dans le menu ⋮). -->
+          <button type="button" class="np-rest-turn" *ngIf="!readOnly" (click)="toggleRestDay()">
+            <i-feather name="activity" class="np-rest-turn__ico"></i-feather>
+            {{ ht('Turn into a workout', 'Transformer en séance') }}
+          </button>
 
           <ng-container *ngIf="showRestNotes; else addNotesBtnRest">
             <div class="wk-notes">
@@ -1160,6 +1215,8 @@
           </ng-container>
         </div>
         </div>
+        <app-day-window-foot *ngIf="viewMode === 'calendar' && win.open" [win]="win" [saving]="savingDraft" [error]="saveError"
+                             [unsaved]="unsaved" [savedAt]="savedAt"></app-day-window-foot>
       </section>
 
       </ng-container>

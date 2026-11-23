@@ -2,7 +2,7 @@ import { WriteActionDirective } from 'app/shared/subscription/write-action.direc
 import { EmptyStateComponent } from 'app/shared/components/empty-state/empty-state.component';
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { firstValueFrom, Observable, of, switchMap } from 'rxjs';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
 import { WorkoutService, PageResponse } from '../../service/workout.service';
@@ -131,6 +131,7 @@ export class ProgramLibraryComponent implements OnInit {
     private translate: TranslateService,
     private toast: ToastService,
     private route: ActivatedRoute,
+    private location: Location,
   ) {}
 
   /** Admin (or super admin): creates, changes and removes the public templates. */
@@ -233,9 +234,9 @@ export class ProgramLibraryComponent implements OnInit {
         this.applyProgramFilters();
 
         if (this.activeTab === 'templates') {
-          this.templatesCount = response.totalElements || this.allPrograms.length;
+          this.templatesCount = this.allPrograms.length;
         } else {
-          this.myLibraryCount = response.totalElements || this.allPrograms.length;
+          this.myLibraryCount = this.allPrograms.length;
         }
         this.isLoading = false;
       },
@@ -1485,6 +1486,17 @@ export class ProgramLibraryComponent implements OnInit {
 
   addNewExercise() {
     console.log('Add new exercise');
+  }
+
+  /**
+   * Tabs « Mes programmes » / « Modèles YoCoach » of the one Programs page (2026-11-20).
+   * The address follows the tab without reloading the page, so a refresh or the back button keeps it.
+   */
+  switchLibraryTab(tab: 'my-library' | 'templates'): void {
+    if (this.activeTab === tab) return;
+    this.location.replaceState(tab === 'templates' ? '/workout/public-templates' : '/workout/program-library');
+    this.searchTerm = '';
+    this.setActiveTab(tab);
   }
 
   setActiveTab(tab: string) {

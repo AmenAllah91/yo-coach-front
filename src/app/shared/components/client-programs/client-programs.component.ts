@@ -1,10 +1,24 @@
 import { Component, DestroyRef, EventEmitter, HostListener, Input, OnChanges, OnInit, Output, SimpleChanges, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
+import { ProgramCalendarComponent } from '@shared/program-calendar/program-calendar.component';
+import { dayWindowPlan, prefetchDayWindowPlan } from '@shared/program-calendar/day-window-prefetch';
+import { nutritionPlanKind } from '@shared/models/nutrition-plan-kind';
+import { CalendarCell, CalendarMenuItem, CalendarTone, CalendarWeek, calendarIcon } from '@shared/program-calendar/program-calendar.model';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { FeatherModule } from 'angular-feather';
 import { ProgramScheduleService } from 'app/service/program-schedule.service';
 import { CoachSubscriptionStateService } from 'app/service/coach-subscription-state.service';
+import { ToastService } from 'app/service/toast.service';
+import { WorkoutService } from 'app/service/workout.service';
+import { NutritionService } from 'app/service/nutrition.service';
+import { ClientActivityDetailComponent } from 'app/components/clients/profil-client/client-activity/client-activity-detail.component';
+import {
+  NutritionActivity,
+  WorkoutActivity,
+  buildNutritionActivities,
+  buildWorkoutActivities,
+} from 'app/components/clients/profil-client/client-activity/client-activity';
 import {
   OverviewAlert,
   OverviewDay,
@@ -16,7 +30,7 @@ import {
 
 export type ClientProgramActionType =
   | 'assign' | 'edit' | 'view' | 'dates' | 'remove' | 'duplicate' | 'open' | 'download' | 'replace' | 'calendar'
-  | 'shift';
+  | 'shift' | 'message';
 
 /** What the coach asked for; the tab that hosts the page does it (it has the windows and the plans). */
 export interface ClientProgramAction {
@@ -25,8 +39,20 @@ export interface ClientProgramAction {
   programId?: string;
   /** edit: the day to open. */
   dayNumber?: number | null;
+  /** edit: the day opens in its window (like a click in the editor's calendar), « Fermer » comes back here. */
+  open?: boolean;
   /** assign: the start to propose; calendar: the day to show. */
   date?: string | null;
+}
+
+/**
+ * The coach picks a day on the week (quick changes, workout only): where to move or copy a day (MOVE, COPY_TO), or
+ * which day to copy onto an empty one (COPY_FROM).
+ */
+interface DayPick {
+  mode: 'MOVE' | 'COPY_TO' | 'COPY_FROM';
+  day: OverviewDay;
+  programId: string;
 }
 
 interface AlertView {
@@ -43,7 +69,7 @@ interface AlertView {
 @Component({
   selector: 'app-client-programs',
   standalone: true,
-  imports: [CommonModule, TranslateModule, FeatherModule],
+  imports: [CommonModule, TranslateModule, FeatherModule, ClientActivityDetailComponent, ProgramCalendarComponent],
   templateUrl: './client-programs.component.html',
   styleUrls: ['./client-programs.component.scss'],
 })
@@ -61,18 +87,42 @@ export class ClientProgramsComponent implements OnInit, OnChanges {
   finished: OverviewItem[] = [];
   loadingMore = false;
   openMenuId: string | null = null;
+  /** The week shown by the arrows (1 = the program's first); null: the week going on. */
+  shownWeek: number | null = null;
+  /** The coach is choosing a day on the week (move, copy). */
+  pick: DayPick | null = null;
+  /** A quick change of a day is being saved. */
+  savingDay = false;
+  /** The menu of a day, fixed on the screen (the week scrolls sideways: a menu inside it would be cut). */
+  dayMenu: { day: OverviewDay; top: number; left: number } | null = null;
+  /**
+   * A day's workout (or nutrition report) shown without leaving the page: planned / done, the client's notes.
+   * {@code loading}: the program is being read; {@code edit}: « Modifier » opens the editor on that day.
+   */
+  preview: {
+    loading: boolean;
+    notice: string | null;
+    workout: WorkoutActivity | null;
+    nutrition: NutritionActivity | null;
+    edit: ClientProgramAction | null;
+  } | null = null;
+  private shownProgramId: string | null = null;
   /** The coach account is read-only (subscription): nothing to change (SUB-30). */
   private readOnlyAccount = false;
 
   private readonly destroyRef = inject(DestroyRef);
 
   constructor(public schedule: ProgramScheduleService, private translate: TranslateService,
-              private subscriptionState: CoachSubscriptionStateService) {}
+              private subscriptionState: CoachSubscriptionStateService, private toast: ToastService,
+              private workoutService: WorkoutService, private nutritionService: NutritionService) {}
 
   ngOnInit(): void {
     this.subscriptionState.states$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(state => (this.readOnlyAccount = !!state?.readOnly));
     this.subscriptionState.getState().subscribe();
     this.schedule.changed$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.reload());
+    this.destroyRef.onDestroy(() => {
+      if (this.preview) this.lockScroll(false);
+    });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -80,6 +130,10 @@ export class ClientProgramsComponent implements OnInit, OnChanges {
       if (changes['clientId'] && !changes['clientId'].firstChange) { // another client
         this.overview = null;
         this.loading = true;
+        this.shownWeek = null;
+        this.pick = null;
+        this.closePreview();
+        this.listExpanded = false;
       }
       this.reload(false);
     }
@@ -88,6 +142,41 @@ export class ClientProgramsComponent implements OnInit, OnChanges {
   @HostListener('document:click')
   closeMenus(): void {
     this.openMenuId = null;
+    this.dayMenu = null;
+  }
+
+  /** A fixed menu would stay where it was while the page moves. */
+  @HostListener('window:scroll')
+  @HostListener('window:resize')
+  closeDayMenu(): void {
+    this.dayMenu = null;
+  }
+
+  @HostListener('document:keydown.escape')
+  cancelPick(): void {
+    if (this.preview) {
+      this.closePreview();
+      return;
+    }
+    this.pick = null;
+    this.closeMenus();
+  }
+
+  /** The menu of a day, under the element clicked (the card, or its ⋯). */
+  openDayMenu(day: OverviewDay, event: Event): void {
+    event.stopPropagation();
+    this.openMenuId = null;
+    if (this.dayMenu?.day.date === day.date) {
+      this.dayMenu = null;
+      return;
+    }
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const width = 240;
+    // Under the card (or the ⋯), its right edge on theirs; always inside the screen.
+    const left = Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8));
+    const below = rect.bottom + 6;
+    const top = below + 150 > window.innerHeight ? Math.max(8, rect.top - 156) : below;
+    this.dayMenu = { day, top, left };
   }
 
   /**
@@ -114,12 +203,56 @@ export class ClientProgramsComponent implements OnInit, OnChanges {
   }
 
   private apply(overview: ProgramOverview): void {
+    const programId = overview.current?.program.id || null;
+    if (programId !== this.shownProgramId) { // another program going on: back to its week
+      this.shownProgramId = programId;
+      this.shownWeek = null;
+      this.pick = null;
+    }
+    const weeks = overview.current?.allWeeks?.length || 0;
+    if (this.shownWeek && this.shownWeek > weeks) this.shownWeek = null;
     this.overview = overview;
     this.finished = overview.finished || [];
     this.loading = false;
+    this.prefetchDayWindow(true);
     if (this.listTab === 'UPCOMING' && !overview.upcoming.length && overview.finishedCount) this.listTab = 'FINISHED';
     if (this.listTab === 'FINISHED' && !overview.finishedCount && overview.upcoming.length) this.listTab = 'UPCOMING';
   }
+
+  /**
+   * A click on a day opens its window at once (2026-11-23): the editor's code and the program going on are read ahead,
+   * once the week is shown. {@code fresh}: the tab was read again (the program may have changed).
+   */
+  prefetchDayWindow(fresh = false): void {
+    const program = this.overview?.current?.program;
+    if (!program || program.file || !this.writable) return;
+    const id = program.id;
+    const read = () => (this.isWorkout ? this.workoutService.getWorkoutById(id, true) : this.nutritionService.getNutritionPlanById(id, true));
+    prefetchDayWindowPlan<unknown>(id, read, fresh ? 5_000 : undefined);
+    if (this.warmedEditor) return;
+    this.warmedEditor = true;
+    const warm = () => {
+      if (this.isWorkout) {
+        void import('app/components/program-library/create-workout/create-workout.component');
+        return;
+      }
+      // The nutrition editor of this plan (the window opens the one of its kind).
+      dayWindowPlan<unknown>(id, read).subscribe({
+        next: (plan) => {
+          const kind = nutritionPlanKind(plan);
+          if (kind === 'DAY_MACROS') void import('app/components/nutrition/create-macro-plan-total-day/create-macro-plan-total-day.component');
+          else if (kind === 'MEAL_MACROS') void import('app/components/nutrition/create-macro-plan/create-macro-plan.component');
+          else void import('app/components/nutrition/create-full-plan/create-full-plan.component');
+        },
+        error: () => (this.warmedEditor = false),
+      });
+    };
+    const win = window as Window & { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number };
+    if (win.requestIdleCallback) win.requestIdleCallback(warm, { timeout: 2000 });
+    else setTimeout(warm, 500);
+  }
+
+  private warmedEditor = false;
 
   loadMoreFinished(): void {
     if (this.loadingMore || !this.overview) return;
@@ -134,6 +267,25 @@ export class ClientProgramsComponent implements OnInit, OnChanges {
   }
 
   /* ---------------- what the page shows ---------------- */
+
+  /** The upcoming / finished list shows a few programs; « Voir tout » the others. */
+  readonly listLimit = 3;
+  listExpanded = false;
+
+  get listTotal(): number {
+    if (!this.overview) return 0;
+    return this.listTab === 'UPCOMING' ? this.overview.upcoming.length : Math.max(this.overview.finishedCount, this.finished.length);
+  }
+
+  get listRows(): OverviewItem[] {
+    const rows = this.listTab === 'UPCOMING' ? this.overview?.upcoming || [] : this.finished;
+    return this.listExpanded ? rows : rows.slice(0, this.listLimit);
+  }
+
+  setListTab(tab: 'UPCOMING' | 'FINISHED'): void {
+    this.listTab = tab;
+    this.listExpanded = false;
+  }
 
   get writable(): boolean {
     return this.canWrite && !this.readOnlyAccount;
@@ -161,7 +313,16 @@ export class ClientProgramsComponent implements OnInit, OnChanges {
   get alerts(): AlertView[] {
     const o = this.overview;
     if (!o) return [];
-    return o.alerts.map(alert => this.alertView(alert, o)).filter((view): view is AlertView => !!view);
+    return o.alerts
+      .filter(alert => !this.weekShowsEmptyDays(alert, o))
+      .map(alert => this.alertView(alert, o)).filter((view): view is AlertView => !!view);
+  }
+
+  /** « N jours vides » starting in the week going on: the line under the week says it (and does it) already. */
+  private weekShowsEmptyDays(alert: OverviewAlert, o: ProgramOverview): boolean {
+    const c = o.current;
+    if (alert.kind !== 'EMPTY_DAYS' || !c || c.program.file || alert.programId !== c.program.id || !alert.from) return false;
+    return c.days.some(day => day.date === alert.from);
   }
 
   private alertView(alert: OverviewAlert, o: ProgramOverview): AlertView | null {
@@ -283,6 +444,235 @@ export class ClientProgramsComponent implements OnInit, OnChanges {
     return this.toDate(day.date).getDate();
   }
 
+  /* ---------------- the week shown (arrows) ---------------- */
+
+  /** The days of the week shown: the week going on, or the one the arrows chose. */
+  get weekDays(): OverviewDay[] {
+    const c = this.overview?.current;
+    if (!c) return [];
+    const weeks = c.allWeeks || [];
+    return (this.shownWeek && weeks[this.shownWeek - 1]) || c.days;
+  }
+
+  /** The arrows: an older server sends only the week going on. */
+  get canBrowseWeeks(): boolean {
+    return (this.overview?.current?.allWeeks?.length || 0) > 1;
+  }
+
+  get shownWeekNumber(): number {
+    return this.shownWeek || this.overview?.current?.week || 1;
+  }
+
+  get weekCount(): number {
+    const c = this.overview?.current;
+    return c?.allWeeks?.length || c?.weeks || 1;
+  }
+
+  get showingCurrentWeek(): boolean {
+    return this.shownWeekNumber === (this.overview?.current?.week || 1);
+  }
+
+  /** "Semaine 3 sur 4 · 30 nov. – 6 déc." */
+  get weekTitle(): string {
+    const days = this.weekDays;
+    const range = days.length ? `${this.dayMonth(days[0].date)} – ${this.dayMonth(days[days.length - 1].date)}` : '';
+    return `${this.translate.instant('CLIENT_PROGRAMS.WEEK_OF', { week: this.shownWeekNumber, weeks: this.weekCount })} · ${range}`;
+  }
+
+  goToWeek(week: number, event?: Event): void {
+    event?.stopPropagation();
+    this.closeMenus();
+    const target = Math.min(Math.max(1, week), this.weekCount);
+    this.shownWeek = target === this.overview?.current?.week ? null : target;
+  }
+
+  /* ---------------- quick changes of a day (workout: move, copy, rest) ---------------- */
+
+  /**
+   * The days of the program the coach can change here without the editor. {@code allWeeks}: a server that knows the
+   * quick changes (deployed first); an older one keeps the card as it was (a click opens the editor).
+   */
+  get quickEdit(): boolean {
+    const c = this.overview?.current;
+    // Workout and nutrition alike (the server moves, copies and frees nutrition days too, 2026-11-23).
+    return this.writable && !!c && !c.program.file && !!c.allWeeks;
+  }
+
+  private isComing(day: OverviewDay): boolean {
+    return !!day.date && day.date >= this.today;
+  }
+
+  /** A day not started by the client, today or later: it can move, receive a copy, rest. */
+  canChange(day: OverviewDay): boolean {
+    return this.quickEdit && this.isComing(day) && !!day.dayId && day.dayNumber > 0
+      && day.state !== 'OUT' && day.state !== 'DONE' && day.state !== 'PARTIAL';
+  }
+
+  /** An empty day today or later: the « + » of the card. */
+  isAddable(day: OverviewDay): boolean {
+    return this.writable && day.state === 'EMPTY' && day.dayNumber > 0 && this.isComing(day);
+  }
+
+  /** A day with something in it (a workout or a rest): it can be copied. */
+  private hasContent(day: OverviewDay): boolean {
+    return day.dayNumber > 0 && day.state !== 'EMPTY' && day.state !== 'OUT';
+  }
+
+  /** The ⋯ of a day to come: planned, rest or empty (its click opens the day's window). */
+  hasDayMenu(day: OverviewDay): boolean {
+    return this.canChange(day);
+  }
+
+  /** The empty days the client will see as nothing, in the week shown (today or later). */
+  get emptyComingDays(): OverviewDay[] {
+    return this.weekDays.filter(day => this.isAddable(day));
+  }
+
+  /** While picking: can this day be chosen? */
+  isPickTarget(day: OverviewDay): boolean {
+    const pick = this.pick;
+    if (!pick || day.date === pick.day.date) return false;
+    switch (pick.mode) {
+      case 'MOVE': return this.canChange(day);
+      case 'COPY_TO': return this.canChange(day) && day.state === 'EMPTY';
+      case 'COPY_FROM': return this.hasContent(day);
+      default: return false;
+    }
+  }
+
+  isPickSource(day: OverviewDay): boolean {
+    return !!this.pick && this.pick.day.date === day.date;
+  }
+
+  get pickText(): string {
+    const pick = this.pick;
+    if (!pick) return '';
+    const date = `${this.weekday(pick.day.date)} ${this.dayMonth(pick.day.date)}`;
+    const name = pick.day.state === 'REST' ? this.translate.instant(`CLIENT_PROGRAMS.REST_TITLE_${this.isWorkout ? 'WORKOUT' : 'NUTRITION'}`) : this.dayHeadline(pick.day);
+    const key = pick.mode === 'MOVE' ? 'PICK_MOVE' : pick.mode === 'COPY_TO' ? 'PICK_COPY_TO' : 'PICK_COPY_FROM';
+    return this.translate.instant(`CLIENT_PROGRAMS.${key}`, { name, date });
+  }
+
+  startPick(mode: DayPick['mode'], day: OverviewDay, item: OverviewItem, event?: Event): void {
+    event?.stopPropagation();
+    this.closeMenus();
+    this.pick = { mode, day, programId: item.id };
+  }
+
+  /** « Modifier » of the top: the editor opens on the week shown when the arrows moved. */
+  editProgram(item: OverviewItem): void {
+    const first = this.showingCurrentWeek ? null : this.weekDays.find(day => day.dayNumber > 0);
+    this.emit({ type: 'edit', item, programId: item.id, dayNumber: first?.dayNumber });
+  }
+
+  /** « Mettre en repos » one empty day, or every empty day of the week shown. */
+  restDays(days: OverviewDay[], item: OverviewItem, event?: Event): void {
+    event?.stopPropagation();
+    this.closeMenus();
+    const numbers = days.filter(day => day.dayNumber > 0).map(day => day.dayNumber);
+    if (!numbers.length || this.savingDay) return;
+    this.savingDay = true;
+    this.schedule.restDays(item.id, numbers).subscribe({
+      next: result => {
+        this.savingDay = false;
+        if (!result.rested.length) {
+          this.toast.error(this.isWorkout ? this.translate.instant('CLIENT_PROGRAMS.REST_NOTHING')
+            : this.ht('No day became a free day: they are already planned, past or done.', "Aucun jour n'est devenu jour libre : ils sont déjà prévus, passés ou faits."));
+          return;
+        }
+        const date = this.longDate(this.dateOfDay(item, result.rested[0]));
+        const title = this.isWorkout
+          ? (result.rested.length === 1
+            ? this.translate.instant('CLIENT_PROGRAMS.RESTED_ONE', { date })
+            : this.translate.instant('CLIENT_PROGRAMS.RESTED', { count: result.rested.length }))
+          : (result.rested.length === 1
+            ? this.ht(`${date} is a free day`, `Le ${date} est un jour libre`)
+            : this.ht(`${result.rested.length} free days`, `${result.rested.length} jours mis en jour libre`));
+        this.schedule.announceCalendarChange(result.undoId, title, this.skippedLines(result.skipped, item));
+      },
+      error: err => {
+        this.savingDay = false;
+        this.toast.error(this.changeError(err));
+      },
+    });
+  }
+
+  /** The day chosen while picking: the move or the copy is saved at once (with « Annuler »). */
+  private finishPick(target: OverviewDay): void {
+    const pick = this.pick;
+    const item = this.overview?.current?.program;
+    if (!pick || !item || this.savingDay) return;
+    this.pick = null;
+    this.savingDay = true;
+    const fail = (err: unknown) => {
+      this.savingDay = false;
+      this.toast.error(this.changeError(err));
+    };
+    if (pick.mode === 'MOVE') {
+      if (!pick.day.dayId || !target.dayId) {
+        this.savingDay = false;
+        return;
+      }
+      this.schedule.swapDays(pick.programId, pick.day.dayId, target.dayId).subscribe({
+        next: result => {
+          this.savingDay = false;
+          const title = target.state === 'EMPTY'
+            ? this.translate.instant('CALENDAR_DAY_MOVED', { date: this.longDate(target.date) })
+            : this.translate.instant('CALENDAR_DAYS_SWAPPED', { first: this.longDate(pick.day.date), second: this.longDate(target.date) });
+          const details = result.restedDayId ? [this.translate.instant('CALENDAR_LEFT_REST', { date: this.longDate(pick.day.date) })] : [];
+          this.schedule.announceCalendarChange(result.undoId, title, details);
+        },
+        error: fail,
+      });
+      return;
+    }
+    const copy = pick.mode === 'COPY_TO'
+      ? { from: pick.day.dayNumber, to: target.dayNumber }
+      : { from: target.dayNumber, to: pick.day.dayNumber };
+    this.schedule.copyDays(pick.programId, [copy]).subscribe({
+      next: result => {
+        this.savingDay = false;
+        if (!result.copied.length) {
+          const line = this.skippedLines(result.skipped, item)[0];
+          this.toast.error(line || this.translate.instant('CALENDAR_CHANGE_ERROR'));
+          return;
+        }
+        this.schedule.announceCalendarChange(result.undoId,
+          this.translate.instant('CLIENT_PROGRAMS.COPIED_TO', { date: this.longDate(this.dateOfDay(item, copy.to)) }));
+      },
+      error: fail,
+    });
+  }
+
+  private skippedLines(skipped: { day: number; reason: string }[], item: OverviewItem): string[] {
+    return skipped
+      .filter(skip => skip.reason !== 'EMPTY_SOURCE')
+      .map(skip => this.translate.instant(`CALENDAR_COPY_SKIPPED_${skip.reason}`, { date: this.longDate(this.dateOfDay(item, skip.day)) }));
+  }
+
+  /** Why the server refused a change of a day (the calendar's words). */
+  private changeError(err: unknown): string {
+    const code = (err as { error?: { code?: string } })?.error?.code;
+    if (code === 'PROGRAM_LOCKED') return this.translate.instant('ASSIGN_FLOW.LOCKED_ERROR');
+    if (code === 'DAY_DONE') return this.translate.instant('CALENDAR_DAY_DONE');
+    if (code === 'DAY_PAST') return this.translate.instant('CALENDAR_DAY_PAST_MOVE');
+    if (code === 'PROGRAM_GAP') return this.translate.instant('CALENDAR_CHANGE_GAP');
+    return this.translate.instant('CALENDAR_CHANGE_ERROR');
+  }
+
+  /** The date of day {@code dayNumber} of the program (yyyy-MM-dd). */
+  private dateOfDay(item: OverviewItem, dayNumber: number): string {
+    const date = this.toDate(item.startDate || this.today);
+    date.setDate(date.getDate() + dayNumber - 1);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  }
+
+  /** "mercredi 25 novembre". */
+  private longDate(iso: string): string {
+    return this.toDate(iso).toLocaleDateString(this.locale(), { weekday: 'long', day: 'numeric', month: 'long' });
+  }
+
   /** The card's color: done, missed, started, today, rest, empty, planned, outside the program. */
   dayTone(day: OverviewDay): string {
     if (day.state === 'DONE' || day.state === 'MISSED' || day.state === 'PARTIAL' || day.state === 'OUT') return day.state.toLowerCase();
@@ -324,7 +714,7 @@ export class ClientProgramsComponent implements OnInit, OnChanges {
     const kind = this.isWorkout ? 'WORKOUT' : 'NUTRITION';
     const t = (key: string) => this.translate.instant(`CLIENT_PROGRAMS.${key}`);
     // Empty today: what matters is that the client sees nothing (the card keeps the « today » border).
-    if (day.state === 'EMPTY') return t('STATUS_EMPTY');
+    if (day.state === 'EMPTY') return this.isAddable(day) ? t('DAY_ADD') : t('STATUS_EMPTY');
     switch (this.dayTone(day)) {
       case 'done': return t(`STATUS_DONE_${kind}`);
       case 'missed': return t(`STATUS_MISSED_${kind}`);
@@ -356,18 +746,227 @@ export class ClientProgramsComponent implements OnInit, OnChanges {
 
   emit(action: ClientProgramAction, event?: Event): void {
     event?.stopPropagation();
-    this.openMenuId = null;
+    this.closeMenus();
     this.action.emit(action);
   }
 
   onDay(day: OverviewDay, item: OverviewItem, event: Event): void {
+    if (this.pick) {
+      event.stopPropagation();
+      if (this.isPickTarget(day)) this.finishPick(day);
+      return;
+    }
     if (day.state === 'OUT') return;
+    // A day to come (empty, planned or rest / free): its window opens at once, as in the editor's calendar; the ⋯
+    // keeps the quick actions (copy here, rest, move, copy to).
+    if (this.isOpenable(day)) {
+      this.emit({ type: 'edit', item, programId: item.id, dayNumber: day.dayNumber, open: true }, event);
+      return;
+    }
+    // An empty day to come: what to put in it (create, copy another day, rest).
+    if (this.quickEdit && this.isAddable(day)) {
+      this.openDayMenu(day, event);
+      return;
+    }
+    // A workout (a nutrition day logged): shown here, planned / done, without leaving the page.
+    if (this.canPreview(day)) {
+      event.stopPropagation();
+      this.openPreview(day, item);
+      return;
+    }
     if (day.date < this.today) this.emit({ type: 'calendar', date: day.date, item, programId: item.id }, event);
     else if (this.writable) this.emit({ type: 'edit', item, programId: item.id, dayNumber: day.dayNumber }, event);
   }
 
+  /* ---------------- a day shown without leaving the page ---------------- */
+
+  private previewRead = 0;
+
+  /** A workout day (any), a nutrition day until today (the report shows what was logged, nothing ahead). */
+  canPreview(day: OverviewDay): boolean {
+    if (!this.hasContent(day) || day.state === 'REST') return false;
+    return this.isWorkout || day.date <= this.today;
+  }
+
+  /** The day's window: the program is read (the tab has no exercise), then the day found in it. */
+  openPreview(day: OverviewDay, item: OverviewItem): void {
+    this.closeMenus();
+    const editable = this.writable && this.isComing(day) && day.state !== 'DONE' && day.state !== 'PARTIAL';
+    const edit: ClientProgramAction = { type: 'edit', item, programId: item.id, dayNumber: day.dayNumber };
+    this.preview = { loading: true, notice: null, workout: null, nutrition: null, edit: editable ? edit : null };
+    this.lockScroll(true);
+    const read = ++this.previewRead;
+    const week = Math.ceil(day.dayNumber / 7);
+    const inWeek = ((day.dayNumber - 1) % 7) + 1;
+    const find = <T extends { id: string; week: number; dayInWeek: number }>(items: T[]): T | null =>
+      items.find(a => !!day.dayId && a.id === day.dayId) || items.find(a => a.week === week && a.dayInWeek === inWeek) || null;
+    const plan$ = this.isWorkout ? this.workoutService.getWorkoutById(item.id, true) : this.nutritionService.getNutritionPlanById(item.id, true);
+    plan$.subscribe({
+      next: plan => {
+        if (read !== this.previewRead || !this.preview) return; // closed, or another day asked meanwhile
+        const workout = this.isWorkout ? find(buildWorkoutActivities([plan])) : null;
+        const nutrition = this.isWorkout ? null : find(buildNutritionActivities([plan]));
+        if (!workout && !nutrition) {
+          // Nothing to show here (a day the builders skip): where the click went before.
+          this.closePreview();
+          if (day.date < this.today) this.emit({ type: 'calendar', date: day.date, item, programId: item.id });
+          else if (this.writable) this.emit(edit);
+          return;
+        }
+        this.preview = { ...this.preview, loading: false, workout, nutrition };
+      },
+      error: () => {
+        if (read !== this.previewRead || !this.preview) return;
+        this.preview = { ...this.preview, loading: false, notice: 'CLIENT_PROGRAMS.DAY_PREVIEW_FAILED' };
+      },
+    });
+  }
+
+  closePreview(): void {
+    if (!this.preview) return;
+    this.preview = null;
+    this.previewRead++;
+    this.lockScroll(false);
+  }
+
+  editPreviewDay(): void {
+    const edit = this.preview?.edit;
+    this.closePreview();
+    if (edit) this.emit(edit);
+  }
+
+  /** « Envoyer un message »: the profile opens its chat. */
+  messageFromPreview(): void {
+    this.closePreview();
+    this.emit({ type: 'message' });
+  }
+
+  /** While the window is open, the page behind does not scroll. */
+  private lockScroll(locked: boolean): void {
+    document.body.style.overflow = locked ? 'hidden' : '';
+  }
+
+  /**
+   * A click opens the day's window in the editor, as in its calendar: every workout day of the program (a past one shows
+   * what the client did, exercise by exercise); a nutrition day to come not started (a past one: its report here).
+   */
+  isOpenable(day: OverviewDay): boolean {
+    if (!this.writable || day.dayNumber <= 0 || day.state === 'OUT') return false;
+    if (this.isWorkout) return true;
+    return this.isComing(day) && day.state !== 'DONE' && day.state !== 'PARTIAL';
+  }
+
+  // ---------- The week shown, drawn by the calendar's own component (shared/program-calendar) ----------
+
+  /** The columns: the weekdays of the week shown. */
+  get calendarColumns(): string[] {
+    return this.weekDays.map((day) => this.toDate(day.date).toLocaleDateString(this.locale(), { weekday: 'long' }));
+  }
+
+  get calendarTodayColumn(): number {
+    return this.weekDays.findIndex((day) => day.date === this.today);
+  }
+
+  /** The week shown as one row of the calendar: the same cards, the same symbols, the same gestures. */
+  get calendarWeek(): CalendarWeek<OverviewDay>[] {
+    const kind = this.isWorkout ? 'WORKOUT' : 'NUTRITION';
+    const t = (key: string) => this.translate.instant(`CLIENT_PROGRAMS.${key}`);
+    const cells: CalendarCell<OverviewDay>[] = this.weekDays.map((day, index) => {
+      const tone = this.calendarTone(day);
+      const empty = tone === 'empty';
+      const movable = this.canChange(day);
+      return {
+        day,
+        index,
+        tone,
+        title: tone === 'rest' ? t(`REST_TITLE_${kind}`) : empty ? t('STATUS_EMPTY') : this.dayHeadline(day),
+        meta: empty || tone === 'rest' ? '' : this.dayMeta(day),
+        status: empty || day.state === 'OUT' ? '' : tone === 'rest' ? t(`STATUS_REST_${kind}`) : this.dayStatus(day),
+        icon: calendarIcon(tone),
+        date: this.dayMonth(day.date),
+        today: day.date === this.today,
+        past: day.date < this.today,
+        locked: !movable,
+        movable,
+        rest: tone === 'rest',
+        hasContent: !empty,
+        lines: [],
+        out: day.state === 'OUT',
+        note: day.note || null,
+        pick: this.pick ? (this.isPickSource(day) ? 'source' : this.isPickTarget(day) ? 'target' : 'dim') : null,
+      };
+    });
+    return [{ number: 1, title: '', range: '', filled: 0, days: this.weekDays, pad: [], cells, current: false, progress: 0, progressText: '' }];
+  }
+
+  private calendarTone(day: OverviewDay): CalendarTone {
+    switch (day.state) {
+      case 'DONE': return 'done';
+      case 'MISSED': return 'missed';
+      case 'PARTIAL': return 'partial';
+      case 'REST': return 'rest';
+      case 'EMPTY': return 'empty';
+      default: return day.date === this.today ? 'today' : 'planned';
+    }
+  }
+
+  ht(en: string, fr: string): string {
+    return this.translate.currentLang === 'en' ? en : fr;
+  }
+
+  /** « Mettre en repos » (workout) / « Mettre en jour libre » (nutrition: the free day is its rest day). */
+  get restOneLabel(): string {
+    return this.isWorkout ? this.translate.instant('CLIENT_PROGRAMS.DAY_SET_REST') : this.ht('Make it a free day', 'Mettre en jour libre');
+  }
+
+  get restAllLabel(): string {
+    return this.isWorkout ? this.translate.instant('CLIENT_PROGRAMS.REST_ALL') : this.ht('All free days', 'Tout mettre en jour libre');
+  }
+
+  /** The ⋮ of a card here: the quick changes saved at once (with « Annuler »). */
+  readonly calendarMenu = (cell: CalendarCell<OverviewDay>): CalendarMenuItem[] => {
+    const t = (key: string) => this.translate.instant(`CLIENT_PROGRAMS.${key}`);
+    if (cell.day.state === 'EMPTY') {
+      return [
+        { type: 'edit', label: this.isWorkout ? t('DAY_CREATE') : this.ht('Fill the day', 'Remplir le jour'), icon: 'edit-2' },
+        { type: 'copyHere', label: t('DAY_COPY_HERE'), icon: 'copy' },
+        { type: 'rest', label: this.restOneLabel, icon: this.isWorkout ? 'moon' : 'flag', disabled: this.savingDay },
+      ];
+    }
+    return [
+      { type: 'edit', label: this.isWorkout ? t('DAY_EDIT') : this.ht('Edit the day', 'Modifier le jour'), icon: 'edit-2' },
+      { type: 'move', label: t('DAY_MOVE'), icon: 'move' },
+      { type: 'copyTo', label: t('DAY_COPY_TO'), icon: 'copy' },
+    ];
+  };
+
+  onCalendarOpen(day: OverviewDay, item: OverviewItem): void {
+    this.onDay(day, item, new Event('click'));
+  }
+
+  onCalendarAction(event: { type: string; day: OverviewDay }, item: OverviewItem): void {
+    switch (event.type) {
+      case 'edit': this.editDay(event.day, item); break;
+      case 'move': this.startPick('MOVE', event.day, item); break;
+      case 'copyTo': this.startPick('COPY_TO', event.day, item); break;
+      case 'copyHere': this.startPick('COPY_FROM', event.day, item); break;
+      case 'rest': this.restDays([event.day], item); break;
+    }
+  }
+
+  /** A card dropped on another day: the two days swap, saved at once (with « Annuler »). */
+  onCalendarSwap(event: { from: OverviewDay; to: OverviewDay }, item: OverviewItem): void {
+    this.pick = { mode: 'MOVE', day: event.from, programId: item.id };
+    this.finishPick(event.to);
+  }
+
+  editDay(day: OverviewDay, item: OverviewItem, event?: Event): void {
+    this.emit({ type: 'edit', item, programId: item.id, dayNumber: day.dayNumber, open: this.isOpenable(day) }, event);
+  }
+
   toggleMenu(id: string, event: Event): void {
     event.stopPropagation();
+    this.dayMenu = null;
     this.openMenuId = this.openMenuId === id ? null : id;
   }
 

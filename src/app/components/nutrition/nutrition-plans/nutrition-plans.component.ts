@@ -2,10 +2,11 @@ import { EmptyStateComponent } from 'app/shared/components/empty-state/empty-sta
 import { ProgramDaysBadgeComponent } from '@shared/components/program-days-badge/program-days-badge.component';
 import { WriteActionDirective } from 'app/shared/subscription/write-action.directive';
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { AuthService } from 'app/config/auth.service';
 import { Subject, takeUntil } from 'rxjs';
 import {
   NutritionService,
@@ -121,16 +122,44 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
     private router: Router,
     private coachSettingsService: CoachSettingsService,
     private translate: TranslateService,
-    private toast: ToastService
+    private toast: ToastService,
+    private route: ActivatedRoute,
+    private location: Location,
+    private authService: AuthService,
   ) {}
+
+  /** Admin (or super admin): creates, changes and removes the YoCoach templates. */
+  isAdmin = false;
+
+  /** Number of plans in each tab (2026-11-20: « Mes plans » / « Modèles YoCoach »). */
+  myLibraryCount = 0;
+  templatesCount = 0;
+
+  /** « Modèles YoCoach » tab, else the coach's own plans. */
+  get publicTemplates(): boolean {
+    return this.activeTab === 'templates';
+  }
+
+  /** A coach only copies a YoCoach template: changing, assigning or removing it is for the admin. */
+  get readOnlyTemplates(): boolean {
+    return this.publicTemplates && !this.isAdmin;
+  }
 
   goBack(): void {
     window.history.back();
   }
 
   ngOnInit() {
+    if (this.route.snapshot.data['tab'] === 'templates') {
+      this.activeTab = 'templates';
+      this.programTypeFilter = 'ALL';
+    }
+    void this.authService.extractRoles().then((roles) => {
+      this.isAdmin = (roles || []).some((role) => role === 'ROLE_ADMIN' || role === 'ROLE_SUPER_ADMIN');
+    });
     this.loadNutritionFileSetting();
     this.loadPlans();
+    this.loadOtherTabCount();
     document.addEventListener('click', this.documentClickHandler);
   }
 
@@ -226,6 +255,11 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
     );
 
     const matchingPlans = this.getMatchingPlans();
+    // The count of the open tab is the list itself (not filtered by a search or a type).
+    if (!this.searchTerm.trim() && this.programTypeFilter === 'ALL') {
+      if (this.activeTab === 'templates') this.templatesCount = matchingPlans.length;
+      else this.myLibraryCount = matchingPlans.length;
+    }
     this.totalElements = matchingPlans.length;
     this.totalPages = Math.ceil(matchingPlans.length / this.pageSize);
     if (this.currentPage > this.totalPages - 1) {
@@ -306,12 +340,30 @@ export class NutritionPlansComponent implements OnInit, OnDestroy {
   }
 
 
-  get myLibraryCount(): number {
-    return this.plans.filter((plan) => !this.isTemplatePlan(plan)).length;
+  /** The other tab only needs its count (one small request). */
+  private loadOtherTabCount(): void {
+    const request$ = this.activeTab === 'templates'
+      ? this.nutritionService.getNutritionPlans(0, 1, 'ALL', '', true)
+      : this.nutritionService.getNutritionPlansTemplates(0, 1, '', true);
+    request$.pipe(takeUntil(this.destroy$)).subscribe({
+      next: (page: any) => {
+        const total = Number(page?.totalElements ?? this.extractPlans(page).length) || 0;
+        if (this.activeTab === 'templates') this.myLibraryCount = total;
+        else this.templatesCount = total;
+      },
+      error: () => undefined,
+    });
   }
 
-  get templatesCount(): number {
-    return this.plans.filter((plan) => this.isTemplatePlan(plan)).length;
+  /**
+   * Tabs « Mes plans » / « Modèles YoCoach » (2026-11-20, like the workout programs).
+   * The address follows the tab without reloading the page, so a refresh or the back button keeps it.
+   */
+  switchLibraryTab(tab: 'my-library' | 'templates'): void {
+    if (this.activeTab === tab) return;
+    this.location.replaceState(tab === 'templates' ? '/nutrition/public-templates' : '/nutrition/plans');
+    this.searchTerm = '';
+    this.setActiveTab(tab);
   }
 
   setActiveTab(tab: 'my-library' | 'templates') {
@@ -954,7 +1006,8 @@ if (this.nutritionFileEnabled === false && type !== 'APP') {
   }
 
   openChooseModal() {
-    if (this.nutritionFileEnabled === false) {
+    // A YoCoach template is a plan made in the app (no PDF / Excel file).
+    if (this.nutritionFileEnabled === false || this.publicTemplates) {
       this.createNormalNutritionPlan();
       return;
     }
@@ -1128,7 +1181,7 @@ if (this.nutritionFileEnabled === false && type !== 'APP') {
       return;
     }
 
-    if (this.isTemplatePlan(plan)) {
+    if (this.isTemplatePlan(plan) && !this.isAdmin) {
       return;
     }
 
@@ -1146,7 +1199,7 @@ if (this.nutritionFileEnabled === false && type !== 'APP') {
   }
 
   openDeleteModal(plan: NutritionPlan) {
-    if (this.isTemplatePlan(plan)) {
+    if (this.isTemplatePlan(plan) && !this.isAdmin) {
       return;
     }
 
@@ -1269,7 +1322,23 @@ if (this.nutritionFileEnabled === false && type !== 'APP') {
           if (copy?.id && this.activeTab !== 'templates') {
             this.applyLoadedPlans([copy, ...this.plans]);
             this.currentPage = 0;
-            this.rememberCachedPlan(copy);
+          } else {
+            this.myLibraryCount += 1;
+          }
+          if (copy?.id) this.rememberCachedPlan(copy);
+          if (this.publicTemplates && copy?.id) {
+            // Copied from the YoCoach templates: the copy is in « Mes plans », opened in one click to adapt it.
+            this.toast.show({
+              type: 'success',
+              duration: 8000,
+              title: this.translate.instant('NUTRITION_TEMPLATE_COPIED'),
+              message: this.translate.instant('TEMPLATE_COPIED_HINT'),
+              actions: [{
+                label: this.translate.instant('TEMPLATE_OPEN_COPY'),
+                run: () => this.editPlan(copy),
+              }],
+            });
+            return;
           }
           this.toast.success(this.translate.instant('PROGRAM_DUPLICATED'));
         },

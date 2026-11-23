@@ -4,7 +4,8 @@ import { CopiedDayBannerComponent } from '@shared/program-copy/copied-day-banner
 import { ProgramDayClipboardService } from '@shared/program-copy/program-day-clipboard.service';
 import { nutritionCopyController } from '../nutrition-day-copy';
 import { NutritionDraftState } from '../nutrition-draft-state';
-import { Component, HostListener, OnInit, ViewChild } from '@angular/core';
+import { AfterViewChecked, Component, DoCheck, ElementRef, HostListener, OnInit, ViewChild, inject } from '@angular/core';
+import { ActiveDayRail } from '@shared/program-calendar/active-day-rail';
 import { ConfirmDialogService } from '@shared/components/confirm-dialog/confirm-dialog.service';
 import { LeavesUnsavedChanges, warnBeforeUnload } from '@config/guard/unsaved-changes.guard';
 import { NutritionClientMode } from '../nutrition-client-mode';
@@ -22,16 +23,19 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
 import { MealDay, Meal, MealPlan } from '@shared/models/MealPlan';
 import { NutritionService } from 'app/service/nutrition.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
+import { NutritionCalendar } from '../nutrition-calendar';
+import { ProgramCalendarComponent } from '@shared/program-calendar/program-calendar.component';
+import { DayWindowFootComponent, DayWindowHeadComponent, ViewSwitchComponent } from '@shared/program-calendar/day-window-bars.component';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-create-macro-plan',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule, EmptyDaysModalComponent, LockedProgramBannerComponent, ProgramOverflowComponent, CopyDaysModalComponent, CopiedDayBannerComponent, ClientProgramDatesComponent],
+  imports: [ProgramCalendarComponent, DayWindowHeadComponent, DayWindowFootComponent, ViewSwitchComponent, CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule, EmptyDaysModalComponent, LockedProgramBannerComponent, ProgramOverflowComponent, CopyDaysModalComponent, CopiedDayBannerComponent, ClientProgramDatesComponent],
   templateUrl: './create-macro-plan.component.html',
-  styleUrls: ['./create-macro-plan.component.scss', '../_nutrition-builder-template.scss', '../../program-library/_workout-builder-layout.scss', '../../program-library/_plan-edit-dialog.scss', '../_nutrition-rail-parity.scss', '../_nutrition-day-parity.scss', '../../program-library/_builder-rail-readable.scss'],
+  styleUrls: ['./create-macro-plan.component.scss', '../_nutrition-builder-template.scss', '../../program-library/_workout-builder-layout.scss', '../../program-library/_plan-edit-dialog.scss', '../_nutrition-rail-parity.scss', '../_nutrition-day-parity.scss', '../../program-library/_builder-rail-readable.scss', '../../../shared/program-calendar/_program-calendar-editor.scss', '../../program-library/_builder-rail-active.scss'],
 })
-export class CreateMacroPlanComponent implements OnInit, LeavesUnsavedChanges {
+export class CreateMacroPlanComponent implements OnInit, DoCheck, AfterViewChecked, LeavesUnsavedChanges {
   /** Phones: the week/day structure opens over the page (same as the workout builder). */
   mobileStructureOpen = false;
   /** Used by the toolbar "Save" (through the empty-days check of the draft state) and to retry after it. */
@@ -53,7 +57,8 @@ export class CreateMacroPlanComponent implements OnInit, LeavesUnsavedChanges {
   durationWeeks = 4;
   private scheduleStartDate = '';
   private scheduleEndDate = '';
-  readonly durationOptions = [1, 2, 3, 4, 5, 6, 8, 10, 12];
+  /** Toutes les durées de 1 à 12 semaines (« Ajouter une semaine » passe de 6 à 7…). */
+  readonly durationOptions = Array.from({ length: 12 }, (_, i) => i + 1);
   pendingDurationWeeks: number | null = null;
   pendingDurationRemovedDays = 0;
   collapsedWeeks = new Set<number>();
@@ -84,6 +89,44 @@ export class CreateMacroPlanComponent implements OnInit, LeavesUnsavedChanges {
     this.nutritionService, this.toastService, this.translate);
   /** « Copier vers… », « Dupliquer la semaine », « Copier le jour » / « Coller sur… » of the day rail. */
   readonly copy = nutritionCopyController(this, 'nutrition:MEAL_MACROS', (day) => this.updateDayTotals(day), this.dayClipboard, this.toastService, this.translate);
+
+  /** Le mode Calendrier, le même que l'éditeur de séances (nutrition-calendar.ts, shared/program-calendar). */
+  private readonly hostEl = inject(ElementRef<HTMLElement>);
+  readonly cal = new NutritionCalendar(this, this.hostEl, this.translate, this.confirmDialog, this.toastService);
+  @ViewChild(ProgramCalendarComponent) set calendarRef(calendar: ProgramCalendarComponent | undefined) {
+    this.cal.calendar = calendar;
+  }
+
+  ngDoCheck(): void {
+    this.cal.check();
+  }
+
+  /** Le jour ouvert reste visible dans la liste de gauche (défile jusqu'à lui quand il change). */
+  private readonly activeDayRail = new ActiveDayRail(() => this.hostEl.nativeElement);
+
+  ngAfterViewChecked(): void {
+    this.activeDayRail.follow(this.selectedDay, this.mobileStructureOpen);
+  }
+
+  /** La semaine qui contient le jour ouvert (son titre est mis en couleur). */
+  weekHasSelectedDay(week: { days: Array<{ day: MealDay }> }): boolean {
+    return !!this.selectedDay && week.days.some(item => item.day === this.selectedDay);
+  }
+
+  @HostListener('document:keydown.escape')
+  onCalendarEscape(): void {
+    this.cal.escape();
+  }
+
+  /** Les jours ont bougé ou ont été remplacés (calendrier) : les totaux suivent. */
+  afterDaysChanged(): void {
+    this.days.forEach((day) => this.updateDayTotals(day));
+  }
+
+  /** Une petite fenêtre de l'éditeur est ouverte par-dessus la fenêtre du jour. */
+  editorWindowOpen(): boolean {
+    return false;
+  }
   @ViewChild(ProgramOverflowComponent) overflow?: ProgramOverflowComponent;
 
   /** « Décaler » or « Retirer » chosen (P9): the save goes on with it. */
@@ -242,11 +285,14 @@ export class CreateMacroPlanComponent implements OnInit, LeavesUnsavedChanges {
     }
 
     if (!this.route.snapshot.paramMap.get('id') && !this.route.snapshot.queryParamMap.get('draftId')) {
+      // Created from the « Modèles YoCoach » tab by an admin: a YoCoach template from the start (2026-11-20).
+      if (this.route.snapshot.queryParamMap.get('template') === '1' && this.canCreateTemplate) this.isMealPlanTemplate = true;
       this.durationWeeks = Math.max(1, Math.min(12, Number(this.route.snapshot.queryParamMap.get('durationWeeks')) || 4));
       this.resizeDraftDays(this.durationWeeks, false);
       this.selectedDay = this.days[0] || null;
       this.clientMode.refreshDates(this.days);
       this.draft.rememberContent();
+      this.cal.openFromRoute(this.route.snapshot.queryParamMap.get('open'));
       if (this.planName.trim()) this.savePlan();
     }
 }
@@ -303,7 +349,7 @@ export class CreateMacroPlanComponent implements OnInit, LeavesUnsavedChanges {
         LOAD PLAN IN EDIT MODE
   ======================================================*/
   loadPlanForEdit(id: string) {
-    this.nutritionService.getNutritionPlanById(id).subscribe((plan) => {
+    this.cal.readPlan(id, () => this.nutritionService.getNutritionPlanById(id, this.cal.embedded)).subscribe((plan) => {
         this.draft.load(plan);
       this.planName = plan.name;
       this.planDescription = plan.details;
@@ -325,6 +371,7 @@ export class CreateMacroPlanComponent implements OnInit, LeavesUnsavedChanges {
       this.selectedDay = this.clientMode.requestedDay(this.days) || this.days[0];
       this.draft.collapsedWeeks.delete(this.draft.selectedWeek(this.days, this.selectedDay));
       this.draft.rememberContent();
+      this.cal.openFromRoute(this.route.snapshot.queryParamMap.get('open'));
     });
   }
 
@@ -514,6 +561,8 @@ export class CreateMacroPlanComponent implements OnInit, LeavesUnsavedChanges {
 
   selectDay(day: MealDay) {
     this.selectedDay = day;
+    // Sa semaine s'ouvre dans la liste de gauche, pour qu'on voie où on est.
+    this.draft.collapsedWeeks.delete(this.draft.selectedWeek(this.days, day));
   }
 
   togglePlanDescription() {

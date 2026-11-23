@@ -289,6 +289,7 @@ $soft: light-dark(#f5f8fb, #161a1e);
 
   &:focus { border-color: $brand; box-shadow: 0 0 0 3px rgba(68, 180, 223, .12); }
   &::placeholder { color: light-dark(#a0adbd, #878e96); }
+  &.is-invalid { border-color: #e48a96; }
 }
 
 .wb-input { height: 42px; }

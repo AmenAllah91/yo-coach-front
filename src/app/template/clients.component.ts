@@ -51,8 +51,6 @@ export class ClientsComponent implements OnInit {
   statusFilter: ClientStatus | 'ALL' = 'ACTIVE';
   programFilter = 'ALL';
   /** Label chosen in the filter (null: every client). The coach's labels are private (2026-11-18). */
-  tagFilter: string | null = null;
-  knownTags: string[] = [];
   goalFilter = 'ALL';
   showAddModal = false;
   showDeleteModal = false;
@@ -313,13 +311,8 @@ export class ClientsComponent implements OnInit {
 
   ngOnInit() {
     this.loadClients();
-    this.clientNotes.allTags().subscribe({
-      next: () => {
-        this.knownTags = this.clientNotes.knownTags();
-        this.applyFilters();
-      },
-      error: () => (this.knownTags = []),
-    });
+    // Labels shown under each client's name.
+    this.clientNotes.allTags().subscribe({ next: () => this.applyFilters(), error: () => {} });
     this.loadInvitations();
     // "/clients?tab=requests": link of the new-request notification and email (also while already on this page).
     if (this.route.snapshot.queryParamMap.get('tab') !== 'requests') this.loadJoinRequests();
@@ -345,11 +338,9 @@ export class ClientsComponent implements OnInit {
       this.loadStatusCounts(coachId);
 
       const statusParam = this.statusFilter === 'ALL' ? undefined : this.statusFilter;
-      // A label filter must find every client with it, not only those of the page: the whole list is read then.
-      const byTag = !!this.tagFilter;
 
       this.clientService
-        .getClientsByCoach(coachId, byTag ? 0 : this.currentPage, byTag ? 500 : this.pageSize, statusParam, true)
+        .getClientsByCoach(coachId, this.currentPage, this.pageSize, statusParam, true)
         .subscribe({
           next: (response) => {
             const clientsData = response.content || response;
@@ -358,11 +349,7 @@ export class ClientsComponent implements OnInit {
                 clientStatus: this.normalizeStatus(client.clientStatus),
             }));
 
-              if (byTag) {
-                this.totalPages = 1;
-                this.totalElements = this.clients.length;
-                this.currentPage = 0;
-              } else if (response.totalPages !== undefined) {
+              if (response.totalPages !== undefined) {
                 this.totalPages = response.totalPages;
                 this.totalElements = response.totalElements;
                 this.currentPage = response.number;
@@ -432,12 +419,6 @@ export class ClientsComponent implements OnInit {
     return client?.id ? this.clientNotes.tagsOf(client.id) : [];
   }
 
-  setTagFilter(tag: string | null) {
-    this.tagFilter = tag || null;
-    this.currentPage = 0;
-    this.loadClients();
-  }
-
   onSearch() {
     this.applyFilters();
   }
@@ -457,9 +438,7 @@ export class ClientsComponent implements OnInit {
       const matchesProgram =
         this.programFilter === 'ALL' || this.getClientProgram(client) === this.programFilter;
 
-      const matchesTag = !this.tagFilter || this.tagsOf(client).some((tag) => tag === this.tagFilter);
-
-      return matchesStatus && matchesSearch && matchesProgram && matchesTag;
+      return matchesStatus && matchesSearch && matchesProgram;
     });
   }
 
@@ -474,7 +453,6 @@ export class ClientsComponent implements OnInit {
 
   clearFilters() {
     this.searchTerm = '';
-    this.tagFilter = null;
     this.programFilter = 'ALL';
     this.goalFilter = 'ALL';
     this.statusFilter = 'ACTIVE';

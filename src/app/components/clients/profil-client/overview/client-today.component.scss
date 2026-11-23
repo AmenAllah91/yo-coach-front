@@ -11,6 +11,16 @@
   align-items: stretch;
 }
 
+// Only one of the two has something today: it takes the whole width and the empty one becomes a
+// one-line strip under it (instead of a tall, mostly blank card next to it).
+.ov-today--mixed {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+
+  > .ov-card.is-empty { order: 2; }
+}
+
 .ov-card { container: today-card / inline-size; }
 
 // An empty card stays short; its content is centred when the other card is taller.
