@@ -249,6 +249,12 @@ body.client-preview-open { overflow: hidden; }
   border-bottom: 1px solid light-dark(#e5e7eb, #34393f);
   margin-top: 8px;    /* ← réduit */
   margin-bottom: 0;
+  /* Tabs on the left, « Envoyer un check-in » on the right, on every tab. */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  .btn-add-checkin { margin: 0 0 6px; flex: none; }
 }
 
 .checkins-subtabs {
@@ -2889,7 +2895,7 @@ body.client-preview-open { overflow: hidden; }
   .checkins-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; margin: 10px 0 14px; }
   .search-input-wrapper { width: 100%; }
   .search-input-wrapper input { height: 38px; font-size: 10px; border-radius: 999px; }
-  .btn-add-checkin { height: 38px; padding: 0 13px; font-size: 10px; white-space: nowrap; }
+  .btn-add-checkin { height: 34px; padding: 0 12px; font-size: 11px; white-space: nowrap; }
   .checkins-tab .profile-pagination { gap: 7px; margin: 14px 0 5px; flex-wrap: nowrap; }
   .checkins-tab .profile-page-btn { min-width: 30px; width: 30px; height: 30px; padding: 0; font-size: 10px; }
 
@@ -3389,6 +3395,49 @@ body.client-preview-open { overflow: hidden; }
 .checkins-empty { margin: 18px 0 6px; font-size: 14px; color: light-dark(#7d889b, #979ca4); }
 /* Tab badge: check-ins waiting for the coach. */
 .subtab-badge--pending { background: rgba(196, 122, 18, .14); color: #c47a12; }
+.subtab-badge--late { background: rgba(194, 65, 45, .12); color: #c2412d; }
+
+/* One line under the tabs: « 1 à relire · 2 sans réponse · Prochain envoi : lun. 24 nov., 08:00 ». */
+.checkins-summary {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; margin: 12px 0 0;
+  font-size: 13px; color: light-dark(#64748b, #a5abb4);
+}
+.checkins-summary-part {
+  border: 0; background: none; padding: 2px 0; cursor: pointer; color: inherit; font: inherit; font-weight: 600;
+  &:hover { text-decoration: underline; }
+  & + &::before { content: '·'; display: inline-block; margin: 0 8px; color: light-dark(#cbd5e1, #4a5059); font-weight: 400; }
+}
+.checkins-summary-part--review { color: #c47a12; }
+.checkins-summary-part--late { color: #c2412d; }
+
+/* « En attente »: three groups, actions on each row, the missed ones folded. */
+.checkin-cards + .checkin-cards { margin-top: 18px; }
+.checkins-group-label--late { color: #c2412d; }
+.checkin-row-actions { flex: none; display: inline-flex; align-items: center; gap: 2px; }
+.checkin-nudge {
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 11px; border-radius: 999px; cursor: pointer;
+  border: 1px solid light-dark(#dfe4ec, #3a3d42); background: light-dark(#fff, #1d2125); color: light-dark(#334155, #d6dae2);
+  font-size: 12.5px; font-weight: 600; white-space: nowrap;
+  i { font-size: 11px; }
+  &:hover:not(:disabled) { border-color: #44b4df; color: light-dark(#0f6f96, #7fcdec); }
+  &:disabled { cursor: default; border-color: transparent; background: rgba(21, 128, 61, .08); color: #15803d; }
+}
+.checkins-missed-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.checkins-missed-toggle {
+  display: inline-flex; align-items: center; gap: 8px; border: 0; background: none; padding: 4px 0; cursor: pointer;
+  font-size: 11.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: light-dark(#7d889b, #979ca4);
+  i { font-size: 10px; width: 10px; }
+  &:hover { color: light-dark(#334155, #d6dae2); }
+}
+.checkins-missed-clear {
+  border: 0; background: none; padding: 4px 0; cursor: pointer; font-size: 13px; font-weight: 600; color: light-dark(#c2412d, #ff856f);
+  &:hover { text-decoration: underline; }
+}
+@media (max-width: 480px) {
+  /* Icon only: the row keeps room for the form name. */
+  .checkin-nudge { width: 32px; padding: 0; justify-content: center; span { display: none; } }
+  .checkins-summary { font-size: 12px; }
+}
 @media (max-width: 480px) {
   .checkins-filters { margin-top: 10px; }
   .checkins-chip, .checkins-form-select { height: 32px; font-size: 12px; }

@@ -639,7 +639,7 @@
             [class.active]="activeSubTab === 'submissions'"
             (click)="setSubTab('submissions')"
           >
-            {{ 'SUBMISSIONS' | translate }}
+            {{ 'PROFILE_CHECKINS.TAB_RECEIVED' | translate }}
             <span
               class="subtab-badge subtab-badge--pending"
               *ngIf="pendingSubmissionsCount > 0"
@@ -654,7 +654,15 @@
             [class.active]="activeSubTab === 'assigned'"
             (click)="setSubTab('assigned')"
           >
-            {{ 'ASSIGNED' | translate }}
+            {{ 'PROFILE_CHECKINS.TAB_WAITING' | translate }}
+            <span
+              class="subtab-badge"
+              *ngIf="waitingCount > 0"
+              [class.subtab-badge--late]="assignedLate.length > 0"
+              [class.subtab-badge--active]="activeSubTab === 'assigned' && !assignedLate.length"
+            >
+              {{ waitingCount }}
+            </span>
           </button>
 
           <button
@@ -662,7 +670,7 @@
             [class.active]="activeSubTab === 'scheduled'"
             (click)="setSubTab('scheduled')"
           >
-            {{ 'SCHEDULED' | translate }}
+            {{ 'PROFILE_CHECKINS.TAB_SCHEDULED' | translate }}
             <span
               class="subtab-badge"
               *ngIf="activeSchedulesCount > 0"
@@ -672,7 +680,26 @@
             </span>
           </button>
         </nav>
+        <button type="button" class="btn-add-checkin" (click)="openCheckinModal(); $event.stopPropagation()">
+          <i class="fas fa-plus"></i>
+          <span>{{ 'PROFILE_CHECKINS.SEND_CHECKIN' | translate }}</span>
+        </button>
       </div>
+
+      <!-- Everything at a glance, whatever the tab: each part opens its tab. -->
+      <p class="checkins-summary" *ngIf="pendingSubmissionsCount || waitingCount || nextPlannedSend">
+        <button type="button" *ngIf="pendingSubmissionsCount" class="checkins-summary-part checkins-summary-part--review"
+                (click)="setSubTab('submissions')">
+          {{ 'PROFILE_CHECKINS.SUMMARY_TO_REVIEW' | translate: { count: pendingSubmissionsCount } }}
+        </button>
+        <button type="button" *ngIf="waitingCount" class="checkins-summary-part"
+                [class.checkins-summary-part--late]="assignedLate.length" (click)="setSubTab('assigned')">
+          {{ 'PROFILE_CHECKINS.SUMMARY_WAITING' | translate: { count: waitingCount } }}
+        </button>
+        <button type="button" *ngIf="nextPlannedSend" class="checkins-summary-part" (click)="setSubTab('scheduled')">
+          {{ 'PROFILE_CHECKINS.SUMMARY_NEXT_SEND' | translate: { date: nextPlannedSend } }}
+        </button>
+      </p>
 
       <app-section-loader *ngIf="activeSubTab === 'submissions' && !submissionsLoaded"></app-section-loader>
       <div *ngIf="activeSubTab === 'submissions' && submissionsLoaded">
@@ -758,49 +785,77 @@
 
       <app-section-loader *ngIf="activeSubTab === 'assigned' && !assignedLoaded"></app-section-loader>
       <div *ngIf="activeSubTab === 'assigned' && assignedLoaded">
-        <div class="checkins-toolbar">
-          <div class="search-input-wrapper">
-            <i class="fas fa-search"></i>
-            <input
-              type="text"
-              [placeholder]="'SEARCH_ASSIGNED_FORMS' | translate"
-              [(ngModel)]="assignedSearch"
-              (ngModelChange)="onAssignedSearchChange()"
-            />
-          </div>
-          <button class="btn-add-checkin" (click)="openCheckinModal(); $event.stopPropagation()">
-            <i class="fas fa-plus"></i>
-            <span>{{ 'ADD_CHECKIN' | translate }}</span>
-          </button>
-        </div>
+        <p class="checkins-empty" *ngIf="!assignedAssignments.length">{{ 'PROFILE_CHECKINS.WAITING_EMPTY' | translate }}</p>
 
-        <div class="checkin-cards">
+        <!-- One row: date tile = due date; « Relancer » and « Retirer » on the right. -->
+        <ng-template #waitingRow let-a let-group="group">
           <app-checkin-card
-            *ngFor="let a of assignedList"
             (click)="openAssignedAssignment(a)"
             [date]="a.dueAt || a.assignedAt"
             [lang]="currentLang"
-            [tone]="isCheckinLate(a) ? 'danger' : 'info'"
+            [tone]="group === 'late' ? 'danger' : group === 'missed' ? 'neutral' : 'info'"
+            [emphasis]="group === 'late'"
             [title]="a.formName"
-            [subtitle]="('ASSIGNED_ON' | translate) + ' ' + (a.assignedAt | date: 'd MMM') + ' · ' + ('DUE' | translate) + ' ' + (a.dueAt | date: 'd MMM')"
-            [status]="(isCheckinLate(a) ? 'OVERDUE_LABEL' : a.status === 'OPENED' ? 'OPENED' : 'PENDING') | translate"
-          ></app-checkin-card>
+            [subtitle]="assignedSubtitle(a)"
+            [status]="assignedStatus(a)"
+            [clickable]="true"
+          >
+            <span class="checkin-row-actions">
+              <button
+                *ngIf="group !== 'missed'"
+                type="button"
+                class="checkin-nudge"
+                [disabled]="nudgedToday(a) || nudgingId === a.id"
+                [title]="(nudgedToday(a) ? 'PROFILE_CHECKINS.NUDGE_ALREADY' : 'PROFILE_CHECKINS.NUDGE_HINT') | translate"
+                (click)="nudgeAssignment(a, $event)"
+              >
+                <i class="fas" [class.fa-bell]="!nudgedToday(a)" [class.fa-check]="nudgedToday(a)"></i>
+                <span>{{ (nudgedToday(a) ? 'PROFILE_CHECKINS.NUDGED' : 'PROFILE_CHECKINS.NUDGE') | translate }}</span>
+              </button>
+              <button
+                type="button"
+                class="sched-delete"
+                [title]="'PROFILE_CHECKINS.WITHDRAW' | translate"
+                [attr.aria-label]="'PROFILE_CHECKINS.WITHDRAW' | translate"
+                (click)="askWithdraw(a, $event)"
+              >
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </span>
+          </app-checkin-card>
+        </ng-template>
+
+        <div class="checkin-cards" *ngIf="assignedLate.length">
+          <div class="checkins-group-label checkins-group-label--late">
+            {{ 'PROFILE_CHECKINS.GROUP_LATE' | translate }} ({{ assignedLate.length }})
+          </div>
+          <ng-container *ngFor="let a of assignedLate">
+            <ng-container *ngTemplateOutlet="waitingRow; context: { $implicit: a, group: 'late' }"></ng-container>
+          </ng-container>
         </div>
 
-        <div class="profile-pagination" *ngIf="assignedTotalPages > 1">
-          <button type="button" class="profile-page-btn" [disabled]="assignedPage === 0" (click)="changeAssignedPage(assignedPage - 1)">&lt;</button>
-          <button
-            type="button"
-            class="profile-page-btn"
-            *ngFor="let page of assignedPagesArray"
-            [class.active]="page !== 'ellipsis' && page === assignedPage"
-            [class.ellipsis]="page === 'ellipsis'"
-            [disabled]="page === 'ellipsis'"
-            (click)="page !== 'ellipsis' && changeAssignedPage(page)"
-          >
-            {{ page === 'ellipsis' ? '…' : page + 1 }}
-          </button>
-          <button type="button" class="profile-page-btn" [disabled]="assignedPage >= assignedTotalPages - 1" (click)="changeAssignedPage(assignedPage + 1)">&gt;</button>
+        <div class="checkin-cards" *ngIf="assignedDue.length">
+          <div class="checkins-group-label">{{ 'PROFILE_CHECKINS.GROUP_DUE' | translate }} ({{ assignedDue.length }})</div>
+          <ng-container *ngFor="let a of assignedDue">
+            <ng-container *ngTemplateOutlet="waitingRow; context: { $implicit: a, group: 'due' }"></ng-container>
+          </ng-container>
+        </div>
+
+        <div class="checkin-cards checkins-missed" *ngIf="assignedMissed.length">
+          <div class="checkins-missed-head">
+            <button type="button" class="checkins-missed-toggle" [attr.aria-expanded]="showMissed" (click)="showMissed = !showMissed">
+              <i class="fas" [class.fa-chevron-right]="!showMissed" [class.fa-chevron-down]="showMissed"></i>
+              {{ 'PROFILE_CHECKINS.GROUP_MISSED' | translate }} ({{ assignedMissed.length }})
+            </button>
+            <button type="button" class="checkins-missed-clear" *ngIf="showMissed" (click)="askWithdraw('missed', $event)">
+              {{ 'PROFILE_CHECKINS.WITHDRAW_ALL' | translate }}
+            </button>
+          </div>
+          <ng-container *ngIf="showMissed">
+            <ng-container *ngFor="let a of assignedMissed">
+              <ng-container *ngTemplateOutlet="waitingRow; context: { $implicit: a, group: 'missed' }"></ng-container>
+            </ng-container>
+          </ng-container>
         </div>
       </div>
 
@@ -809,15 +864,13 @@
           <div class="scheduled-empty-icon">
             <i class="far fa-clock"></i>
           </div>
-          <p class="scheduled-empty-title">{{ 'NO_SCHEDULED_CHECKINS' | translate }}</p>
+          <p class="scheduled-empty-title">{{ 'PROFILE_CHECKINS.SCHEDULED_EMPTY' | translate }}</p>
           <p class="scheduled-empty-sub">
             {{ 'SCHEDULE_FORMS_AUTOMATION_HINT' | translate }}
           </p>
         </div>
 
         <ng-container *ngIf="scheduledItems.length > 0">
-          <p class="sched-count">{{ 'SCHED.TITLE_COUNT' | translate: { count: activeSchedulesCount } }}</p>
-
           <div class="sched-list">
             <article class="sched-card" *ngFor="let s of scheduledItems" (click)="openScheduleDetail(s)">
               <header class="sched-head">
@@ -825,10 +878,10 @@
                   class="sched-summary"
                   [date]="s.dueAt"
                   [lang]="currentLang"
-                  [tone]="s.kind === 'PLANNED' ? 'info' : 'warning'"
+                  tone="info"
                   [title]="s.formTitle"
                   [subtitle]="scheduleFrequencyLabel(s)"
-                  [status]="(s.kind === 'PLANNED' ? 'SCHED.KIND_PLANNED' : 'SCHED.KIND_ASSIGNED') | translate"
+                  [status]="'PROFILE_CHECKINS.CHIP_SCHEDULED' | translate"
                   [clickable]="false"
                 ></app-checkin-card>
                 <button
@@ -848,10 +901,6 @@
                   <dd>{{ s.dueAt | date: 'EEE d MMM · HH:mm' }}</dd>
                 </div>
                 <div>
-                  <dt>{{ 'SCHED.FREQUENCY' | translate }}</dt>
-                  <dd>{{ scheduleFrequencyLabel(s) }}</dd>
-                </div>
-                <div>
                   <dt>{{ 'SCHED.ENDS' | translate }}</dt>
                   <dd>{{ s.stopAt ? (s.stopAt | date: 'd MMM y') : ('SCHED.NO_END' | translate) }}</dd>
                 </div>
@@ -860,14 +909,6 @@
                   <dd [class.sched-off]="!s.reminderEnabled">
                     {{ s.reminderEnabled ? ('SCHED.REMINDER_AT' | translate: { time: shortTime(s.reminderTime) || '—' }) : ('SCHED.REMINDER_OFF' | translate) }}
                   </dd>
-                </div>
-                <div>
-                  <dt>{{ 'SCHED.QUESTIONS' | translate }}</dt>
-                  <dd>{{ s.questions?.length || 0 }}</dd>
-                </div>
-                <div *ngIf="s.status">
-                  <dt>{{ 'STATUS' | translate }}</dt>
-                  <dd>{{ ('CHECKIN_STATUS_' + (s.status | uppercase)) | translate }}</dd>
                 </div>
               </dl>
             </article>
@@ -1337,6 +1378,27 @@
               (click)="confirmScheduledDelete()" [disabled]="deletingScheduled">
         <span *ngIf="!deletingScheduled">{{ 'YES' | translate }}</span>
         <span *ngIf="deletingScheduled">{{ 'DELETING' | translate }}</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="pc-confirm-backdrop" *ngIf="withdrawTarget" (click)="closeWithdraw()"></div>
+<div class="pc-confirm-modal" *ngIf="withdrawTarget" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+  <div class="pc-confirm-content">
+    <button class="pc-confirm-close" type="button" (click)="closeWithdraw()">✕</button>
+    <div class="pc-confirm-title">
+      {{ (withdrawTarget === 'missed' ? 'PROFILE_CHECKINS.WITHDRAW_ALL_TITLE' : 'PROFILE_CHECKINS.WITHDRAW_TITLE') | translate: { count: assignedMissed.length } }}
+    </div>
+    <div class="pc-confirm-body">
+      <p class="pc-confirm-text">{{ 'PROFILE_CHECKINS.WITHDRAW_TEXT' | translate }}</p>
+    </div>
+    <div class="pc-confirm-actions">
+      <button class="pc-confirm-btn pc-confirm-btn--no" type="button" (click)="closeWithdraw()" [disabled]="withdrawing">
+        {{ 'CANCEL' | translate }}
+      </button>
+      <button class="pc-confirm-btn pc-confirm-btn--yes" type="button" (click)="confirmWithdraw()" [disabled]="withdrawing">
+        {{ 'PROFILE_CHECKINS.WITHDRAW_CONFIRM' | translate }}
       </button>
     </div>
   </div>

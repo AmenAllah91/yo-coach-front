@@ -872,9 +872,20 @@ export class ProfilClientComponent {
   private readonly SUBMISSIONS_FETCH_SIZE = 200;
   private readonly SUBMISSIONS_MAX_EXTRA_PAGES = 4;
 
-  assignedPage = 0;
-  assignedTotalPages = 0;
-  assignedPagesArray: Array<number | 'ellipsis'> = [];
+  /** « En attente » in three groups (see loadAssignedPage). */
+  assignedLate: FormAssignment[] = [];
+  assignedDue: FormAssignment[] = [];
+  assignedMissed: FormAssignment[] = [];
+  /** The missed group is folded until the coach opens it. */
+  showMissed = false;
+  /** Same limit as the coach's check-in inbox (CheckinInboxService.MISSED_AFTER_DAYS in CE). */
+  private readonly MISSED_AFTER_DAYS = 7;
+  nudgingId: string | null = null;
+  /** Check-in to withdraw, or 'missed' for every missed one; asks first. */
+  withdrawTarget: FormAssignment | 'missed' | null = null;
+  withdrawing = false;
+  /** « Programmés »: sends not done yet only (already sent check-ins are in « En attente »). */
+  plannedItems: ClientScheduleItemDto[] = [];
 
   scheduledPage = 0;
   scheduledPageSize = 5;
@@ -1145,12 +1156,10 @@ export class ProfilClientComponent {
 
   activeSubTab: 'submissions' | 'assigned' | 'scheduled' = 'submissions';
   private notificationAssignmentId: string | null = null;
-  assignedSearch = '';
 
   showCheckinModal = false;
   showFormSelectionModal = false;
 
-  scheduledCheckIns: ScheduledCheckIn[] = [];
   bodyMeasurements: BodyMeasurement[] = [];
 
   @Input() set clientIdInput(id: string) {
@@ -1714,10 +1723,6 @@ export class ProfilClientComponent {
       && a.getDate() === b.getDate();
   }
 
-  get assignedList(): FormAssignment[] {
-    return this.assignedAssignments;
-  }
-
   get submissionsList(): FormAssignment[] {
     return this.submissionAssignments;
   }
@@ -1816,8 +1821,10 @@ export class ProfilClientComponent {
   async loadClientAssignments(): Promise<void> {
     if (!this.clientId) return;
 
+    // All three at once: the tab counts and the summary line need them.
     this.loadSubmissionsPage(0);
-    this.loadAssignedPage(0);
+    this.loadAssignedPage();
+    this.loadScheduledItems(0);
   }
 
   /**
@@ -2031,56 +2038,202 @@ export class ProfilClientComponent {
       });
   }
 
-  loadAssignedPage(page: number = this.assignedPage): void {
+  /**
+   * « En attente » (2026-11-23): every check-in sent and not answered yet, in one go (a client has a few), sorted in
+   * three groups: late (1 to 7 days), due (today or later, or no date) and missed (late by more than 7 days, the same
+   * limit as the coach's check-in inbox), the missed ones folded. The page argument is kept for the old callers.
+   */
+  loadAssignedPage(_page?: number): void {
     if (!this.clientId) return;
 
     this.loadingAssignments = true;
     this.assignmentsError = null;
-    this.assignedPage = Math.max(page, 0);
+    const clientId = this.clientId;
+    const fetchPage = (index: number) => this.assignmentsApi.pageOwnerAssignmentsByAssigneeIdStatuses(
+      index,
+      this.SUBMISSIONS_FETCH_SIZE,
+      'dueAt',
+      'ASC',
+      clientId,
+      ['ASSIGNED', 'OPENED'],
+      undefined,
+      true, // shown in place by the section loader
+      true // rows only: no questions, form name included
+    );
 
-    this.assignmentsApi
-      .pageOwnerAssignmentsByAssigneeIdStatuses(
-        this.assignedPage,
-        this.PAGE_SIZE,
-        'assignedAt',
-        'DESC',
-        this.clientId,
-        ['ASSIGNED', 'OPENED'],
-        this.assignedSearch,
-        true, // shown in place by the section loader
-        true // rows only: no questions, form name included
-      )
+    fetchPage(0).pipe(
+      switchMap(first => {
+        const extraPages = Math.min((first.totalPages || 1) - 1, this.SUBMISSIONS_MAX_EXTRA_PAGES);
+        if (extraPages <= 0) return of([first]);
+        return forkJoin([of(first), ...Array.from({ length: extraPages }, (_, i) => fetchPage(i + 1))]);
+      }),
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (pages) => {
+        if (clientId !== this.clientId) return;
+        const rows = pages.flatMap(res => res.content || []);
+        this.assignedAssignments = rows;
+        void this.attachFormNames(rows);
+        this.groupAssigned();
+        this.syncAssignmentsCache();
+        this.loadingAssignments = false;
+        this.assignedLoaded = true;
+      },
+      error: () => {
+        this.assignmentsError = 'Failed to load assigned check-ins';
+        this.loadingAssignments = false;
+        this.assignedLoaded = true;
+      },
+    });
+  }
+
+  /** Days between the due day and today (local days): 1 = due yesterday, 0 = due today, −1 = due tomorrow. */
+  private daysPastDue(a: FormAssignment, now = new Date()): number | null {
+    const due = a.dueAt ? new Date(a.dueAt) : null;
+    if (!due || Number.isNaN(due.getTime())) return null;
+    const dayStart = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    return Math.round((dayStart(now) - dayStart(due)) / 86_400_000);
+  }
+
+  /** Late (1 to 7 days), due (today or later, or no date) or missed (more than 7 days late). */
+  assignedGroupOf(a: FormAssignment): 'late' | 'due' | 'missed' {
+    const days = this.daysPastDue(a);
+    if (days === null || days <= 0) return 'due';
+    return days > this.MISSED_AFTER_DAYS ? 'missed' : 'late';
+  }
+
+  private groupAssigned(): void {
+    const time = (a: FormAssignment) => (a.dueAt ? new Date(a.dueAt).getTime() : Number.MAX_SAFE_INTEGER);
+    const rows = this.assignedAssignments;
+    // Most late first; soonest first; the most recent missed first.
+    this.assignedLate = rows.filter(a => this.assignedGroupOf(a) === 'late').sort((a, b) => time(a) - time(b));
+    this.assignedDue = rows.filter(a => this.assignedGroupOf(a) === 'due').sort((a, b) => time(a) - time(b));
+    this.assignedMissed = rows.filter(a => this.assignedGroupOf(a) === 'missed').sort((a, b) => time(b) - time(a));
+  }
+
+  /** Tab badge and summary: sent and not answered, the missed ones left out (they are folded). */
+  get waitingCount(): number {
+    return this.assignedLate.length + this.assignedDue.length;
+  }
+
+  private shortDate(value?: string | null): string {
+    const date = value ? new Date(value) : null;
+    if (!date || Number.isNaN(date.getTime())) return '';
+    return date.toLocaleDateString(this.currentLang === 'fr' ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short' });
+  }
+
+  /** True when the coach already pressed « Relancer » today (one reminder a day). */
+  nudgedToday(a: FormAssignment): boolean {
+    if (!a.nudgedAt) return false;
+    const nudged = new Date(a.nudgedAt);
+    const now = new Date();
+    return nudged.getFullYear() === now.getFullYear() && nudged.getMonth() === now.getMonth()
+      && nudged.getDate() === now.getDate();
+  }
+
+  /** « Envoyé le 25 nov. · 3 jours de retard »: the due date is in the tile, never written twice. */
+  assignedSubtitle(a: FormAssignment): string {
+    const t = (key: string, params?: object) => this.translate.instant('PROFILE_CHECKINS.' + key, params);
+    const parts: string[] = [];
+    // The tile shows the due date (or the send date when there is none): the send date only when it is another day.
+    const sent = this.shortDate(a.assignedAt);
+    if (sent && a.dueAt && sent !== this.shortDate(a.dueAt)) parts.push(t('SENT_ON', { date: sent }));
+    const days = this.daysPastDue(a);
+    const group = this.assignedGroupOf(a);
+    if (group === 'missed') parts.push(t('MISSED'));
+    else if (group === 'late') parts.push(days === 1 ? t('LATE_ONE') : t('LATE_MANY', { count: days }));
+    else if (days === null) parts.push(t('NO_DUE'));
+    else if (days === 0) parts.push(t('DUE_TODAY'));
+    else if (days === -1) parts.push(t('DUE_TOMORROW'));
+    else parts.push(t('DUE_IN', { count: -days }));
+    if (this.nudgedToday(a)) parts.push(t('NUDGED_TODAY'));
+    return parts.join(' · ');
+  }
+
+  assignedStatus(a: FormAssignment): string {
+    const group = this.assignedGroupOf(a);
+    const key = group === 'late' ? 'PROFILE_CHECKINS.CHIP_LATE'
+      : group === 'missed' ? 'PROFILE_CHECKINS.CHIP_MISSED'
+      : a.status === 'OPENED' ? 'PROFILE_CHECKINS.CHIP_OPENED' : 'PROFILE_CHECKINS.CHIP_SENT';
+    return this.translate.instant(key);
+  }
+
+  /** « Relancer »: one notification to the client about this check-in (the server allows one a day). */
+  nudgeAssignment(a: FormAssignment, event: Event): void {
+    event.stopPropagation();
+    if (this.nudgingId || this.nudgedToday(a)) return;
+    this.nudgingId = a.id;
+    this.assignmentsApi.nudge(a.id)
+      .pipe(finalize(() => (this.nudgingId = null)), takeUntil(this.destroy$))
       .subscribe({
-        next: (res) => {
-          this.assignedAssignments = res.content || [];
-          void this.attachFormNames(this.assignedAssignments);
-          this.assignedTotalPages = res.totalPages || 0;
-          this.assignedPage = res.number ?? this.assignedPage;
-          this.assignedPagesArray = this.buildCompactPages(this.assignedPage, this.assignedTotalPages);
-          this.syncAssignmentsCache();
-          this.loadingAssignments = false;
-          this.assignedLoaded = true;
+        next: (updated) => {
+          a.nudgedAt = updated?.nudgedAt ?? new Date().toISOString();
+          this.showCheckinNotice('PROFILE_CHECKINS.NUDGE_SENT');
         },
-        error: () => {
-          this.assignmentsError = 'Failed to load assigned check-ins';
-          this.loadingAssignments = false;
-          this.assignedLoaded = true;
+        error: (err) => {
+          if (err?.status === 409) {
+            a.nudgedAt = new Date().toISOString();
+            this.showCheckinNotice('PROFILE_CHECKINS.NUDGE_ALREADY', true);
+          } else {
+            this.showCheckinNotice(err?.status === 503 ? 'PROFILE_CHECKINS.NUDGE_UNAVAILABLE' : 'PROFILE_CHECKINS.ACTION_FAILED', true);
+          }
         },
       });
   }
 
-  onAssignedSearchChange(): void {
-    this.loadAssignedPage(0);
+  /** Asks before withdrawing one check-in (« Retirer ») or every missed one (« Tout retirer »). */
+  askWithdraw(target: FormAssignment | 'missed', event: Event): void {
+    event.stopPropagation();
+    this.withdrawTarget = target;
+  }
+
+  closeWithdraw(): void {
+    if (this.withdrawing) return;
+    this.withdrawTarget = null;
+  }
+
+  confirmWithdraw(): void {
+    const target = this.withdrawTarget;
+    if (!target || this.withdrawing) return;
+    this.withdrawing = true;
+    const req$: Observable<unknown> = target === 'missed'
+      ? this.assignmentsApi.bulkCancel(this.assignedMissed.map(a => a.id))
+      : this.assignmentsApi.cancel(target.id);
+    req$.pipe(finalize(() => (this.withdrawing = false)), takeUntil(this.destroy$)).subscribe({
+      next: () => {
+        this.withdrawTarget = null;
+        this.showCheckinNotice('PROFILE_CHECKINS.WITHDRAWN');
+        this.loadAssignedPage();
+      },
+      error: () => {
+        this.withdrawTarget = null;
+        this.showCheckinNotice('PROFILE_CHECKINS.ACTION_FAILED', true);
+        this.loadAssignedPage();
+      },
+    });
+  }
+
+  private showCheckinNotice(key: string, error = false): void {
+    const text = this.translate.instant(key);
+    if (error) this.toastService.error(text);
+    else this.toastService.success(text);
+  }
+
+  /** Next automatic send (earliest planned one), for the summary line. */
+  get nextPlannedSend(): string {
+    const first = this.plannedItems.find(s => !!s.dueAt);
+    if (!first?.dueAt) return '';
+    const date = new Date(first.dueAt);
+    if (Number.isNaN(date.getTime())) return '';
+    const locale = this.currentLang === 'fr' ? 'fr-FR' : 'en-GB';
+    const day = date.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' });
+    const time = date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+    return `${day}, ${time}`;
   }
 
   changeSubmissionsPage(page: number): void {
     if (page < 0 || page >= this.submissionsTotalPages || page === this.submissionsPage) return;
     this.showSubmissionsPage(page);
-  }
-
-  changeAssignedPage(page: number): void {
-    if (page < 0 || page >= this.assignedTotalPages || page === this.assignedPage) return;
-    this.loadAssignedPage(page);
   }
 
   private buildCompactPages(current: number, total: number): Array<number | 'ellipsis'> {
@@ -2149,7 +2302,7 @@ export class ProfilClientComponent {
 
           this.closeModal();
           this.loadSubmissionsPage(this.submissionsPage);
-          this.loadAssignedPage(this.assignedPage);
+          this.loadAssignedPage();
         },
         error: (err) => {
           console.error(err);
@@ -2198,11 +2351,6 @@ export class ProfilClientComponent {
   /** "09:00:00" → "09:00". */
   shortTime(value?: string | null): string {
     return value ? String(value).slice(0, 5) : '';
-  }
-
-  /** Assigned and not answered after its real due date. */
-  isCheckinLate(a: FormAssignment): boolean {
-    return !!a.dueAt && new Date(a.dueAt).getTime() < Date.now() && a.status !== 'SUBMITTED' && a.status !== 'REVIEWED';
   }
 
   openAssignmentModal(a: FormAssignment): void {
@@ -3147,40 +3295,17 @@ export class ProfilClientComponent {
           endDate: hasSchedule ? (endDate || null) : null,
         })
       ),
-      switchMap(() =>
-        this.assignmentsApi.pageOwnerAssignmentsByAssigneeIdStatuses(
-          0,
-          this.PAGE_SIZE,
-          'assignedAt',
-          'DESC',
-          this.clientId,
-          ['ASSIGNED', 'OPENED'],
-          this.assignedSearch,
-          false,
-          true
-        )
-      ),
-      switchMap((res: any) =>
-        from((async () => {
-          const items: FormAssignment[] = res.content ?? [];
-          await this.attachFormNames(items);
-          this.assignedTotalPages = res.totalPages || 0;
-          this.assignedPage = res.number ?? 0;
-          this.assignedPagesArray = this.buildCompactPages(this.assignedPage, this.assignedTotalPages);
-          return items;
-        })())
-      ),
-      map((items: FormAssignment[]) => [...items]),
       finalize(() => {
         this.loadingAssignments = false;
       })
     ).subscribe({
-      next: (items) => {
-        this.assignedAssignments = items;
-        this.syncAssignmentsCache();
+      next: () => {
         this.preselectFormId = null;
         this.activeTab = 'checkins';
-        this.activeSubTab = 'assigned';
+        // A scheduled form may send its first one later: it then shows in « Programmés ».
+        this.activeSubTab = hasSchedule ? 'scheduled' : 'assigned';
+        this.loadAssignedPage();
+        this.loadScheduledItems(0);
       },
       error: (err) => {
         console.error(err);
@@ -3196,7 +3321,7 @@ export class ProfilClientComponent {
   }
 
   get activeSchedulesCount(): number {
-    return this.scheduledCheckIns.length;
+    return this.plannedItems.length;
   }
 
   openScheduleDetail(item: ClientScheduleItemDto): void {
@@ -3262,48 +3387,43 @@ export class ProfilClientComponent {
       });
   }
 
-  deleteSchedule(schedule: ScheduledCheckIn): void {
-    this.scheduledCheckIns = this.scheduledCheckIns.filter(s => s.id !== schedule.id);
-    if (this.selectedSchedule?.id === schedule.id) {
-      this.selectedSchedule = null;
-    }
-  }
-
+  /**
+   * « Programmés » (2026-11-23): the sends not done yet (kind PLANNED). The server list also holds check-ins already
+   * sent with a later due date (kind ASSIGNED, any status): they are in « En attente » and were shown twice.
+   */
   loadScheduledItems(page: number = this.scheduledPage): void {
     if (!this.clientId) return;
 
     this.loadingScheduled = true;
     this.scheduledError = null;
-    this.scheduledPage = Math.max(page, 0);
+    const clientId = this.clientId;
 
-    this.formsApi.getClientScheduleItemsPage(this.clientId, this.scheduledPage, this.scheduledPageSize)
-      .pipe(finalize(() => (this.loadingScheduled = false)))
+    this.formsApi.getClientScheduleItems(clientId)
+      .pipe(finalize(() => (this.loadingScheduled = false)), takeUntil(this.destroy$))
       .subscribe({
-        next: (res) => {
-          this.scheduledItems = res.content ?? [];
-          this.scheduledTotalPages = res.totalPages || 0;
-          this.scheduledPage = res.number ?? this.scheduledPage;
-          this.scheduledPagesArray = Array.from({ length: this.scheduledTotalPages }, (_, i) => i);
+        next: (items) => {
+          if (clientId !== this.clientId) return;
+          this.plannedItems = (items ?? [])
+            .filter(item => item.kind === 'PLANNED')
+            .sort((a, b) => new Date(a.dueAt ?? 0).getTime() - new Date(b.dueAt ?? 0).getTime());
+          this.showScheduledPage(page);
         },
-        error: () => {
-          // Fallback if backend page endpoint is not available yet.
-          this.formsApi.getClientScheduleItems(this.clientId).subscribe({
-            next: (items) => {
-              const all = items ?? [];
-              this.scheduledTotalPages = Math.ceil(all.length / this.scheduledPageSize);
-              this.scheduledPagesArray = Array.from({ length: this.scheduledTotalPages }, (_, i) => i);
-              const start = this.scheduledPage * this.scheduledPageSize;
-              this.scheduledItems = all.slice(start, start + this.scheduledPageSize);
-            },
-            error: () => (this.scheduledError = 'Failed to load scheduled items'),
-          });
-        },
+        error: () => (this.scheduledError = 'Failed to load scheduled items'),
       });
+  }
+
+  private showScheduledPage(page: number): void {
+    const all = this.plannedItems;
+    this.scheduledTotalPages = Math.ceil(all.length / this.scheduledPageSize);
+    this.scheduledPage = Math.min(Math.max(page, 0), Math.max(this.scheduledTotalPages - 1, 0));
+    this.scheduledPagesArray = Array.from({ length: this.scheduledTotalPages }, (_, i) => i);
+    const start = this.scheduledPage * this.scheduledPageSize;
+    this.scheduledItems = all.slice(start, start + this.scheduledPageSize);
   }
 
   changeScheduledPage(page: number): void {
     if (page < 0 || page >= this.scheduledTotalPages || page === this.scheduledPage) return;
-    this.loadScheduledItems(page);
+    this.showScheduledPage(page);
   }
 
 

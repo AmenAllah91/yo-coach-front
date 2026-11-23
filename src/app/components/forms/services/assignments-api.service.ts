@@ -31,6 +31,8 @@ export interface FormAssignment {
   /** Answers in progress (page by page) and the part the client was on: they resume there. */
   draftAnswers?: any[] | null;
   draftSectionId?: string | null;
+  /** Last « Relancer » by the coach (one a day). */
+  nudgedAt?: string | null;
 }
 export interface BulkAssignResult {
   created: FormAssignment[];
@@ -137,6 +139,14 @@ export class AssignmentsApiService {
   bulkCancel(ids: string[]): Observable<CheckinBulkResult> {
     return this.http.post<CheckinBulkResult>(`${this.baseUrl}/owner/bulk-cancel`, { ids }, {
       headers: { 'X-Skip-Toast': 'true' },
+    });
+  }
+
+  /** « Relancer »: notifies the client about a check-in not answered yet (409 if already done today). */
+  nudge(assignmentId: string): Observable<FormAssignment> {
+    return this.http.post<FormAssignment>(`${this.baseUrl}/${encodeURIComponent(assignmentId)}/nudge`, null, {
+      // The profile says itself what went wrong (already reminded today, notifications down).
+      headers: { 'X-Skip-Loader': 'true', 'X-Skip-Toast': 'true' },
     });
   }
 
