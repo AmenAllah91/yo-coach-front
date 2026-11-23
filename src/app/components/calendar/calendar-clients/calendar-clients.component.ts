@@ -22,7 +22,7 @@ import { CalendarCheckIn, ProgramScheduleService } from 'app/service/program-sch
 import { ClientTasksService, TaskCalendarItem } from 'app/service/client-tasks.service';
 import { ProgramShiftModalComponent } from '@shared/components/program-shift-modal/program-shift-modal.component';
 import {
-  ExerciseLine, MealLine, NutritionReport, WorkoutReport, checkInTone, exerciseLines, mealLines, nutritionReport, tasksTone,
+  ExerciseLine, MealLine, NutritionReport, WorkoutReport, checkInTone, exerciseLines, mealLines, nutritionReport, plannedMeals, tasksTone,
   workoutReport,
 } from '@shared/models/calendar-day';
 import { CopyDaysModalComponent } from '@shared/program-copy/copy-days-modal.component';
@@ -350,6 +350,8 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
   createProgramStartDate = '';
   readonly createProgramDurationOptions = [1, 2, 3, 4, 5, 6, 8, 10, 12];
   createProgramSaving = false;
+  /** A nutrition program created here: its kind (full meal plan, targets of the day, targets per meal), as in the library. */
+  createProgramKind: NutritionPlanKind = 'FOODS';
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   workoutPrograms: any[] = [];
@@ -452,6 +454,8 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
     }
 
     this.restorePlace();
+    // From the menu: the client seen last time (the calendar opened on « Choisir un client » at every visit).
+    if (!this.embeddedClientId && !this.hideClientFilter && !this.selectedClient) this.selectedClient = this.lastClient();
     this.loadCalendar();
     if (!this.hideClientFilter) {
       this.getClients();
@@ -491,9 +495,10 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
   /** Échap closes the side panel (not while one of its windows is open: Échap closes that window). */
   @HostListener('document:keydown.escape')
   onEscape(): void {
-    if (this.cardMenu || this.pick) {
+    if (this.cardMenu || this.pick || this.copyWeekMenu) {
       this.cardMenu = null;
       this.pick = null;
+      this.copyWeekMenu = false;
       return;
     }
     if (this.sidePanel && !this.removeTarget && !this.shiftTarget && !this.copyWeek) this.closeDay();
@@ -509,6 +514,7 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
   @HostListener('document:click')
   closeCardMenu(): void {
     this.cardMenu = null;
+    this.copyWeekMenu = false;
   }
 
   private outletKind(kind: CalendarType, item: WorkoutProgram | NutritionProgram): DayOutletKind {
@@ -766,7 +772,32 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
 
   onClientChange(clientId: string): void {
     this.selectedClient = clientId;
+    this.rememberClient(clientId);
     this.loadCalendar();
+  }
+
+  /* ---- The client seen last time in the calendar of the menu, kept in this browser (one per coach). ---- */
+
+  private get lastClientKey(): string {
+    return `yo-coach.calendar-client.${this.coachId || ''}`;
+  }
+
+  private lastClient(): string {
+    try {
+      return localStorage.getItem(this.lastClientKey) || '';
+    } catch {
+      return '';
+    }
+  }
+
+  private rememberClient(clientId: string): void {
+    if (this.embeddedClientId || this.hideClientFilter) return;
+    try {
+      if (clientId) localStorage.setItem(this.lastClientKey, clientId);
+      else localStorage.removeItem(this.lastClientKey);
+    } catch {
+      // No storage: the calendar opens on « Choisir un client ».
+    }
   }
 
   getClients(): void {
@@ -776,6 +807,12 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
         next: (res) => {
           // Active clients only (backlog-programmes.md A1): the calendar creates programs for the one selected.
           this.clients = (res || []).filter((client: any) => (client?.clientStatus ?? 'ACTIVE') === 'ACTIVE');
+          // The client kept from last time is gone (archived, another coach): back to « Choisir un client ».
+          if (!this.embeddedClientId && this.selectedClient && !this.clients.some((client) => client.id === this.selectedClient)) {
+            this.onClientChange('');
+          } else if (this.selectedClient) {
+            this.rememberClient(this.selectedClient);
+          }
         },
         error: (err) => {
           console.error('Error loading clients', err);
@@ -913,6 +950,7 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
         (period?.workoutPlans || []).forEach((plan) => plan?.id && workoutPlans.set(plan.id, plan));
         (period?.mealPlans || []).forEach((plan) => plan?.id && mealPlans.set(plan.id, plan));
         this.checkInsByMonth.set(month, period?.checkIns || []);
+        if (/^\d{4}-\d{2}-\d{2}/.test(String(period?.today || ''))) this.serverToday = String(period.today).slice(0, 10);
         if (!this.freshPlans) this.applyPlans();
         this.afterRead();
       },
@@ -989,7 +1027,7 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private planRanges(plans: any[], endOf: (plan: any, start: string) => string | null): PlanRange[] {
-    const today = todayIso();
+    const today = this.ruleToday;
     return plans.flatMap((plan) => {
       const start = this.toCalendarDateOnly(plan?.startDate);
       if (!plan?.id || !start) return [];
@@ -1277,7 +1315,9 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
 
 
   addDays(dateStr: string, days: number): string {
-    const d = new Date(dateStr);
+    // A local day: `new Date('2026-11-23')` is midnight UTC, the 22nd in the evening for a coach in America (every
+    // card of the calendar was then drawn one day too early).
+    const d = this.parseCalendarDate(dateStr) || new Date(dateStr);
     d.setDate(d.getDate() + days);
     return this.formatDateToYYYYMMDD(d);
   }
@@ -1303,7 +1343,8 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
 
     plans.forEach((plan) => {
       this.nutritionDays(plan).forEach((day: any) => {
-        const hasMeals = !!day.meals && day.meals.length > 0;
+        // Only meals with something in them: a day of empty meals is still a day to fill (backlog-programmes.md R3).
+        const hasMeals = plannedMeals(day).length > 0;
 
         const hasTargets =
           !!day.dayTargets &&
@@ -1339,7 +1380,7 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
           return;
         }
 
-        const meals: NutritionMeal[] = (day.meals || []).map(
+        const meals: NutritionMeal[] = plannedMeals(day).map(
           (meal: any, i: number) => ({
             id: meal.id || `${plan.id}-meal-${i}`,
             name: meal.name || `Meal ${i + 1}`,
@@ -1841,6 +1882,18 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
     return todayIso();
   }
 
+  /** Today for the server, sent with each month read (null: an older server). */
+  private serverToday: string | null = null;
+
+  /**
+   * Today for the rules of the days (a past day no longer moves, receives a copy nor rests): the server's day, since
+   * the server decides. On the coach's computer it may be another day around midnight (another time zone): the screen
+   * then offered a move the server refused. « Aujourd'hui » on the screen stays the coach's own day.
+   */
+  private get ruleToday(): string {
+    return this.serverToday || todayIso();
+  }
+
   /** « Cartes : Détail | Résumé » (the same control as the editors' calendar). */
   setWeekDetail(on: boolean): void {
     if (on !== this.weekDetailed) this.toggleWeekDetail();
@@ -1898,7 +1951,7 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
   /** The day of the dragged day's program on that date, in its row, when it can go there (K1-K3, C4). */
   private dropTargetOf(day: WeekRowDay, kind: CalendarType): WorkoutProgram | NutritionProgram | null {
     const moving = this.dragging;
-    if (!moving || kind !== this.dragKind || day.dateString === moving.date || day.dateString < todayIso()) return null;
+    if (!moving || kind !== this.dragKind || day.dateString === moving.date || day.dateString < this.ruleToday) return null;
     const cells: WeekCell<WorkoutProgram | NutritionProgram>[] = kind === 'workout' ? day.workout : day.nutrition;
     const target = cells.find((cell) => cell.item.programId === moving.programId)?.item || null;
     return target && !this.isLocked(kind, target) ? target : null;
@@ -1924,7 +1977,7 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
   /** A day not done, not past, in a program not stopped: it can move, receive a copy, rest. */
   isLocked(kind: CalendarType, item: WorkoutProgram | NutritionProgram): boolean {
     if (kind === 'workout') return this.isDayLocked(item as WorkoutProgram);
-    return !!item.done || (!!item.date && item.date < todayIso())
+    return !!item.done || (!!item.date && item.date < this.ruleToday)
       || this.nutritionRanges.some((range) => range.programId === item.programId && range.locked);
   }
 
@@ -1963,32 +2016,69 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
   }
 
   /* « Copier une semaine » (C4): the editor's « Dupliquer la semaine » window, onto empty days only (the user's choice). */
-  copyWeek: { programId: string; dayCount: number; sourceWeek: number; filled: boolean[]; locked: boolean[] } | null = null;
+  copyWeek: { kind: CalendarType; programId: string; dayCount: number; sourceWeek: number; filled: boolean[]; locked: boolean[] } | null = null;
+  /** A workout program and a nutrition plan in the week shown: the button asks which one to copy. */
+  copyWeekMenu = false;
 
-  /** The workout program of the week shown (the one with the most days in it), with its days as the window reads them. */
-  openCopyWeek(): void {
+  /** The program of that type in the week shown that can still change (the one with the most days in it). */
+  private copyWeekProgram(kind: CalendarType): PlanRange | null {
     const days = this.getWeekDates().map((date) => this.formatDateToYYYYMMDD(date));
-    const today = todayIso();
-    const program = this.workoutRanges
+    return (kind === 'workout' ? this.workoutRanges : this.nutritionRanges)
       .filter((range) => !range.locked && range.start <= days[6] && days[0] <= range.end)
       .sort((a, b) => days.filter((date) => b.start <= date && date <= b.end).length
-        - days.filter((date) => a.start <= date && date <= a.end).length)[0];
-    const plan = program ? this.workoutPlansById.get(program.programId) : null;
+        - days.filter((date) => a.start <= date && date <= a.end).length)[0] || null;
+  }
+
+  /** « Copier une semaine »: the workout week or the nutrition week; with both in the week shown, the coach chooses. */
+  onCopyWeekClick(event: Event): void {
+    event.stopPropagation();
+    const kinds = (['workout', 'nutrition'] as CalendarType[]).filter((kind) => !!this.copyWeekProgram(kind));
+    if (kinds.length > 1) {
+      this.copyWeekMenu = !this.copyWeekMenu;
+      return;
+    }
+    this.openCopyWeek(kinds[0] || 'workout');
+  }
+
+  /** The program of the week shown, with its days as the copy window reads them (filled, locked). */
+  openCopyWeek(kind: CalendarType = 'workout'): void {
+    this.copyWeekMenu = false;
+    const days = this.getWeekDates().map((date) => this.formatDateToYYYYMMDD(date));
+    const today = this.ruleToday;
+    const program = this.copyWeekProgram(kind);
+    const plan = program ? (kind === 'workout' ? this.workoutPlansById : this.mealPlansById).get(program.programId) : null;
     if (!program || !plan) {
       this.toast.info(this.translate.instant('CALENDAR_COPY_NO_PROGRAM'));
       return;
     }
-    const dayCount = Math.max((plan.workoutDays || []).length, this.daysBetween(program.start, program.end) + 1);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const dayAt = (index: number) => (plan.workoutDays || []).find((day: any) => Number(day?.dayNumber) === index + 1);
-    const filled = Array.from({ length: dayCount }, (_, index) => {
-      const day = dayAt(index);
-      return !!day && (day.restDay === true || workoutReport(day).exercises.length > 0);
-    });
-    const locked = Array.from({ length: dayCount }, (_, index) =>
-      this.addDays(program.start, index) < today || workoutDayActive(dayAt(index)));
+    let filled: boolean[];
+    let locked: boolean[];
+    let dayCount: number;
+    if (kind === 'workout') {
+      dayCount = Math.max((plan.workoutDays || []).length, this.daysBetween(program.start, program.end) + 1);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const dayAt = (index: number) => (plan.workoutDays || []).find((day: any) => Number(day?.dayNumber) === index + 1);
+      filled = Array.from({ length: dayCount }, (_, index) => {
+        const day = dayAt(index);
+        return !!day && (day.restDay === true || workoutReport(day).exercises.length > 0);
+      });
+      locked = Array.from({ length: dayCount }, (_, index) =>
+        this.addDays(program.start, index) < today || workoutDayActive(dayAt(index)));
+    } else {
+      // The days of the plan as the calendar shows them (a free day is filled, a day without meal nor target is empty).
+      const items = this.nutritionPrograms.filter((item) => item.programId === program.programId);
+      const dayAt = (index: number) => items.find((item) => Number(item.dayNumber) === index + 1);
+      dayCount = Math.max(items.length, this.daysBetween(program.start, program.end) + 1);
+      filled = Array.from({ length: dayCount }, (_, index) => {
+        const item = dayAt(index);
+        return !!item && !item.emptyDay;
+      });
+      locked = Array.from({ length: dayCount }, (_, index) =>
+        this.addDays(program.start, index) < today || !!dayAt(index)?.done);
+    }
     const first = days[0] < program.start ? program.start : days[0];
     this.copyWeek = {
+      kind,
       programId: program.programId,
       dayCount,
       sourceWeek: Math.floor(this.daysBetween(program.start, first) / 7) + 1,
@@ -2005,7 +2095,8 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
       copies.map((copy) => ({ from: (copy.from ?? 0) + 1, to: copy.to + 1 })))
       .subscribe({
         next: (result) => {
-          const start = this.workoutRanges.find((range) => range.programId === target.programId)?.start || '';
+          const start = (target.kind === 'workout' ? this.workoutRanges : this.nutritionRanges)
+            .find((range) => range.programId === target.programId)?.start || '';
           const date = (day: number) => (this.parseCalendarDate(this.addDays(start, day - 1)) || new Date())
             .toLocaleDateString(this.calendarLocale, { weekday: 'short', day: 'numeric', month: 'short' });
           const details = result.skipped
@@ -2542,7 +2633,7 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
   /** A day the client already did something on, or a past day, is read in the editor (K1, as the editor does). */
   isDayLocked(item: WorkoutProgram): boolean {
     return !!item.done
-      || (!!item.date && item.date < todayIso())
+      || (!!item.date && item.date < this.ruleToday)
       || this.workoutRanges.some((range) => range.programId === item.programId && range.locked);
   }
 
@@ -2629,7 +2720,7 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
       this.toast.info(this.translate.instant('ASSIGN_FLOW.LOCKED_ERROR'));
       return;
     }
-    if (dateStr < todayIso()) {
+    if (dateStr < this.ruleToday) {
       this.toast.info(this.translate.instant('CALENDAR_DAY_PAST'));
       return;
     }
@@ -2654,6 +2745,7 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
     // A day in the past cannot start a program (A2): it starts today.
     this.createProgramStartDate = dateStr && dateStr >= todayIso() ? dateStr : todayIso();
     this.createProgramSaving = false;
+    this.createProgramKind = this.createProgramKinds[0]?.kind || 'FOODS';
     this.createProgramPreviews = {};
     this.createProgramConfirmRows = null;
     this.createProgramConfirmed = false;
@@ -2689,6 +2781,21 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
   get normalizedCreateProgramDurationWeeks(): number {
     const weeks = Number(this.createProgramDurationWeeks) || 4;
     return Math.max(1, Math.min(weeks, 52));
+  }
+
+  /** The nutrition kinds the coach allows (Paramètres), in the library's order. */
+  get createProgramKinds(): { kind: NutritionPlanKind; title: string; text: string; icon: string }[] {
+    const kinds: { kind: NutritionPlanKind; title: string; text: string; icon: string }[] = [];
+    if (this.coachSettingsService.canCreateFullMealPlan()) {
+      kinds.push({ kind: 'FOODS', title: 'FULL_MEAL_PLAN', text: 'FULL_MEAL_PLAN_DESCRIPTION', icon: 'restaurant_menu' });
+    }
+    if (this.coachSettingsService.canCreateMacroDailyPlan()) {
+      kinds.push({ kind: 'DAY_MACROS', title: 'MACRO_TOTAL_DAY_PLAN', text: 'MACRO_TOTAL_DAY_DESCRIPTION', icon: 'today' });
+    }
+    if (this.coachSettingsService.canCreateMacroEachMealPlan()) {
+      kinds.push({ kind: 'MEAL_MACROS', title: 'MACRO_EACH_MEAL_PLAN', text: 'MACRO_EACH_MEAL_DESCRIPTION', icon: 'pie_chart' });
+    }
+    return kinds;
   }
 
   get canCreateCalendarProgram(): boolean {
@@ -2834,7 +2941,8 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
       startDate,
       endDate: this.createProgramEndDate,
       date: null,
-      trackingMode: null,
+      // The kind chosen: the same tracking mode as the library's 3 editors (the calendar then opens the right one).
+      trackingMode: this.createProgramKind === 'DAY_MACROS' ? 'TOTAL_FOR_DAY' : this.createProgramKind === 'MEAL_MACROS' ? 'EACH_MEAL' : null,
       mealDays,
       coach: null,
       client: this.getSelectedClientRef(),

@@ -6,6 +6,8 @@ import { nutritionCopyController } from '../nutrition-day-copy';
 import { NutritionDraftState } from '../nutrition-draft-state';
 import { AfterViewChecked, Component, DoCheck, ElementRef, HostListener, OnInit, ViewChild, inject } from '@angular/core';
 import { ActiveDayRail } from '@shared/program-calendar/active-day-rail';
+import { ProgramStructureRailComponent } from '@shared/program-structure-rail/program-structure-rail.component';
+import { nutritionRailWeeks } from '../nutrition-rail';
 import { ConfirmDialogService } from '@shared/components/confirm-dialog/confirm-dialog.service';
 import { LeavesUnsavedChanges, warnBeforeUnload } from '@config/guard/unsaved-changes.guard';
 import { NutritionClientMode } from '../nutrition-client-mode';
@@ -31,7 +33,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 @Component({
   selector: 'app-create-macro-plan',
   standalone: true,
-  imports: [ProgramCalendarComponent, DayWindowHeadComponent, DayWindowFootComponent, ViewSwitchComponent, CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule, EmptyDaysModalComponent, LockedProgramBannerComponent, ProgramOverflowComponent, CopyDaysModalComponent, CopiedDayBannerComponent, ClientProgramDatesComponent],
+  imports: [ProgramStructureRailComponent, ProgramCalendarComponent, DayWindowHeadComponent, DayWindowFootComponent, ViewSwitchComponent, CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule, EmptyDaysModalComponent, LockedProgramBannerComponent, ProgramOverflowComponent, CopyDaysModalComponent, CopiedDayBannerComponent, ClientProgramDatesComponent],
   templateUrl: './create-macro-plan.component.html',
   styleUrls: ['./create-macro-plan.component.scss', '../_nutrition-builder-template.scss', '../../program-library/_workout-builder-layout.scss', '../../program-library/_plan-edit-dialog.scss', '../_nutrition-rail-parity.scss', '../_nutrition-day-parity.scss', '../../program-library/_builder-rail-readable.scss', '../../../shared/program-calendar/_program-calendar-editor.scss', '../../program-library/_builder-rail-active.scss'],
 })
@@ -316,6 +318,11 @@ export class CreateMacroPlanComponent implements OnInit, DoCheck, AfterViewCheck
       this.addDay();
     }
     this.selectedDay = this.days[0] || null;
+  }
+
+  /** Semaines et jours de « Structure du programme » (même composant que l'éditeur de séances). */
+  get railWeeks() {
+    return nutritionRailWeeks(this.draft, this.days, this.nutritionWeeks, this.translate);
   }
 
   get nutritionWeeks(): Array<{ weekNumber: number; days: Array<{ day: MealDay; index: number }> }> {
@@ -663,6 +670,28 @@ export class CreateMacroPlanComponent implements OnInit, DoCheck, AfterViewCheck
       SAVE (CREATE OR UPDATE)
   ======================================================*/
   savePlan() {
+    this.draft.error = '';
+    if (!this.planName.trim()) {
+      this.draft.error = this.translate.instant('NUTRITION_PLAN_NAME_REQUIRED');
+      return;
+    }
+    // The day and meal to fix, translated, before sending (R2), as the plan of foods does; an empty meal never blocks.
+    const dayValidation = this.draft.firstIssue(this.days);
+    if (dayValidation) {
+      this.draft.error = dayValidation;
+      return;
+    }
+    // Whole grams: MacroTargets is an Integer on CE (a typed 12.5 was cut to 12 by the server, not rounded).
+    this.days.forEach(day => (day.meals || []).forEach(meal => {
+      const t = meal.mealTargets;
+      if (!t) return;
+      const before = [t.proteinG, t.carbsG, t.fatG];
+      t.proteinG = Math.round(Number(t.proteinG) || 0);
+      t.carbsG = Math.round(Number(t.carbsG) || 0);
+      t.fatG = Math.round(Number(t.fatG) || 0);
+      if (before.some((value, i) => value !== [t.proteinG, t.carbsG, t.fatG][i])) this.updateMealCalories(meal);
+      t.calories = Math.round(Number(t.calories) || 0);
+    }));
     this.days.forEach(day => this.updateDayTotals(day));
     this.clientMode.refreshDates(this.days);
 

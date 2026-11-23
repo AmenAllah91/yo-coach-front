@@ -30,7 +30,7 @@ interface DayItem { plan: any; day: any; date: Date; }
 /** One day of the week shown: its date and what is planned on it (nothing = empty line). */
 interface WeekRow { key: string; date: Date; today: boolean; selected: boolean; items: DayItem[]; }
 interface FileProgram { plan: any; type: 'PDF' | 'EXCEL'; isCurrent: boolean; }
-interface ReplacementOption { item: FoodReplacementGroupItem; name: string; calories: number; protein: number; carbs: number; fat: number; }
+interface ReplacementOption { item: FoodReplacementGroupItem; groupId?: string; quantity: number; name: string; calories: number; protein: number; carbs: number; fat: number; }
 
 /**
  * Client nutrition, same content and logic as the mobile NutritionScreen and NutritionDetailScreen: month list
@@ -923,17 +923,19 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
         this.loadingSwapFoodId = null;
         const originalName = String(food?.name || food?.foodRef?.name || '').trim().toLowerCase();
         const originalRef = this.foodRefId(food);
-        const options = (groups || []).flatMap(group => group.foods || []).filter(option =>
+        const options = (groups || []).flatMap(group => (group.foods || []).map(option => ({ option, groupId: group.id }))).filter(({ option }) =>
           !(originalRef && option.foodRefId === originalRef) && String(option.name || '').trim().toLowerCase() !== originalName);
         if (!options.length) { this.showToast(this.t('No replacement foods found', 'Aucun aliment de remplacement trouvé')); return; }
         this.swapMeal = meal;
         this.swapFood = food;
         this.swapSelected = null;
-        this.swapOptions = options.map(option => {
+        this.swapOptions = options.map(({ option, groupId }) => {
           const serving = Number(option.servingSize) > 0 ? Number(option.servingSize) : 100;
-          const factor = Number(option.quantity ?? 100) / serving;
+          // 2026-11-23: the quantity CE will give (scaled on the planned one: rice 250 g → pasta 250 g, not the 100 g of the group).
+          const quantity = Number(option.adjustedQuantity ?? option.quantity ?? 100);
+          const factor = quantity / serving;
           return {
-            item: option, name: option.name ? capitalizeFirst(option.name) : 'Food',
+            item: option, groupId, quantity, name: option.name ? capitalizeFirst(option.name) : 'Food',
             calories: Math.round(Number(option.energy || 0) * factor), protein: Math.round(Number(option.protein || 0) * factor),
             carbs: Math.round(Number(option.carbohydrates || 0) * factor), fat: Math.round(Number(option.fat || 0) * factor),
           };
@@ -954,7 +956,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     this.replacingFoodId = food.id;
     this.subscriptions.add(this.nutritionService.replaceAssignedMealFood(item.plan.id, item.day.id, meal.id, food.id, {
       replacementFoodRefId: option.item.foodRefId, servingId: option.item.servingId ?? null,
-      quantity: option.item.quantity, unit: option.item.unit,
+      quantity: option.quantity, unit: option.item.unit, groupId: option.groupId ?? null,
     }).subscribe({
       next: (updatedPlan: any) => {
         this.replacingFoodId = null;

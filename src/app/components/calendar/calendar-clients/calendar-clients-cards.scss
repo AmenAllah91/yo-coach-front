@@ -64,3 +64,7 @@
   background: light-dark(#fff, #1d2125); }
 .dp-kebab .wr-kebab .material-icons { font-size: 18px; }
 .dp-kebab .wr-menu__list { top: 42px; left: 0; right: auto; }
+
+/* « Copier une semaine »: the choice between the workout week and the nutrition week, under its button. */
+.copy-week { position: relative; display: inline-flex; }
+.copy-week__list { top: calc(100% + 4px); right: 0; }

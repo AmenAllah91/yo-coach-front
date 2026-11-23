@@ -80,9 +80,6 @@ export class AddMealModalComponent implements OnChanges, OnInit, LeavesUnsavedCh
   directions: string[] = [''];
 
   ingredientPickerOpen = false;
-  foodSearch = '';
-  foods: any[] = [];
-  searchingFoods = false;
 
   nutritionView: NutritionView = 'whole';
   nutritionSource: NutritionSource = 'foods';
@@ -345,8 +342,6 @@ export class AddMealModalComponent implements OnChanges, OnInit, LeavesUnsavedCh
     this.step = step;
     this.nutritionService.prefetchPickerFoods();
     this.ingredientPickerOpen = false;
-    this.foodSearch = '';
-    this.foods = [];
     this.submitted = false;
   }
 
@@ -429,48 +424,6 @@ export class AddMealModalComponent implements OnChanges, OnInit, LeavesUnsavedCh
   closeIngredientPicker(): void {
     this.foodsTouched = true;
     this.ingredientPickerOpen = false;
-    this.foodSearch = '';
-    this.foods = [];
-  }
-
-  searchFoods(): void {
-    this.searchingFoods = true;
-    this.nutritionService.filteredFoods(0, 12, this.foodSearch.trim()).subscribe({
-      next: (response: any) => {
-        this.foods = Array.isArray(response) ? response : response?.content || [];
-        this.searchingFoods = false;
-      },
-      error: () => {
-        this.foods = [];
-        this.searchingFoods = false;
-      },
-    });
-  }
-
-  addFood(food: any): void {
-    if (!food) return;
-
-    if (this.foodAlreadyAdded(food) || this.saving) return;
-    this.clearServerErrors();
-
-    const row: IngredientRow = {
-      id: this.newId(),
-      name: food.name || '',
-      category: food.category || food.foodGroup || this.translate.instant('FOOD'),
-      quantity: null,
-      unit: '',
-      foodRef: food,
-      calories: null,
-      protein: null,
-      carbs: null,
-      fat: null,
-      manual: false,
-    };
-    this.applyServing(row, defaultServingOf(food));
-    this.ingredients.push(row);
-
-    this.loadFoodDetails();
-    this.closeIngredientPicker();
   }
 
   addManualIngredient(): void {
@@ -585,6 +538,12 @@ export class AddMealModalComponent implements OnChanges, OnInit, LeavesUnsavedCh
       }
       this.coverImage = data;
       this.coverImageName = file.name;
+      // 2026-11-23: a big photo is redrawn at 1024 px, JPEG 0.8: it is copied into every plan day using the meal.
+      if (file.size > 300 * 1024) {
+        void this.shrinkCover(data).then((small) => {
+          if (version === this.coverReadVersion && this.coverImage === data) this.coverImage = small;
+        });
+      }
     };
     reader.onerror = () => {
       if (version !== this.coverReadVersion) return;
@@ -592,6 +551,34 @@ export class AddMealModalComponent implements OnChanges, OnInit, LeavesUnsavedCh
       this.imageError = this.translate.instant('IMAGE_READ_ERROR');
     };
     reader.readAsDataURL(file);
+  }
+
+  private shrinkCover(data: string): Promise<string> {
+    return new Promise((resolve) => {
+      const image = new Image();
+      image.onload = () => {
+        const side = Math.max(image.naturalWidth || 1, image.naturalHeight || 1);
+        const scale = Math.min(1, 1024 / side);
+        const width = Math.max(1, Math.round((image.naturalWidth || 1) * scale));
+        const height = Math.max(1, Math.round((image.naturalHeight || 1) * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext('2d');
+        if (!context) return resolve(data);
+        context.fillStyle = '#fff'; // a transparent PNG gets a white background
+        context.fillRect(0, 0, width, height);
+        context.drawImage(image, 0, 0, width, height);
+        try {
+          const small = canvas.toDataURL('image/jpeg', 0.8);
+          resolve(small.length < data.length ? small : data);
+        } catch {
+          resolve(data);
+        }
+      };
+      image.onerror = () => resolve(data);
+      image.src = data;
+    });
   }
 
   removeCoverImage(): void {
@@ -908,9 +895,6 @@ export class AddMealModalComponent implements OnChanges, OnInit, LeavesUnsavedCh
     this.closeServingForm();
     this.directions = [''];
     this.ingredientPickerOpen = false;
-    this.foodSearch = '';
-    this.foods = [];
-    this.searchingFoods = false;
     this.nutritionView = 'whole';
     this.nutritionSource = 'foods';
     this.quickMacros = this.emptyMacros();

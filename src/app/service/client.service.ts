@@ -5,6 +5,9 @@ import { environment } from '../../environments/environment';
 
 export type ClientStatus = 'ACTIVE' | 'ARCHIVED';
 
+/** Order of the coach's client list (CE: name A→Z by default, name Z→A, newest first). */
+export type ClientListSort = 'name' | 'name_desc' | 'recent';
+
 export interface ClientStatusCounts {
   active: number;
   archived: number;
@@ -52,7 +55,9 @@ export class ClientService {
     page: number = 0,
     size: number = 10,
     status?: ClientStatus,
-    skipLoader = false
+    skipLoader = false,
+    search?: string,
+    sort?: ClientListSort,
   ): Observable<any> {
     let params = new HttpParams()
       .set('page', page.toString())
@@ -60,6 +65,14 @@ export class ClientService {
 
     if (status) {
       params = params.set('status', status);
+    }
+    // 2026-11-23: searched and sorted by the server, in the whole list (not only the page shown).
+    const q = search?.trim();
+    if (q) {
+      params = params.set('q', q);
+    }
+    if (sort) {
+      params = params.set('sort', sort);
     }
 
     return this.http.get<any>(`${this.apiUrl}/coach/${coachId}`, {

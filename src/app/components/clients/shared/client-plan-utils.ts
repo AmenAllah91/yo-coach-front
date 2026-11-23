@@ -223,12 +223,11 @@ function hasRecipeContent(meal: any): boolean {
 }
 
 /** Meal.isEmptyPlaceholder on mobile: an untouched "Meal 2" with nothing in it is hidden from the client. */
+/** A meal without food or macros is empty whatever its name (« New Meal », « Déjeuner »), as on the server (R3). */
 export function isEmptyPlaceholderMeal(day: any, meal: any): boolean {
-  const name = String(meal?.name ?? '').trim();
-  const untouched = !name || /^meal\s+\d+$/i.test(name);
   const macros = mealMacros(meal);
   const log = (day?.clientMealLogs || []).find((item: any) => String(item?.mealId) === String(meal?.id ?? meal?._id));
-  return untouched && !(meal?.foods || []).length && !macros.calories && !macros.protein && !macros.carbs && !macros.fat
+  return !(meal?.foods || []).length && !macros.calories && !macros.protein && !macros.carbs && !macros.fat
     && !hasRecipeContent(meal) && !mealReportStatus(day, meal)
     && !String(log?.note ?? meal?.note ?? '').trim() && !String(log?.photoPath ?? meal?.photoPath ?? '').trim();
 }

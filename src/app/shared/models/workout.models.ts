@@ -65,4 +65,9 @@ export interface WorkoutPlan {
   overlap?: boolean;
   /** One-based week numbers explicitly published by the coach. */
   publishedWeeks?: number[];
+  /**
+   * Two devices: +1 at each coach save. Sent back with a save; the server refuses it (409 PLAN_CHANGED) when another
+   * save came in between. Absent on older programs: no check.
+   */
+  revision?: number | null;
 }

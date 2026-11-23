@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, tap } from 'rxjs';
 
 import { ExerciseService, PageResponse } from 'app/service/exercise.service';
 import { WorkoutService } from 'app/service/workout.service';
@@ -12,6 +12,8 @@ import {
   TypeWorkoutPlan,
 } from '@shared/models/workout.models';
 import { Exercise, ExerciseSet, WorkoutSetType } from '@shared/models/exercice.models';
+import { daysInCalendarOrder } from '@shared/models/program-days';
+import { workoutDayActive } from '@shared/models/client-day-activity';
 import {
   GroupType,
   Measure,
@@ -312,12 +314,19 @@ export class WorkoutPlanFacade {
 
   createPlan() {
     const payload = this.buildSavePayload();
-    return this.workoutService.createWorkout(payload, true); // the toolbar shows the saving state
+    return this.workoutService.createWorkout(payload, true) // the toolbar shows the saving state
+      .pipe(tap((saved) => this.rememberRevision(saved)));
   }
 
   updatePlan(overlap?: 'SHIFT' | 'REMOVE' | null) {
     const payload = this.buildSavePayload();
-    return this.workoutService.updateWorkout(payload.id!, payload, true, overlap);
+    return this.workoutService.updateWorkout(payload.id!, payload, true, overlap)
+      .pipe(tap((saved) => this.rememberRevision(saved)));
+  }
+
+  /** The next save sends the revision the server gave this one (two devices: 409 PLAN_CHANGED otherwise). */
+  private rememberRevision(saved: WorkoutPlan | null | undefined): void {
+    if (saved && saved.revision != null) this.setPlan({ ...this.plan, revision: saved.revision });
   }
 
   private clean(value: any): string {
@@ -1632,12 +1641,39 @@ export class WorkoutPlanFacade {
       coach: plan.coach ?? { id: this.userid },
     });
 
-    const normalized = this.normalizeDaysFromApi(plan.workoutDays || []);
+    // By day number: a day moved on the calendar may still be at its old rank in the list (program-days.ts).
+    const normalized = this.normalizeDaysFromApi(daysInCalendarOrder(plan.workoutDays || []));
 
     this.days = normalized;
     this.selectedDay = normalized[0] || null;
 
     this.syncPlanDays();
+  }
+
+  /**
+   * After a save of a client's program: the days the client did while the editor was open. The server kept them as
+   * the client did them (never erased by a save); they replace ours, at the same place, so the editor shows them done
+   * and locks them. Returns these days.
+   */
+  takeClientDays(saved: WorkoutDay[] | null | undefined): WorkoutDay[] {
+    const stored = new Map((saved || []).filter((day) => day?.id).map((day) => [day.id, day]));
+    const taken: WorkoutDay[] = [];
+    this.days.forEach((day, index) => {
+      const done = stored.get(day.id);
+      if (!done || !workoutDayActive(done) || workoutDayActive(day)) return;
+      const fresh = this.normalizeDaysFromApi([done])[0];
+      // The place stays ours (number, date, « Day N »).
+      fresh.dayNumber = day.dayNumber;
+      fresh.date = day.date;
+      fresh.dayOfWeek = day.dayOfWeek;
+      fresh.title = day.title;
+      fresh.name = day.name;
+      this.days[index] = fresh;
+      if (this.selectedDay === day) this.selectedDay = fresh;
+      taken.push(fresh);
+    });
+    if (taken.length) this.syncPlanDays();
+    return taken;
   }
 
   private parseDateOnly(value: string): Date {

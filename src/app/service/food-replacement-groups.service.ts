@@ -18,6 +18,8 @@ export interface FoodReplacementGroupItem {
   servingSize?: number;
   servingDescription?: string;
   general?: boolean;
+  /** 2026-11-23: only for a plan line: the quantity the client gets, scaled by CE on the planned quantity. */
+  adjustedQuantity?: number | null;
 }
 
 export interface FoodReplacementGroup {

@@ -4,10 +4,11 @@ import { CommonModule } from '@angular/common';
 import { ProgramCalendarComponent } from '@shared/program-calendar/program-calendar.component';
 import { dayWindowPlan, prefetchDayWindowPlan } from '@shared/program-calendar/day-window-prefetch';
 import { nutritionPlanKind } from '@shared/models/nutrition-plan-kind';
-import { CalendarCell, CalendarMenuItem, CalendarTone, CalendarWeek, calendarIcon } from '@shared/program-calendar/program-calendar.model';
+import { CalendarCell, CalendarLine, CalendarMenuItem, CalendarTone, CalendarWeek, calendarIcon } from '@shared/program-calendar/program-calendar.model';
+import { exerciseLines } from '@shared/models/calendar-day';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { FeatherModule } from 'angular-feather';
-import { ProgramScheduleService } from 'app/service/program-schedule.service';
+import { CalendarCopyResult, ProgramScheduleService } from 'app/service/program-schedule.service';
 import { CoachSubscriptionStateService } from 'app/service/coach-subscription-state.service';
 import { ToastService } from 'app/service/toast.service';
 import { WorkoutService } from 'app/service/workout.service';
@@ -22,6 +23,7 @@ import {
 import {
   OverviewAlert,
   OverviewDay,
+  OverviewExercise,
   OverviewItem,
   ProgramKind,
   ProgramOverview,
@@ -43,6 +45,8 @@ export interface ClientProgramAction {
   open?: boolean;
   /** assign: the start to propose; calendar: the day to show. */
   date?: string | null;
+  /** message: a text ready in the chat (a missed workout), the coach changes it or sends it. */
+  draft?: string | null;
 }
 
 /**
@@ -93,6 +97,21 @@ export class ClientProgramsComponent implements OnInit, OnChanges {
   pick: DayPick | null = null;
   /** A quick change of a day is being saved. */
   savingDay = false;
+  /**
+   * « Répéter la semaine »: week {@code source} copied onto the next week or every next week, only on their empty days.
+   * {@code preview}: what the server would do (dry run), read again when the choice changes.
+   */
+  repeat: {
+    source: number;
+    mode: 'ALL' | 'NEXT';
+    loading: boolean;
+    failed: boolean;
+    saving: boolean;
+    preview: CalendarCopyResult | null;
+  } | null = null;
+  private repeatRead = 0;
+  /** The missed workouts the coach closed (« × »), kept in this browser: `programId:dayNumber`. */
+  private dismissedMissed = new Set<string>(ClientProgramsComponent.readDismissedMissed());
   /** The menu of a day, fixed on the screen (the week scrolls sideways: a menu inside it would be cut). */
   dayMenu: { day: OverviewDay; top: number; left: number } | null = null;
   /**
@@ -154,6 +173,10 @@ export class ClientProgramsComponent implements OnInit, OnChanges {
 
   @HostListener('document:keydown.escape')
   cancelPick(): void {
+    if (this.repeat) {
+      this.closeRepeat();
+      return;
+    }
     if (this.preview) {
       this.closePreview();
       return;
@@ -597,6 +620,306 @@ export class ClientProgramsComponent implements OnInit, OnChanges {
     });
   }
 
+  /* ---------------- missed workouts: tell the client, or do it another day ---------------- */
+
+  trackByDate = (_: number, day: OverviewDay) => day.date;
+
+  /** How far back a missed workout is shown (yesterday and the 2 days before). */
+  static readonly MISSED_DAYS = 3;
+  private static readonly MISSED_KEY = 'yc-missed-dismissed';
+
+  private static readDismissedMissed(): string[] {
+    try {
+      const value = JSON.parse(localStorage.getItem(ClientProgramsComponent.MISSED_KEY) || '[]');
+      return Array.isArray(value) ? value.map(String) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private missedKey(day: OverviewDay): string {
+    return `${this.overview?.current?.program.id || ''}:${day.dayNumber}`;
+  }
+
+  private isoMinus(days: number): string {
+    const date = this.toDate(this.today);
+    date.setDate(date.getDate() - days);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  }
+
+  /** The workouts of the last 3 days the client did not do (not today: the day is not over), the latest first. */
+  get missedDays(): OverviewDay[] {
+    const c = this.overview?.current;
+    if (!this.isWorkout || !this.writable || !c || c.program.file || this.pick) return [];
+    const from = this.isoMinus(ClientProgramsComponent.MISSED_DAYS);
+    const days = (c.allWeeks?.length ? c.allWeeks.flat() : c.days)
+      .filter(day => day.state === 'MISSED' && day.dayNumber > 0 && day.date < this.today && day.date >= from)
+      .filter(day => !this.dismissedMissed.has(this.missedKey(day)));
+    return days.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
+  }
+
+  /** The first empty day from today: where « Refaire » puts the missed workout in one click. */
+  get nextEmptyDay(): OverviewDay | null {
+    const c = this.overview?.current;
+    if (!c || !this.quickEdit) return null;
+    const days = c.allWeeks?.flat() || [];
+    return days.find(day => day.state === 'EMPTY' && this.canChange(day)) || null;
+  }
+
+  /** « Lun. 22 nov. · Push A » (a workout without its own name: « Séance »). */
+  missedLabel(day: OverviewDay): string {
+    return `${this.weekday(day.date)} ${this.dayMonth(day.date)} · ${this.dayHeadline(day)}`;
+  }
+
+  /** « Refaire mer. 25 nov. » */
+  redoLabel(target: OverviewDay): string {
+    return this.ht(`Redo on ${this.weekday(target.date)} ${this.dayMonth(target.date)}`, `Refaire ${this.weekday(target.date)} ${this.dayMonth(target.date)}`);
+  }
+
+  /** The missed workout copied onto the first empty day to come (the missed day stays in the history), with « Annuler ». */
+  redoMissed(day: OverviewDay, event?: Event): void {
+    event?.stopPropagation();
+    const item = this.overview?.current?.program;
+    const target = this.nextEmptyDay;
+    if (!item || !target || this.savingDay) return;
+    this.savingDay = true;
+    this.schedule.copyDays(item.id, [{ from: day.dayNumber, to: target.dayNumber }]).subscribe({
+      next: result => {
+        this.savingDay = false;
+        if (!result.copied.length) {
+          const line = this.skippedLines(result.skipped, item)[0];
+          this.toast.error(line || this.translate.instant('CALENDAR_CHANGE_ERROR'));
+          return;
+        }
+        this.schedule.announceCalendarChange(result.undoId,
+          this.ht(`« ${this.dayHeadline(day)} » planned again on ${this.longDate(target.date)}`, `« ${this.dayHeadline(day)} » reprogrammée le ${this.longDate(target.date)}`),
+          [this.ht('The missed day stays in the history.', 'Le jour manqué reste dans l’historique.')]);
+      },
+      error: err => {
+        this.savingDay = false;
+        this.toast.error(this.changeError(err));
+      },
+    });
+  }
+
+  /** « Autre jour »: the coach touches the empty day where the workout goes (the arrows show the other weeks). */
+  pickForMissed(day: OverviewDay, event?: Event): void {
+    const item = this.overview?.current?.program;
+    if (item) this.startPick('COPY_TO', day, item, event);
+  }
+
+  /** The chat opens with a kind message ready, in the coach's language: the coach changes it or sends it. */
+  messageForMissed(day: OverviewDay, event?: Event): void {
+    event?.stopPropagation();
+    const name = (this.clientName || '').trim().split(/\s+/)[0] || '';
+    const weekday = this.toDate(day.date).toLocaleDateString(this.locale(), { weekday: 'long' });
+    const title = day.title?.trim() && day.title.trim() !== 'Main Session' ? day.title.trim() : '';
+    const draft = this.ht(
+      `Hi${name ? ' ' + name : ''} 👋 I saw your ${title ? '« ' + title + ' » ' : ''}workout on ${weekday} wasn't done. Everything OK? We can move it to another day if you need.`,
+      `Salut${name ? ' ' + name : ''} 👋 J’ai vu que ta séance ${title ? '« ' + title + ' » ' : ''}de ${weekday} n’a pas été faite. Tout va bien ? Si besoin, on la déplace à un autre jour.`,
+    );
+    this.emit({ type: 'message', draft });
+  }
+
+  /** « × »: the coach saw it; it does not come back for that day (in this browser). */
+  dismissMissed(day: OverviewDay, event?: Event): void {
+    event?.stopPropagation();
+    this.dismissedMissed.add(this.missedKey(day));
+    try {
+      localStorage.setItem(ClientProgramsComponent.MISSED_KEY, JSON.stringify([...this.dismissedMissed].slice(-200)));
+    } catch {
+      // Private window: hidden until the page is reloaded.
+    }
+  }
+
+  /* ---------------- « Répéter la semaine » ---------------- */
+
+  private weekAt(number: number): OverviewDay[] {
+    return this.overview?.current?.allWeeks?.[number - 1] || [];
+  }
+
+  /** A week with something in it and at least one week after it: it can be repeated. */
+  canRepeat(week: number): boolean {
+    return this.quickEdit && !this.pick && week >= 1 && week < this.weekCount && this.weekAt(week).some(day => this.hasContent(day));
+  }
+
+  /** The week shown is empty to come and the one before has something: « Copier la semaine N ici ». */
+  get previousWeekToCopy(): number | null {
+    const before = this.shownWeekNumber - 1;
+    return this.emptyComingDays.length && this.canRepeat(before) ? before : null;
+  }
+
+  private repeatTargets(source: number, mode: 'ALL' | 'NEXT'): number[] {
+    const last = mode === 'NEXT' ? source + 1 : this.weekCount;
+    const weeks: number[] = [];
+    for (let w = source + 1; w <= Math.min(last, this.weekCount); w++) weeks.push(w);
+    return weeks;
+  }
+
+  /** Each day of the week copied onto the same weekday of the target weeks (the server keeps only the empty ones). */
+  private repeatCopies(source: number, mode: 'ALL' | 'NEXT'): { from: number; to: number }[] {
+    const from = this.weekAt(source);
+    const copies: { from: number; to: number }[] = [];
+    for (const week of this.repeatTargets(source, mode)) {
+      const to = this.weekAt(week);
+      from.forEach((day, i) => {
+        const target = to[i];
+        if (this.hasContent(day) && target && target.dayNumber > 0 && target.state !== 'OUT') {
+          copies.push({ from: day.dayNumber, to: target.dayNumber });
+        }
+      });
+    }
+    return copies;
+  }
+
+  /** Opens the window: every next week by default (the case of a coach who filled week 1), the next one when last. */
+  openRepeat(source: number, mode?: 'ALL' | 'NEXT', event?: Event): void {
+    event?.stopPropagation();
+    this.closeMenus();
+    if (!this.canRepeat(source)) return;
+    const only = source + 1 >= this.weekCount;
+    this.repeat = { source, mode: only ? 'NEXT' : mode || 'ALL', loading: true, failed: false, saving: false, preview: null };
+    this.readRepeatPreview();
+  }
+
+  setRepeatMode(mode: 'ALL' | 'NEXT'): void {
+    if (!this.repeat || this.repeat.mode === mode || this.repeat.saving) return;
+    this.repeat = { ...this.repeat, mode, loading: true, failed: false, preview: null };
+    this.readRepeatPreview();
+  }
+
+  retryRepeat(): void {
+    if (!this.repeat) return;
+    this.repeat = { ...this.repeat, loading: true, failed: false, preview: null };
+    this.readRepeatPreview();
+  }
+
+  closeRepeat(): void {
+    if (this.repeat?.saving) return;
+    this.repeat = null;
+  }
+
+  private readRepeatPreview(): void {
+    const r = this.repeat;
+    const item = this.overview?.current?.program;
+    if (!r || !item) return;
+    const read = ++this.repeatRead;
+    const copies = this.repeatCopies(r.source, r.mode);
+    if (!copies.length) {
+      this.repeat = { ...r, loading: false, preview: { copied: [], skipped: [], undoId: null } };
+      return;
+    }
+    this.schedule.copyDays(item.id, copies, true).subscribe({
+      next: preview => {
+        if (read !== this.repeatRead || !this.repeat) return;
+        this.repeat = { ...this.repeat, loading: false, preview };
+      },
+      error: () => {
+        if (read !== this.repeatRead || !this.repeat) return;
+        this.repeat = { ...this.repeat, loading: false, failed: true };
+      },
+    });
+  }
+
+  get repeatSourceDays(): OverviewDay[] {
+    return this.repeat ? this.weekAt(this.repeat.source) : [];
+  }
+
+  /** What a day of the week copied shows in the window: its workout, « Repos », or nothing. */
+  repeatDayLabel(day: OverviewDay): string {
+    if (day.state === 'OUT' || day.state === 'EMPTY') return '—';
+    if (day.state === 'REST') return this.isWorkout ? this.ht('Rest', 'Repos') : this.ht('Free', 'Libre');
+    return this.dayHeadline(day);
+  }
+
+  get repeatTitle(): string {
+    const r = this.repeat;
+    if (!r) return '';
+    const only = r.source + 1 >= this.weekCount;
+    return only
+      ? this.ht(`Repeat week ${r.source} on week ${r.source + 1}`, `Répéter la semaine ${r.source} sur la semaine ${r.source + 1}`)
+      : this.ht(`Repeat week ${r.source}`, `Répéter la semaine ${r.source}`);
+  }
+
+  /** « Semaine 2 · 30 nov. – 6 déc. » / « Semaines 2 à 4 ». */
+  repeatChoiceDetail(mode: 'ALL' | 'NEXT'): string {
+    const r = this.repeat;
+    if (!r) return '';
+    const weeks = this.repeatTargets(r.source, mode);
+    if (weeks.length === 1) {
+      const days = this.weekAt(weeks[0]);
+      const range = days.length ? ` · ${this.dayMonth(days[0].date)} – ${this.dayMonth(days[days.length - 1].date)}` : '';
+      return this.ht(`Week ${weeks[0]}`, `Semaine ${weeks[0]}`) + range;
+    }
+    return this.ht(`Weeks ${weeks[0]} to ${weeks[weeks.length - 1]}`, `Semaines ${weeks[0]} à ${weeks[weeks.length - 1]}`);
+  }
+
+  /** The preview, week by week: how many days each target week receives. */
+  get repeatWeeks(): { week: number; count: number }[] {
+    const r = this.repeat;
+    if (!r?.preview) return [];
+    return this.repeatTargets(r.source, r.mode).map(week => ({
+      week,
+      count: r.preview!.copied.filter(day => Math.ceil(day / 7) === week).length,
+    }));
+  }
+
+  get repeatCount(): number {
+    return this.repeat?.preview?.copied.length || 0;
+  }
+
+  /** « 3 jours déjà remplis ne changent pas. », « 2 jours passés ou faits ne changent pas. » */
+  get repeatKept(): string[] {
+    const skipped = this.repeat?.preview?.skipped || [];
+    const taken = skipped.filter(s => s.reason === 'TAKEN').length;
+    const locked = skipped.filter(s => s.reason === 'PAST' || s.reason === 'DONE').length;
+    const lines: string[] = [];
+    if (taken) lines.push(taken === 1
+      ? this.ht('1 day already filled stays as it is.', '1 jour déjà rempli reste comme il est.')
+      : this.ht(`${taken} days already filled stay as they are.`, `${taken} jours déjà remplis restent comme ils sont.`));
+    if (locked) lines.push(locked === 1
+      ? this.ht('1 day past or done stays as it is.', '1 jour passé ou fait reste comme il est.')
+      : this.ht(`${locked} days past or done stay as they are.`, `${locked} jours passés ou faits restent comme ils sont.`));
+    return lines;
+  }
+
+  get repeatButton(): string {
+    const n = this.repeatCount;
+    if (!n) return this.ht('Repeat', 'Répéter');
+    return n === 1 ? this.ht('Fill 1 day', 'Remplir 1 jour') : this.ht(`Fill ${n} days`, `Remplir ${n} jours`);
+  }
+
+  /** Saved at once, with « Annuler » for 15 s; the week shown stays where it is. */
+  confirmRepeat(): void {
+    const r = this.repeat;
+    const item = this.overview?.current?.program;
+    if (!r || !item || r.loading || r.saving || !this.repeatCount) return;
+    const copies = this.repeatCopies(r.source, r.mode);
+    this.repeat = { ...r, saving: true };
+    this.schedule.copyDays(item.id, copies).subscribe({
+      next: result => {
+        this.repeat = null;
+        const n = result.copied.length;
+        if (!n) {
+          this.toast.error(this.ht('Nothing was filled: those days are no longer empty.', "Rien n'a été rempli : ces jours ne sont plus vides."));
+          return;
+        }
+        const weeks = this.repeatTargets(r.source, r.mode);
+        const days = n === 1 ? this.ht('1 day filled', '1 jour rempli') : this.ht(`${n} days filled`, `${n} jours remplis`);
+        const title = weeks.length === 1
+          ? this.ht(`Week ${r.source} repeated on week ${weeks[0]}`, `Semaine ${r.source} répétée sur la semaine ${weeks[0]}`)
+          : this.ht(`Week ${r.source} repeated on weeks ${weeks[0]} to ${weeks[weeks.length - 1]}`,
+            `Semaine ${r.source} répétée sur les semaines ${weeks[0]} à ${weeks[weeks.length - 1]}`);
+        this.schedule.announceCalendarChange(result.undoId, title, [days]);
+      },
+      error: err => {
+        this.repeat = this.repeat ? { ...this.repeat, saving: false } : null;
+        this.toast.error(this.changeError(err));
+      },
+    });
+  }
+
   /** The day chosen while picking: the move or the copy is saved at once (with « Annuler »). */
   private finishPick(target: OverviewDay): void {
     const pick = this.pick;
@@ -875,12 +1198,14 @@ export class ClientProgramsComponent implements OnInit, OnChanges {
       const tone = this.calendarTone(day);
       const empty = tone === 'empty';
       const movable = this.canChange(day);
+      const lines = empty || tone === 'rest' ? [] : this.dayLines(day);
       return {
         day,
         index,
         tone,
         title: tone === 'rest' ? t(`REST_TITLE_${kind}`) : empty ? t('STATUS_EMPTY') : this.dayHeadline(day),
-        meta: empty || tone === 'rest' ? '' : this.dayMeta(day),
+        // The exercises say it: the count only for an older server (no list).
+        meta: empty || tone === 'rest' || lines.length ? '' : this.dayMeta(day),
         status: empty || day.state === 'OUT' ? '' : tone === 'rest' ? t(`STATUS_REST_${kind}`) : this.dayStatus(day),
         icon: calendarIcon(tone),
         date: this.dayMonth(day.date),
@@ -890,13 +1215,52 @@ export class ClientProgramsComponent implements OnInit, OnChanges {
         movable,
         rest: tone === 'rest',
         hasContent: !empty,
-        lines: [],
+        lines,
         out: day.state === 'OUT',
         note: day.note || null,
         pick: this.pick ? (this.isPickSource(day) ? 'source' : this.isPickTarget(day) ? 'target' : 'dim') : null,
       };
     });
     return [{ number: 1, title: '', range: '', filled: 0, days: this.weekDays, pad: [], cells, current: false, progress: 0, progressText: '' }];
+  }
+
+  /** At most this many exercises on a card, then « +N autres » (a long workout would make the whole week tall). */
+  static readonly CARD_EXERCISES = 3;
+
+  /**
+   * A workout day's exercises on its card, as in the editor's calendar: « A », « B1 / B2 » for a superset, the sets
+   * (« 4 × 8 », « 3 × 30 s »), the first ones only and « +2 autres ».
+   */
+  dayLines(day: OverviewDay): CalendarLine[] {
+    const list = this.isWorkout ? day.exercises || [] : [];
+    if (!list.length) return [];
+    const fake = { workoutSessions: [{ exercises: list.map((ex) => ({ name: ex.name, supersetGroupId: ex.groupId, groupType: ex.groupType })) }] };
+    const max = ClientProgramsComponent.CARD_EXERCISES;
+    // One more than the limit is shown rather than « +1 autre ».
+    const shown = list.length <= max + 1 ? list.length : max;
+    const lines: CalendarLine[] = exerciseLines(fake).slice(0, shown).map((line, i) => ({
+      label: line.label,
+      name: line.name || this.ht('Exercise', 'Exercice'),
+      detail: this.exerciseDetail(list[i]),
+      link: line.link,
+      groupKind: line.groupKind,
+    }));
+    const last = lines[lines.length - 1];
+    // A superset cut by the limit: its line stops on the last exercise shown.
+    if (shown < list.length && last && (last.link === 'start' || last.link === 'middle')) last.link = last.link === 'start' ? null : 'end';
+    if (shown < list.length) {
+      const more = list.length - shown;
+      lines.push({ label: '', name: '', detail: this.ht(`+${more} more`, `+${more} autre${more > 1 ? 's' : ''}`) });
+    }
+    return lines;
+  }
+
+  /** « 4 × 8 », « 3 × 8–12 », « 3 × 30 s », « 20 min ». */
+  private exerciseDetail(ex: OverviewExercise): string {
+    const unit = ex.unit === 'MINUTES' ? ' min' : ex.unit === 'SECONDS' ? ' s' : '';
+    const value = ex.value ? `${ex.value}${unit}` : '';
+    if (ex.sets > 1 || (ex.sets === 1 && ex.unit !== 'MINUTES')) return `${ex.sets} × ${value || '—'}`;
+    return value;
   }
 
   private calendarTone(day: OverviewDay): CalendarTone {

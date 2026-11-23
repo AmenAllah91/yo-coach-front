@@ -520,7 +520,7 @@
           <span class="swap-option__icon"><i-feather name="utensils"></i-feather></span>
           <span class="swap-option__copy">
             <strong>{{ option.name }}</strong>
-            <small>{{ quantity(option.item.quantity) }} {{ option.item.unit }} · {{ option.calories }} kcal
+            <small>{{ quantity(option.quantity) }} {{ option.item.unit }} · {{ option.calories }} kcal
               <b *ngIf="swapDelta(option) !== 0" [class.down]="swapDelta(option) < 0">({{ swapDelta(option) > 0 ? '+' : '' }}{{ swapDelta(option) }})</b>
             </small>
             <span class="macro-pills">

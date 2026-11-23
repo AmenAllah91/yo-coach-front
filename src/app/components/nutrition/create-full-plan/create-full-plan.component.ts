@@ -3,10 +3,11 @@ import { ClientProgramDatesComponent } from '@shared/components/client-program-d
 import { CopiedDayBannerComponent } from '@shared/program-copy/copied-day-banner.component';
 import { ProgramDayClipboardService } from '@shared/program-copy/program-day-clipboard.service';
 import { nutritionCopyController } from '../nutrition-day-copy';
-import { foodPageRange } from '../food-page-range';
 import { NutritionDraftState } from '../nutrition-draft-state';
 import { AfterViewChecked, Component, DoCheck, ElementRef, HostListener, OnInit, ViewChild, inject } from '@angular/core';
 import { ActiveDayRail } from '@shared/program-calendar/active-day-rail';
+import { ProgramStructureRailComponent } from '@shared/program-structure-rail/program-structure-rail.component';
+import { nutritionRailWeeks } from '../nutrition-rail';
 import { ConfirmDialogService } from '@shared/components/confirm-dialog/confirm-dialog.service';
 import { LeavesUnsavedChanges, warnBeforeUnload } from '@config/guard/unsaved-changes.guard';
 import { NutritionClientMode } from '../nutrition-client-mode';
@@ -32,18 +33,14 @@ import { NutritionCalendar } from '../nutrition-calendar';
 import { ProgramCalendarComponent } from '@shared/program-calendar/program-calendar.component';
 import { DayWindowFootComponent, DayWindowHeadComponent, ViewSwitchComponent } from '@shared/program-calendar/day-window-bars.component';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { nutritionDayState, nutritionDayValidationMessages, nutritionFoodValidationKey } from '@shared/models/nutrition-publication';
+import { nutritionDayState, nutritionDayValidationMessages } from '@shared/models/nutrition-publication';
 import { lineMacros, lineServing } from '@shared/models/nutrition-math';
-import { FoodServing } from '@shared/models/MealPlan';
-import { FoodServingFormComponent } from '../food-servings/food-serving-form.component';
 import { ServingUnitPipe } from '../food-servings/serving-unit.pipe';
 import { AddedFood, AddFoodModalComponent } from '../add-food-modal/add-food-modal.component';
 import {
   linePortions,
   lineServingIndex,
   lineServingOptions,
-  NEW_SERVING_OPTION,
-  PlanFoodServing,
   setLinePortions,
   setLineServing,
 } from '../food-servings/plan-food-serving';
@@ -51,7 +48,7 @@ import {
 @Component({
   selector: 'app-create-full-plan',
   standalone: true,
-  imports: [ProgramCalendarComponent, DayWindowHeadComponent, DayWindowFootComponent, ViewSwitchComponent, CommonModule, FormsModule, FeatherModule, DragDropModule, MealTemplatePickerComponent, MealTimeFieldComponent, TranslateModule, FoodServingFormComponent, ServingUnitPipe, EmptyDaysModalComponent, AddFoodModalComponent, LockedProgramBannerComponent, ProgramOverflowComponent, CopyDaysModalComponent, CopiedDayBannerComponent, ClientProgramDatesComponent],
+  imports: [ProgramStructureRailComponent, ProgramCalendarComponent, DayWindowHeadComponent, DayWindowFootComponent, ViewSwitchComponent, CommonModule, FormsModule, FeatherModule, DragDropModule, MealTemplatePickerComponent, MealTimeFieldComponent, TranslateModule, ServingUnitPipe, EmptyDaysModalComponent, AddFoodModalComponent, LockedProgramBannerComponent, ProgramOverflowComponent, CopyDaysModalComponent, CopiedDayBannerComponent, ClientProgramDatesComponent],
   templateUrl: './create-full-plan.component.html',
   styleUrls: ['./create-full-plan.component.scss', '../_nutrition-builder-template.scss', '../../program-library/_workout-builder-layout.scss', '../../program-library/_plan-edit-dialog.scss', '../_nutrition-rail-parity.scss', '../_nutrition-day-parity.scss', '../_nutrition-foods.scss', '../../program-library/_builder-rail-readable.scss', '../../../shared/program-calendar/_program-calendar-editor.scss', '../../program-library/_builder-rail-active.scss'],
 })
@@ -170,11 +167,7 @@ export class CreateFullPlanComponent implements OnInit, DoCheck, AfterViewChecke
 
 
   get canCreateTemplate(): boolean {
-    const roles = this.getCurrentRoles();
-
-    console.log('[ADMIN CHECK CURRENT ROLES]', roles);
-
-    return roles.some((role) =>
+    return this.getCurrentRoles().some((role) =>
       role === 'ROLE_ADMIN' ||
       role === 'ADMIN' ||
       role === 'ROLE_SUPER_ADMIN' ||
@@ -358,6 +351,11 @@ export class CreateFullPlanComponent implements OnInit, DoCheck, AfterViewChecke
       this.addDay();
     }
     this.selectedDay = this.days[0] || null;
+  }
+
+  /** Semaines et jours de « Structure du programme » (même composant que l'éditeur de séances). */
+  get railWeeks() {
+    return nutritionRailWeeks(this.draft, this.days, this.nutritionWeeks, this.translate);
   }
 
   get nutritionWeeks(): Array<{ weekNumber: number; days: Array<{ day: MealDay; index: number }> }> {
@@ -944,48 +942,25 @@ export class CreateFullPlanComponent implements OnInit, DoCheck, AfterViewChecke
   isFoodModalOpen = false;
   mealForModal: Meal | null = null;
 
-  filteredFoods: FoodRef[] = [];
-  foodSearch = '';
-  foodPage = 0;
-  readonly foodPageSize = 3;
-  foodTotalPages = 0;
-  get visibleFoodPages(): Array<number | null> { return foodPageRange(this.foodPage, this.foodTotalPages); }
-
-  foodStep: 'list' | 'detail' = 'list';
-  selectedFood: FoodRef | null = null;
-
-  readonly foodServing = new PlanFoodServing(() => this.canCreateTemplate);
-  readonly newServingOption = NEW_SERVING_OPTION;
-  foodValidationMessage = '';
-
   openFoodModal(meal: Meal) {
     if (this.isRecipeMeal(meal)) return;
-    this.foodValidationMessage = '';
     this.mealForModal = meal;
-    this.foodStep = 'list';
-    this.foodSearch = '';
     this.isFoodModalOpen = true;
   }
 
+  /** The meal under the Add Food modal's title, named as in the editor (« Repas 2 », not « Meal 2 »). */
+  get mealForModalName(): string {
+    const meal = this.mealForModal;
+    if (!meal) return '';
+    const index = (this.selectedDay?.meals || []).indexOf(meal);
+    return this.displayMealName(meal, Math.max(index, 0));
+  }
+
   closeFoodModal() {
-    this.foodValidationMessage = '';
     this.isFoodModalOpen = false;
     this.mealForModal = null;
-    this.selectedFood = null;
   }
 
-  filterFoods() {
-    this.foodPage = 0;
-    this.nutritionService
-      .filteredFoods(0, 100, this.foodSearch || '')
-      .subscribe((res) => {
-        this.filteredFoods = [...res.content].sort((a, b) => Number(a.general) - Number(b.general));
-        this.foodTotalPages = Math.ceil(this.filteredFoods.length / this.foodPageSize);
-      });
-  }
-
-  get pagedModalFoods(): FoodRef[] { return this.filteredFoods.slice(this.foodPage * 3, this.foodPage * 3 + 3); }
-  changeFoodPage(page: number) { if (page >= 0 && page < this.foodTotalPages) this.foodPage = page; }
   foodImage(food: FoodRef | Food): string {
     const value = food as any;
     return value?.imageUrl
@@ -1065,45 +1040,8 @@ export class CreateFullPlanComponent implements OnInit, DoCheck, AfterViewChecke
     }
   }
 
-  showFoodDetail(food: FoodRef) {
-    this.foodValidationMessage = '';
-    this.selectedFood = food;
-    this.foodStep = 'detail';
-    this.foodServing.start(food);
-  }
-
-  backToList() {
-    this.foodValidationMessage = '';
-    this.foodStep = 'list';
-    this.selectedFood = null;
-  }
-
-  recomputeAdjusted() {
-    this.foodValidationMessage = '';
-  }
-
-  get adj() {
-    const macros = this.foodServing.macros;
-    return { calories: macros.calories, protein: macros.protein, carbohydrates: macros.carbs, fat: macros.fat };
-  }
-
-  get unitSuggestions(): string[] {
-    return String(this.translate.instant('FOOD_UNIT_SUGGESTIONS')).split(',').map((unit) => unit.trim()).filter(Boolean);
-  }
-
-  createServing(serving: FoodServing): void {
-    this.foodServing.create(serving, (id, draft) => this.nutritionService.addFoodServing(id, draft), (food) => {
-      this.selectedFood = food;
-      this.filteredFoods = this.filteredFoods.map((item) => (item.id === food.id ? food : item));
-    });
-  }
-
-  private showFoodValidation(message: string): void {
-    this.foodValidationMessage = message;
-    this.toastService.error(this.translate.instant('NUTRITION_VALIDATION'), message);
-  }
-
-  /** A food chosen in the shared Add Food modal: added to the meal the modal was opened for. */
+  /** A food chosen in the shared Add Food modal: added to the meal the modal was opened for. The modal stays open
+   *  (keepOpen) for the next food; « Terminé » closes it. */
   onFoodAdded(line: AddedFood): void {
     const meal = this.mealForModal;
     if (!meal) return;
@@ -1112,48 +1050,6 @@ export class CreateFullPlanComponent implements OnInit, DoCheck, AfterViewChecke
     if (this.selectedDay) {
       this.recalcDayTargets(this.selectedDay);
     }
-    this.closeFoodModal();
-  }
-
-  addFoodToMeal() {
-    if (!this.mealForModal) {
-      this.showFoodValidation(this.translate.instant('FOOD_LINE_CHOOSE_MEAL'));
-      return;
-    }
-    if (!this.selectedFood) {
-      this.showFoodValidation(this.translate.instant('FOOD_LINE_SELECT_FOOD'));
-      return;
-    }
-
-    const line = this.foodServing.line(this.translate.instant('FOOD_UNIT_PIECE'));
-    const validationFood: Partial<Food> = {
-      name: this.selectedFood.name,
-      ...line,
-      foodRef: this.selectedFood,
-    };
-    const messageKey = nutritionFoodValidationKey(validationFood);
-    const message = messageKey ? this.translate.instant(messageKey) : '';
-    if (message) {
-      this.showFoodValidation(message);
-      return;
-    }
-    this.foodValidationMessage = '';
-
-    const food: Food = {
-      id: crypto.randomUUID?.() ?? Date.now().toString(),
-      name: this.selectedFood.name,
-      ...line,
-      foodRef: this.selectedFood,
-    };
-
-    this.mealForModal.foods.push(food);
-    this.recalcMealTargets(this.mealForModal);
-
-    if (this.selectedDay) {
-      this.recalcDayTargets(this.selectedDay);
-    }
-
-    this.closeFoodModal();
   }
 
   /* ============================================
@@ -1183,9 +1079,9 @@ export class CreateFullPlanComponent implements OnInit, DoCheck, AfterViewChecke
     const m = this.computeMealMacros(meal);
     meal.mealTargets = {
       calories: Math.round(m.calories),
-      proteinG: +m.protein.toFixed(1),
-      carbsG: +m.carbs.toFixed(1),
-      fatG: +m.fat.toFixed(1),
+      proteinG: Math.round(m.protein),
+      carbsG: Math.round(m.carbs),
+      fatG: Math.round(m.fat),
     };
   }
 
@@ -1206,9 +1102,9 @@ export class CreateFullPlanComponent implements OnInit, DoCheck, AfterViewChecke
 
     day.dayTargets = {
       calories: Math.round(totals.calories),
-      proteinG: +totals.protein.toFixed(1),
-      carbsG: +totals.carbs.toFixed(1),
-      fatG: +totals.fat.toFixed(1),
+      proteinG: Math.round(totals.protein),
+      carbsG: Math.round(totals.carbs),
+      fatG: Math.round(totals.fat),
     };
   }
 
@@ -1257,6 +1153,15 @@ export class CreateFullPlanComponent implements OnInit, DoCheck, AfterViewChecke
 
   getFoodFat(food: Food) {
     return +this.computeFoodMacros(food).fat.toFixed(1);
+  }
+
+  /** 2026-11-23: « Riz 250 g »: what the coach had planned on a line the client swapped (CE replacedFrom). */
+  replacedLabel(food: Food): string {
+    const planned = (food as any)?.replacedFrom;
+    if (!planned) return '';
+    const quantity = Number(planned.quantity);
+    const amount = Number.isFinite(quantity) && quantity > 0 ? String(Math.round(quantity * 100) / 100) : '';
+    return [planned.name, amount, planned.unit].filter((part) => part !== null && part !== undefined && String(part).trim()).join(' ');
   }
 
 

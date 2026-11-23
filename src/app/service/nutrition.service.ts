@@ -185,27 +185,17 @@ export class NutritionService {
     });
   }
 
-  filteredFoods(
-    page: number = 0,
-    size: number = 20,
-    search?: string
-  ): Observable<any> {
-    let params = `page=${page}&size=${size}`;
-    if (search) {
-      params += `&search=${search}`;
-    }
-
-    return this.http.get<any>(
-      `${environment.baseApiUrl}/api/food-ref/filtered?${params}`
-    ).pipe(map(response => response?.content ? { ...response, content: response.content.map((f: any) => localizeFood(f)) } : response));
-  }
-
   /** Foods of the Add Food modal (first 100, custom foods first), by search: kept 2 min, the modal opens at once. */
-  private readonly pickerFoods = new Map<string, { at: number; foods: any[] }>();
+  private readonly pickerFoods = new Map<string, { at: number; foods: any[]; truncated: boolean }>();
 
   pickerFoodsSnapshot(search: string, maxAgeMs = 120_000): any[] | null {
+    return this.pickerFoodsResult(search, maxAgeMs)?.foods ?? null;
+  }
+
+  /** The cached list of a search, and whether the server had more foods than the 100 sent. */
+  pickerFoodsResult(search: string, maxAgeMs = 120_000): { foods: any[]; truncated: boolean } | null {
     const known = this.pickerFoods.get(search.trim().toLowerCase());
-    return known && Date.now() - known.at < maxAgeMs ? known.foods : null;
+    return known && Date.now() - known.at < maxAgeMs ? { foods: known.foods, truncated: known.truncated } : null;
   }
 
   private readonly pickerRequests = new Map<string, Observable<any[]>>();
@@ -214,15 +204,26 @@ export class NutritionService {
     const key = search.trim().toLowerCase();
     const running = this.pickerRequests.get(key);
     if (running) return running; // the prefetch and the modal share one request
-    const params = new HttpParams().set('page', 0).set('size', 100).set('search', search.trim());
+    // The coach's own foods first (catalog: false/absent sorts before true), then by name: the 100 sent are not random.
+    const params = new HttpParams()
+      .set('page', 0)
+      .set('size', PICKER_PAGE_SIZE)
+      .set('search', search.trim())
+      .append('sort', 'catalog,asc')
+      .append('sort', 'name,asc');
     const request = this.http
       .get<any>(`${environment.baseApiUrl}/api/food-ref/filtered`, { params, headers: { 'X-Skip-Loader': 'true' } })
       .pipe(
-        map((response) => [...(response?.content || [])].map((f: any) => localizeFood(f)).sort((a: any, b: any) => Number(!!a.general) - Number(!!b.general))),
-        tap((foods) => {
-          if (this.pickerFoods.size > 50) this.pickerFoods.clear();
-          this.pickerFoods.set(key, { at: Date.now(), foods });
+        map((response) => {
+          const foods = sortPickerFoods((response?.content || []).map((f: any) => localizeFood(f)), search);
+          const total = Number(response?.totalElements ?? foods.length);
+          return { foods, truncated: total > foods.length };
         }),
+        tap(({ foods, truncated }) => {
+          if (this.pickerFoods.size > 50) this.pickerFoods.clear();
+          this.pickerFoods.set(key, { at: Date.now(), foods, truncated });
+        }),
+        map(({ foods }) => foods),
         finalize(() => this.pickerRequests.delete(key)),
         shareReplay({ bufferSize: 1, refCount: false }),
       );
@@ -485,6 +486,8 @@ export class NutritionService {
       quantity: number;
       unit: string;
       servingId?: string | null;
+      /** 2026-11-23: the group the client picked from; CE computes the quantity itself. */
+      groupId?: string | null;
     }
   ): Observable<any> {
     return this.http.patch<any>(
@@ -492,4 +495,24 @@ export class NutritionService {
       payload
     );
   }
+}
+
+const PICKER_PAGE_SIZE = 100;
+
+/** Lower case, no accents, « œ » = « oe »: « pates » matches « Pâtes », « oeuf » matches « Œuf ». */
+export function foldFoodText(text: unknown): string {
+  return String(text ?? '')
+    .toLowerCase()
+    .replace(/œ/g, 'oe')
+    .replace(/æ/g, 'ae')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '');
+}
+
+/** The coach's own foods first, then the names starting with the search (« Riz blanc » before « Farine de riz »),
+ *  then alphabetical order, accents ignored. */
+export function sortPickerFoods(foods: any[], search: string): any[] {
+  const wanted = foldFoodText(search.trim());
+  const rank = (food: any) => (food?.general ? 2 : 0) + (wanted && !foldFoodText(food?.name).startsWith(wanted) ? 1 : 0);
+  return [...foods].sort((a, b) => rank(a) - rank(b) || foldFoodText(a?.name).localeCompare(foldFoodText(b?.name)));
 }

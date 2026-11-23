@@ -141,9 +141,29 @@ export interface NutritionReport {
 }
 
 /** The nutrition day's meals with the client's report of each, and how they felt (L2: the client notes no calories). */
+/**
+ * A meal with something planned in it: a food, or macros the coach typed (macros per meal). A meal without either
+ * (« New Meal », even renamed « Déjeuner ») is empty: never shown to the client, never counted (backlog-programmes.md R3).
+ * No tracking mode needed: the same test fits the three kinds of plan.
+ */
+export function mealPlanned(meal: any): boolean {
+  if ((meal?.foods || []).length) return true;
+  const targets = meal?.mealTargets || {};
+  return [targets.calories, targets.proteinG, targets.carbsG, targets.fatG].some((value) => Number(value) > 0);
+}
+
+/** The meals of a day to show and count: the planned ones, and any the client reported (kept, whatever it holds). */
+export function plannedMeals(day: any): any[] {
+  const logs: any[] = Array.isArray(day?.clientMealLogs) ? day.clientMealLogs : [];
+  return (day?.meals || []).filter((meal: any) => {
+    const id = meal?.id ?? meal?._id;
+    return mealPlanned(meal) || (id != null && logs.some((log) => String(log?.mealId) === String(id)));
+  });
+}
+
 export function nutritionReport(day: any): NutritionReport {
   const logs: any[] = Array.isArray(day?.clientMealLogs) ? day.clientMealLogs : [];
-  const meals = (day?.meals || []).map((meal: any): MealReport => {
+  const meals = plannedMeals(day).map((meal: any): MealReport => {
     const id = meal?.id ?? meal?._id;
     const log = logs.find((item) => id != null && String(item?.mealId) === String(id));
     const state = String(log?.status || '').toUpperCase();
@@ -230,15 +250,20 @@ export function exerciseLines(day: any): ExerciseLine[] {
 
 /** One meal of a nutrition day: its name, its foods with their quantity, its calories target when it has one. */
 export interface MealLine {
+  /** Its place in the day (1-based), empty meals included: « Repas 3 » stays « Repas 3 ». */
+  number: number;
   name: string;
   foods: string[];
   kcal: number | null;
 }
 
 export function mealLines(day: any): MealLine[] {
-  return (day?.meals || []).map((meal: any): MealLine => {
+  const all: any[] = day?.meals || [];
+  // The same meals as nutritionReport (the day panel reads both side by side).
+  return plannedMeals(day).map((meal: any): MealLine => {
     const kcal = Number(meal?.mealTargets?.calories);
     return {
+      number: all.indexOf(meal) + 1,
       name: String(meal?.name || '').trim(),
       foods: (meal?.foods || [])
         .map((food: any) => {

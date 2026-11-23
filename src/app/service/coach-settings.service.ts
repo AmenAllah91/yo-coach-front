@@ -43,6 +43,8 @@ export interface CoachSettingsConfig {
     weightUnit?: 'kg' | 'lbs';
     distanceUnit?: 'km' | 'miles';
     measurementUnit?: 'cm' | 'in';
+    /** How the program editors open (workouts and nutrition); the coach can still switch on the editor's page. */
+    programEditorView?: 'list' | 'calendar';
   };
   notifications: {
     enabled: boolean;
@@ -248,9 +250,10 @@ export class CoachSettingsService {
         weightUnit: 'kg',
         distanceUnit: 'km',
         measurementUnit: 'cm',
+        programEditorView: 'list',
       },
       notifications: {
-        enabled: false,
+        enabled: true,
         workoutCompleted: true,
         measurementAdded: true,
         progressPictureAdded: true,
@@ -280,6 +283,11 @@ export class CoachSettingsService {
 
   getMeasurementUnit(): 'cm' | 'in' {
     return this.getConfig().defaults.measurementUnit === 'in' ? 'in' : 'cm';
+  }
+
+  /** Settings › Preferences: the view a program editor opens with (« Liste » unless the coach chose « Calendrier »). */
+  getProgramEditorView(): 'list' | 'calendar' {
+    return this.getConfig().defaults.programEditorView === 'calendar' ? 'calendar' : 'list';
   }
 
   convertWeightFromKg(value: number | null | undefined): number | null {
@@ -415,6 +423,7 @@ export class CoachSettingsService {
         weightUnit: (config.defaults as any)?.weightUnit === 'lbs' ? 'lbs' : 'kg',
         distanceUnit: (config.defaults as any)?.distanceUnit === 'miles' ? 'miles' : 'km',
         measurementUnit: (config.defaults as any)?.measurementUnit === 'in' ? 'in' : 'cm',
+        programEditorView: (config.defaults as any)?.programEditorView === 'calendar' ? 'calendar' : 'list',
       },
       notifications: {
         ...defaults.notifications,

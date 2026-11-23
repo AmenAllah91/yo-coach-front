@@ -43,7 +43,8 @@ export class NutritionClientTabComponent implements OnInit {
   /** « Voir le suivi » / a past day: the client's calendar. */
   @Output() openCalendar = new EventEmitter<string | null>();
   /** « Envoyer un message » from a day shown in the tab: the profile opens its chat. */
-  @Output() message = new EventEmitter<void>();
+  /** « Envoyer un message », with a text ready in the chat when there is one (a missed workout). */
+  @Output() message = new EventEmitter<string | null>();
   @ViewChild(ClientProgramsComponent) programs?: ClientProgramsComponent;
   /** The program the coach asked to remove (P10). */
   removeTarget: OverviewItem | null = null;
@@ -107,7 +108,7 @@ export class NutritionClientTabComponent implements OnInit {
     const id = action.programId || action.item?.id;
     switch (action.type) {
       case 'message':
-        this.message.emit();
+        this.message.emit(action.draft || null);
         return;
       case 'assign':
         this.assignNew.emit(action.date || null);

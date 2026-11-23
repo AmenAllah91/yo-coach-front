@@ -132,3 +132,17 @@ test('a day refused by the server always says what to fix and where', () => {
   const older = { code: 'PROGRAM_INVALID_DAYS', error: 'Day 1 has an error: correct it before saving.', days: [1] };
   assert.equal(pd.refusedDaysMessage(older, tr), 'Le serveur refuse le jour 1 : ouvre ce jour.');
 });
+
+// A day moved on the calendar changes its number; its rank in the list may be the old one (server before the sort).
+test('the editor reads the days by their number, not by their rank in the list', () => {
+  const pd = load('src/app/shared/models/program-days.ts');
+  const ids = list => Array.from(list, day => day.id).join(',');
+  // « Push » (d2) moved from day 2 to day 4 on the calendar: the list kept its order.
+  const moved = [{ id: 'd1', dayNumber: 1 }, { id: 'd2', dayNumber: 4 }, { id: 'd3', dayNumber: 3 }, { id: 'd4', dayNumber: 2 }];
+  assert.equal(ids(pd.daysInCalendarOrder(moved)), 'd1,d4,d3,d2');
+  assert.equal(ids(moved), 'd1,d2,d3,d4', 'the list given is not changed');
+  // Without one number per day (an older program, a number twice): the list decides.
+  assert.equal(ids(pd.daysInCalendarOrder([{ id: 'a' }, { id: 'b', dayNumber: 1 }])), 'a,b');
+  assert.equal(ids(pd.daysInCalendarOrder([{ id: 'a', dayNumber: 2 }, { id: 'b', dayNumber: 2 }])), 'a,b');
+  assert.equal(ids(pd.daysInCalendarOrder(null)), '');
+});

@@ -53,100 +53,25 @@
     </div>
   </header>
   <div class="np-shell">
-    <aside class="np-aside">
-      <div class="np-aside__head">
-        <button type="button" class="np-mobile-structure-close" (click)="closeMobileStructure()" [attr.aria-label]="'CLOSE_WEEKS' | translate"><i-feather name="x" class="np-ico"></i-feather></button>
-        <h2 class="np-h6">{{ 'PROGRAM_STRUCTURE' | translate }}</h2>
-        <p class="np-aside__sub">{{ 'WEEKS_DAYS_COUNT' | translate:{ weeks: workoutWeeks.length, days: days.length } }}</p>
-        <button type="button" class="np-link" (click)="toggleAllWeeks()">
-          <i-feather [name]="allWeeksExpanded() ? 'minimize-2' : 'maximize-2'" class="np-ico"></i-feather>
-          {{ (allWeeksExpanded() ? 'COLLAPSE_ALL' : 'EXPAND_ALL') | translate }}
-        </button>
-      </div>
-
-      <div
-        class="np-aside__body"
-        cdkDropList
-        [cdkDropListData]="days"
-        [cdkDropListDisabled]="readOnly"
-        (cdkDropListDropped)="onDropDay($event)"
-      >
-        <div class="np-week-card" *ngFor="let week of workoutWeeks; trackBy: trackByWeek; let wi = index" [class.has-active]="weekHasSelectedDay(week)">
-          <button
-            type="button"
-            class="np-week-card__head"
-            (click)="toggleWeek(week.label)"
-            [attr.aria-expanded]="!isWeekCollapsed(week.label)"
-          >
-            <div class="np-week-card__head-top">
-              <i-feather
-                [name]="isWeekCollapsed(week.label) ? 'chevron-right' : 'chevron-down'"
-                class="np-week-card__chevron"
-              ></i-feather>
-              <strong>{{ getWeekDisplayLabel(week.label) }}</strong>
-              <span class="np-week-range" *ngIf="isClientMode">{{ getWeekDateRange(week) }}</span>
-              <span class="np-week-card__count" [title]="'PROGRAM_DAYS_FILLED' | translate:{ count: getWeekReadyCount(week.days), total: 7 }">{{ 'PROGRAM_DAYS_FILLED_SHORT' | translate:{ count: getWeekReadyCount(week.days), total: 7 } }}</span>
-            </div>
-          </button>
-          <button
-            type="button"
-            class="np-week-card__dup"
-            *ngIf="!readOnly && days.length > 7"
-            [disabled]="!getWeekReadyCount(week.days)"
-            [title]="'COPY_DAYS.BUTTON_DUPLICATE_WEEK' | translate"
-            [attr.aria-label]="'COPY_DAYS.BUTTON_DUPLICATE_WEEK' | translate"
-            (click)="duplicateWeek(week, $event)"
-          >
-            <i-feather name="copy" class="np-week-card__dupico"></i-feather>
-          </button>
-
-          <ng-container *ngIf="!isWeekCollapsed(week.label)">
-          <ng-container *ngFor="let d of week.days; trackBy: trackByDay; let i = index">
-            <div
-              class="np-dayrow"
-              cdkDrag
-              [class.is-active]="selectedDay?.id === d.id"
-            >
-              <button
-                type="button"
-                class="np-day"
-                [class.is-active]="selectedDay?.id === d.id"
-                [attr.aria-current]="selectedDay?.id === d.id ? 'true' : null"
-                (click)="selectDay(d); closeMobileStructure()"
-              >
-                <ng-container *ngIf="dayRailState(d) as state">
-                <span class="np-day-state" [class.ready]="state === 'FILLED'" [class.rest]="state === 'REST'" [class.invalid]="state === 'INVALID'" [class.gap]="state === 'GAP'">
-                  <span *ngIf="state === 'FILLED'" class="np-ready-check" aria-hidden="true">✓</span>
-                  <i-feather *ngIf="state !== 'FILLED'" [name]="state === 'REST' ? 'moon' : state === 'INVALID' || state === 'GAP' ? 'alert-circle' : 'circle'"></i-feather>
-                </span>
-                <span class="np-day__topline">
-                  <span class="np-day__title">{{ getDayDisplayTitle(d) }}</span>
-                  <span class="np-day__dateLine" *ngIf="isClientMode">{{ getRailDateLabel(d) }}</span>
-                </span>
-                <small class="np-day__meta" [class.is-warning]="state === 'INVALID' || state === 'GAP'">
-                  {{ (state === 'REST' ? 'REST_DAY' : state === 'FILLED' ? 'PROGRAM_DAY_FILLED' : state === 'INVALID' ? 'PROGRAM_DAY_TO_FIX' : state === 'GAP' ? 'PROGRAM_DAY_GAP' : 'PROGRAM_DAY_EMPTY') | translate }}
-                </small>
-                </ng-container>
-              </button>
-            </div>
-          </ng-container>
-          </ng-container>
-        </div>
-
-        <button class="np-btn np-btn--dash np-btn--ghost np-btn--full" *ngIf="!readOnly" [disabled]="weekCount >= maxWeeks && !(days.length % 7)" (click)="addWeek()">
-          <i-feather name="plus" class="np-ico"></i-feather>
-          {{ ht('Add a week', 'Ajouter une semaine') }}
-        </button>
-
-        <div class="np-stack" *ngIf="!readOnly">
-          <!-- « Copier ce jour » vers les jours choisis (avant : une copie ajoutée à la fin, qui créait une semaine à moitié). -->
-          <button class="np-rowbtn" [disabled]="!copy.canCopyDay" (click)="copy.openDay()">
-            <span>{{ 'COPY_DAYS.BUTTON_COPY_DAY' | translate }}</span>
-            <i-feather name="copy" class="np-ico"></i-feather>
-          </button>
-        </div>
-      </div>
-    </aside>
+    <app-program-structure-rail
+      [weeks]="railWeeks"
+      [days]="days"
+      [activeDay]="selectedDay"
+      restLabel="REST_DAY"
+      [allExpanded]="allWeeksExpanded()"
+      [readOnly]="readOnly"
+      [canAddWeek]="!(weekCount >= maxWeeks && !(days.length % 7))"
+      [canCopyDay]="copy.canCopyDay"
+      [addWeekLabel]="ht('Add a week', 'Ajouter une semaine')"
+      (daySelect)="selectDay($event)"
+      (weekToggle)="toggleWeek($event.key)"
+      (toggleAll)="toggleAllWeeks()"
+      (weekDuplicate)="duplicateWeek($event.week, $event.event)"
+      (dayDrop)="onDropDay($event)"
+      (addWeek)="addWeek()"
+      (copyDay)="copy.openDay()"
+      (closePanel)="closeMobileStructure()"
+    ></app-program-structure-rail>
     <button type="button" class="np-mobile-structure-backdrop" *ngIf="mobileStructureOpen" (click)="closeMobileStructure()" [attr.aria-label]="'CLOSE_WEEKS' | translate"></button>
 
     <main class="np-main">
@@ -314,6 +239,7 @@
         (addWeek)="addWeek()"
         (deleteWeek)="deleteWeek($event)"
         (duplicateWeek)="onCalendarDuplicateWeek($event)"
+        (repeatWeek)="onCalendarDuplicateWeek($event, true)"
         (dayAction)="onCalendarDayAction($event)"
         (detailedChange)="setCalendarDetailed($event)"
       ></app-program-calendar>
@@ -1625,6 +1551,7 @@
   [filled]="copyModal.filled"
   [sourceLabel]="copyModal.sourceLabel"
   [locked]="copyModal.locked"
+  [preselect]="copyModal.preselect"
   (keep)="copy.keepForAnotherProgram()"
   (close)="copy.close()"
   (confirm)="copy.confirm($event)"

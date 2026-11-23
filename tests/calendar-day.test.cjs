@@ -57,7 +57,7 @@ test('workout: sets done, missed, skipped exercise, by id, number or position', 
 
 test('nutrition: each meal with its report, the feelings, no calories invented', () => {
   const report = d.nutritionReport({
-    meals: [{ id: 'm1', name: 'Petit-déjeuner' }, { id: 'm2', name: 'Déjeuner' }, { _id: 'm3', name: 'Dîner' }],
+    meals: [{ id: 'm1', name: 'Petit-déjeuner', foods: [{ name: 'Avoine' }] }, { id: 'm2', name: 'Déjeuner', foods: [{ name: 'Riz' }] }, { _id: 'm3', name: 'Dîner', foods: [{ name: 'Soupe' }] }],
     clientMealLogs: [{ mealId: 'm1', status: 'AS_PLANNED' }, { mealId: 'm3', status: 'skipped', note: 'resto' }],
     hunger: '4', energy: 'bonne', overallNote: 'ok',
   });
@@ -124,4 +124,22 @@ test('exercise lines: timed exercise (measure TIME), superset links', () => {
   assert.equal(lines[0].sets[0].seconds, 30);
   const report = d.workoutReport({ workoutSessions: [{ exercises: [{ id: 'a', name: 'Gainage', measure: 'TIME', sets: [{ durationSec: 45 }] }] }] });
   assert.equal(report.exercises[0].timed, true);
+});
+
+// 2026-11-23 audit « repas vides »: an empty meal (no food, no macros) is never shown nor counted, whatever its name.
+test('planned meals: an empty meal is left out, whatever its name; a reported one stays', () => {
+  const day = {
+    meals: [
+      { id: 'a', name: 'Petit-déjeuner', foods: [{ name: 'Avoine', quantity: 80, unit: 'g' }], mealTargets: { calories: 300 } },
+      { id: 'b', name: 'Déjeuner', foods: [], mealTargets: { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 } },
+      { id: 'c', name: 'Meal 3', foods: [], mealTargets: { calories: 450, proteinG: 30, carbsG: 50, fatG: 12 } },
+      { id: 'd', name: 'New Meal', foods: [] },
+    ],
+    clientMealLogs: [{ mealId: 'd', status: 'SKIPPED' }],
+  };
+  assert.equal(d.mealPlanned(day.meals[1]), false, 'renamed but empty');
+  assert.equal(d.mealPlanned(day.meals[2]), true, 'macros per meal');
+  assert.deepEqual(d.plannedMeals(day).map((meal) => meal.id), ['a', 'c', 'd']);
+  assert.deepEqual(d.mealLines(day).map((line) => line.number), [1, 3, 4], 'each meal keeps its place');
+  assert.equal(d.nutritionReport(day).meals.length, d.mealLines(day).length, 'the day panel reads both side by side');
 });

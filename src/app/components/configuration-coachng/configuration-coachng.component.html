@@ -588,6 +588,33 @@
           </select>
         </div>
 
+        <div class="units-settings">
+          <div class="units-setting">
+            <label class="select-label" id="editor-view-label">{{ 'COACH_SETTINGS_PROGRAM_EDITOR_VIEW' | translate }}</label>
+            <div class="unit-segment" role="group" aria-labelledby="editor-view-label">
+              <button
+                type="button"
+                class="unit-segment__option"
+                [class.unit-segment__option--active]="config.defaults.programEditorView !== 'calendar'"
+                [attr.aria-pressed]="config.defaults.programEditorView !== 'calendar'"
+                (click)="config.defaults.programEditorView = 'list'"
+              >
+                {{ 'COACH_SETTINGS_PROGRAM_EDITOR_VIEW_LIST' | translate }}
+              </button>
+              <button
+                type="button"
+                class="unit-segment__option"
+                [class.unit-segment__option--active]="config.defaults.programEditorView === 'calendar'"
+                [attr.aria-pressed]="config.defaults.programEditorView === 'calendar'"
+                (click)="config.defaults.programEditorView = 'calendar'"
+              >
+                {{ 'COACH_SETTINGS_PROGRAM_EDITOR_VIEW_CALENDAR' | translate }}
+              </button>
+            </div>
+            <p class="demo-workspace-description">{{ 'COACH_SETTINGS_PROGRAM_EDITOR_VIEW_HINT' | translate }}</p>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>

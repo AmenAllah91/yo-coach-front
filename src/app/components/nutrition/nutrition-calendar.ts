@@ -3,11 +3,12 @@ import { Observable } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
 import { ProgramScheduleService } from 'app/service/program-schedule.service';
-import { closeDayOutlet, inDayOutlet, openFullEditor } from '@shared/program-calendar/day-outlet';
+import { CoachSettingsService } from 'app/service/coach-settings.service';
+import { closeDayOutlet, inDayOutlet, openFullEditor, startingEditorView } from '@shared/program-calendar/day-outlet';
 import { dayWindowPlan, forgetDayWindowPlan } from '@shared/program-calendar/day-window-prefetch';
 import { ConfirmDialogService } from '@shared/components/confirm-dialog/confirm-dialog.service';
 import { mealDayActive } from '@shared/models/client-day-activity';
-import { mealLines } from '@shared/models/calendar-day';
+import { mealLines, plannedMeals } from '@shared/models/calendar-day';
 import { MealDay } from '@shared/models/MealPlan';
 import { todayIso } from '@shared/models/program-schedule';
 import { CalendarDayWindow } from '@shared/program-calendar/day-window';
@@ -25,7 +26,7 @@ export interface NutritionCalendarEditor {
   durationWeeks: number;
   readonly draft: NutritionDraftState;
   readonly clientMode: NutritionClientMode;
-  readonly copy: { readOnly: boolean; modal: unknown; openDay(): void; openWeek(): void };
+  readonly copy: { readOnly: boolean; modal: unknown; openDay(): void; openWeek(repeat?: boolean): void };
   readonly savePlanFn: () => void;
   planEditOpen: boolean;
   pendingDurationWeeks: number | null;
@@ -45,7 +46,6 @@ export interface NutritionCalendarEditor {
  * weeks and cards, the day window, whole weeks, the ⋮ / ⋯ actions. One per editor, built in its constructor.
  */
 export class NutritionCalendar {
-  private static readonly VIEW_KEY = 'yc.nutritionEditor.view';
   private static readonly COMPACT_KEY = 'yc.nutritionEditor.calendarCompact';
   readonly maxWeeks = 12;
 
@@ -54,7 +54,8 @@ export class NutritionCalendar {
   private readonly schedule = inject(ProgramScheduleService);
   /** Opened over the client's profile (outlet « day », day-outlet.ts): only the day window. */
   readonly embedded = inDayOutlet(this.route);
-  viewMode: 'list' | 'calendar' = this.embedded ? 'calendar' : CALENDAR_PREFS.view(NutritionCalendar.VIEW_KEY);
+  /** On opening: the coach's choice in Settings › Preferences; the Liste | Calendrier switch is for this visit. */
+  viewMode: 'list' | 'calendar' = startingEditorView(this.route, inject(CoachSettingsService));
   detailed = CALENDAR_PREFS.detailed(NutritionCalendar.COMPACT_KEY);
   calendar?: ProgramCalendarComponent<MealDay>;
   private weeksCache: CalendarWeek<MealDay>[] | null = null;
@@ -73,6 +74,7 @@ export class NutritionCalendar {
     inject(DestroyRef).onDestroy(() => {
       if (this.embedded && this.editor.draft.savedAt) forgetDayWindowPlan(this.route.snapshot.paramMap.get('id'));
     });
+    this.editor.draft.clientDaysKept = (saved) => this.takeClientDays(saved?.mealDays);
     this.win = new CalendarDayWindow<MealDay>({
       days: () => this.editor.days,
       selected: () => this.editor.selectedDay,
@@ -130,7 +132,6 @@ export class NutritionCalendar {
     this.viewMode = mode;
     this.win.reset();
     this.editor.mobileStructureOpen = false;
-    CALENDAR_PREFS.setView(NutritionCalendar.VIEW_KEY, mode);
   }
 
   setDetailed(on: boolean): void {
@@ -152,7 +153,6 @@ export class NutritionCalendar {
   private showDayInList(): void {
     const day = this.editor.selectedDay;
     if (this.embedded) {
-      CALENDAR_PREFS.setView(NutritionCalendar.VIEW_KEY, 'list');
       openFullEditor(this.router, this.route, this.editor.days.indexOf(day as MealDay) + 1);
       return;
     }
@@ -186,6 +186,33 @@ export class NutritionCalendar {
     return !!this.editor.copy.modal || this.editor.planEditOpen || !!this.editor.draft.emptyDaysPrompt
       || this.editor.pendingDurationWeeks !== null || !!this.editor.editorWindowOpen?.()
       || !!document.querySelector('.cd-backdrop, .np-planedit');
+  }
+
+  /**
+   * After a save of a client's plan: the days the client logged while the editor was open. The server kept them as
+   * the client did them (never erased by a save); here they become done (and locked), and the coach is told.
+   */
+  private takeClientDays(saved: MealDay[] | null | undefined): boolean {
+    if (!this.editor.clientMode.active) return false;
+    const stored = new Map((saved || []).filter((day) => day?.id).map((day) => [day.id, day]));
+    const labels: string[] = [];
+    this.editor.days.forEach((day, index) => {
+      const done = stored.get(day.id) as (MealDay & Record<string, unknown>) | undefined;
+      if (!done || !mealDayActive(done) || mealDayActive(day)) return;
+      const mine = day as MealDay & Record<string, unknown>;
+      for (const field of ['status', 'clientMealLogs', 'hunger', 'energy', 'digestion', 'overallNote']) mine[field] = done[field];
+      const date = this.editor.draft.dayDate(day);
+      labels.push([this.translate.instant('WEEK_DAY_LABEL', { week: Math.floor(index / 7) + 1, day: (index % 7) + 1 }), date].filter(Boolean).join(' · '));
+    });
+    if (!labels.length) return false;
+    const list = labels.join(', ');
+    this.toast.show({
+      type: 'info',
+      title: this.ht('Your client logged meals while you were editing', 'Votre client a suivi son plan pendant votre modification'),
+      message: this.ht(`${list}: kept as your client logged it.`, `${list} : gardé comme votre client l'a noté.`),
+      duration: 10000,
+    });
+    return true;
   }
 
   // ---------- The weeks and the cards ----------
@@ -238,7 +265,8 @@ export class NutritionCalendar {
   /** « 4 repas · P 150 g · G 200 g · L 70 g » */
   private meta(day: MealDay): string {
     const parts: string[] = [];
-    const meals = (day.meals || []).length;
+    // An empty meal is not counted: the client does not see it (backlog-programmes.md R3).
+    const meals = plannedMeals(day).length;
     if (meals) parts.push(this.ht(`${meals} meal${meals > 1 ? 's' : ''}`, `${meals} repas`));
     const t = day.dayTargets;
     if (t && (t.proteinG || t.carbsG || t.fatG)) {
@@ -250,9 +278,9 @@ export class NutritionCalendar {
 
   /** One line per meal: its name, its calories, its foods. */
   private lines(day: MealDay): CalendarLine[] {
-    return mealLines(day).map((meal, i) => ({
+    return mealLines(day).map((meal) => ({
       label: '',
-      name: (/^(Meal \d+|New Meal)$/.test(meal.name) || !meal.name ? this.translate.instant('MEAL_NUMBER', { number: i + 1 }) : meal.name)
+      name: (/^(Meal \d+|New Meal)$/.test(meal.name) || !meal.name ? this.translate.instant('MEAL_NUMBER', { number: meal.number }) : meal.name)
         + (meal.kcal ? ` · ${this.kcal(meal.kcal)} kcal` : ''),
       detail: meal.foods.join(', '),
     }));
@@ -266,9 +294,10 @@ export class NutritionCalendar {
     else if (event.type === 'rest') this.editor.toggleCheatMeal();
   }
 
-  onDuplicateWeek(week: CalendarWeek<MealDay>): void {
+  /** `repeat`: « Répéter sur les semaines suivantes » (the same window, every week after this one chosen). */
+  onDuplicateWeek(week: CalendarWeek<MealDay>, repeat = false): void {
     if (!week.days.includes(this.editor.selectedDay as MealDay)) this.select(week.days[0]);
-    this.editor.copy.openWeek();
+    this.editor.copy.openWeek(repeat);
   }
 
   /** The days moved or were replaced: numbers, dates and totals follow. */

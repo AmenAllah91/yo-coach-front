@@ -40,6 +40,7 @@ describe('CalendarClientsComponent (tab of the client profile)', () => {
       workoutService, nutritionService, {} as any, {} as any, settings,
       { instant: (k: string) => k, currentLang: 'fr' } as any,
       jasmine.createSpyObj('ClientProfileCacheService', ['forget']),
+      {} as any, // ChatService
     ));
     calendar.embeddedClientId = 'client-1';
     calendar.embeddedCoachId = 'coach-1';

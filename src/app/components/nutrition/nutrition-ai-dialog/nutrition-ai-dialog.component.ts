@@ -99,8 +99,8 @@ export class NutritionAiDialogComponent implements OnDestroy {
     if (!this.profileValid || this.computing) return;
     this.computing = true;
     this.error = '';
-    this.requests.push(this.nutrition.targets({ ...this.profile, age: +this.profile.age, weightKg: +this.profile.weightKg,
-      heightCm: +this.profile.heightCm }).subscribe({
+    this.requests.push(this.nutrition.targets({ ...this.profile, age: Math.round(+this.profile.age),
+      weightKg: Math.round(+this.profile.weightKg), heightCm: Math.round(+this.profile.heightCm) }).subscribe({
       next: (t) => {
         this.computing = false;
         this.answers = { ...this.answers, goal: this.profile.goal, calories: t.calories, proteinG: t.proteinG,
@@ -129,8 +129,8 @@ export class NutritionAiDialogComponent implements OnDestroy {
     this.step = 'loading';
     this.error = '';
     const a = this.answers;
-    this.requests.push(this.nutrition.draft({ ...a, calories: +a.calories, proteinG: +a.proteinG, carbsG: +a.carbsG,
-      fatG: +a.fatG, mealsPerDay: +a.mealsPerDay, weeks: +a.weeks, avoid: a.avoid?.trim() || null }).subscribe({
+    this.requests.push(this.nutrition.draft({ ...a, calories: Math.round(+a.calories), proteinG: Math.round(+a.proteinG),
+      carbsG: Math.round(+a.carbsG), fatG: Math.round(+a.fatG), mealsPerDay: Math.round(+a.mealsPerDay), weeks: Math.round(+a.weeks), avoid: a.avoid?.trim() || null }).subscribe({
       next: (draft) => {
         this.step = 'meals';
         this.drafted.emit(draft);

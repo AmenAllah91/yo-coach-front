@@ -78,6 +78,34 @@
         </div>
       </div>
 
+      <!-- Missed workouts (the last 3 days): tell the client, or do it another day -->
+      <ul class="cp-missed" *ngIf="missedDays.length" role="status">
+        <li class="cp-missed-row" *ngFor="let day of missedDays; trackBy: trackByDate">
+          <span class="cp-missed-icon" aria-hidden="true"><i-feather name="x-circle"></i-feather></span>
+          <span class="cp-missed-text">
+            <strong>{{ ht('Missed workout', 'Séance manquée') }}</strong>
+            <span>{{ missedLabel(day) }}</span>
+          </span>
+          <span class="cp-missed-actions">
+            <button type="button" class="cp-btn cp-btn--brand cp-btn--sm" *ngIf="nextEmptyDay as target" [disabled]="savingDay"
+                    [title]="ht('Copies this workout onto the first empty day to come', 'Copie cette séance sur le premier jour vide à venir')"
+                    (click)="redoMissed(day, $event)">
+              <i-feather name="rotate-ccw" class="cp-ico"></i-feather>{{ redoLabel(target) }}
+            </button>
+            <button type="button" class="cp-btn cp-btn--outline cp-btn--sm" *ngIf="nextEmptyDay" (click)="pickForMissed(day, $event)">
+              <i-feather name="calendar" class="cp-ico"></i-feather>{{ ht('Another day', 'Autre jour') }}
+            </button>
+            <button type="button" class="cp-btn cp-btn--outline cp-btn--sm" (click)="messageForMissed(day, $event)">
+              <i-feather name="message-circle" class="cp-ico"></i-feather>{{ ht('Message', 'Message') }}
+            </button>
+            <button type="button" class="cp-btn cp-btn--icon cp-btn--sm cp-missed-close" [attr.aria-label]="ht('Hide', 'Masquer')"
+                    [title]="ht('Hide', 'Masquer')" (click)="dismissMissed(day, $event)">
+              <i-feather name="x" class="cp-ico"></i-feather>
+            </button>
+          </span>
+        </li>
+      </ul>
+
       <!-- The arrows: every week of the program, here (an older server sends only the week going on) -->
       <div class="cp-weeknav" *ngIf="!c.program.file && canBrowseWeeks">
         <button type="button" class="cp-btn cp-btn--outline cp-btn--icon cp-btn--xs" [disabled]="shownWeekNumber <= 1"
@@ -94,6 +122,11 @@
         <span class="cp-weeknav-now" *ngIf="showingCurrentWeek">{{ 'CLIENT_PROGRAMS.THIS_WEEK' | translate }}</span>
         <button type="button" class="cp-link cp-weeknav-back" *ngIf="!showingCurrentWeek" (click)="goToWeek(c.week, $event)">
           {{ 'CLIENT_PROGRAMS.BACK_TO_THIS_WEEK' | translate }}
+        </button>
+        <!-- « Répéter la semaine »: the week shown copied onto the next ones (only their empty days). -->
+        <button type="button" class="cp-btn cp-btn--outline cp-btn--sm cp-weeknav-repeat" *ngIf="canRepeat(shownWeekNumber)"
+                (click)="openRepeat(shownWeekNumber, undefined, $event)">
+          <i-feather name="repeat" class="cp-ico"></i-feather>{{ ht('Repeat this week', 'Répéter cette semaine') }}
         </button>
       </div>
 
@@ -129,6 +162,11 @@
         <i-feather name="alert-circle" class="cp-ico"></i-feather>
         <span class="cp-emptyline-text">{{ 'CLIENT_PROGRAMS.EMPTY_WEEK' | translate: { count: emptyComingDays.length } }}</span>
         <span class="cp-emptyline-actions">
+          <!-- The quickest way to fill an empty week: the one before, on the same days. -->
+          <button type="button" class="cp-btn cp-btn--brand cp-btn--sm" *ngIf="previousWeekToCopy as prev"
+                  (click)="openRepeat(prev, 'NEXT', $event)">
+            <i-feather name="copy" class="cp-ico"></i-feather>{{ ht('Copy week ' + prev + ' here', 'Copier la semaine ' + prev + ' ici') }}
+          </button>
           <button type="button" class="cp-btn cp-btn--outline cp-btn--sm" *ngIf="quickEdit" [disabled]="savingDay"
                   (click)="restDays(emptyComingDays, c.program, $event)">
             <i-feather [name]="isWorkout ? 'moon' : 'flag'" class="cp-ico"></i-feather>{{ restAllLabel }}
@@ -260,6 +298,88 @@
   (closed)="closePreview()"
   (message)="messageFromPreview()"
 ></app-client-activity-detail>
+
+<!-- « Répéter la semaine »: what is copied, where, and what will happen, before anything is saved -->
+<div class="cp-modal-backdrop" *ngIf="repeat as r" (click)="closeRepeat()">
+  <div class="cp-modal" role="dialog" aria-modal="true" [attr.aria-label]="repeatTitle" (click)="$event.stopPropagation()">
+    <header class="cp-modal-head">
+      <span class="cp-modal-icon" aria-hidden="true"><i-feather name="repeat"></i-feather></span>
+      <div class="cp-modal-titles">
+        <h3>{{ repeatTitle }}</h3>
+        <p>{{ ht('Only empty days are filled: nothing already planned changes.', 'Seuls les jours vides sont remplis : rien de ce qui est déjà prévu ne change.') }}</p>
+      </div>
+      <button type="button" class="cp-btn cp-btn--icon cp-modal-close" [disabled]="r.saving" [attr.aria-label]="ht('Close', 'Fermer')" (click)="closeRepeat()">
+        <i-feather name="x" class="cp-ico"></i-feather>
+      </button>
+    </header>
+
+    <!-- The week copied, day by day -->
+    <ol class="cp-repeat-week" [attr.aria-label]="ht('Week ' + r.source, 'Semaine ' + r.source)">
+      <li *ngFor="let day of repeatSourceDays" class="cp-repeat-day"
+          [class.is-rest]="day.state === 'REST'" [class.is-empty]="day.state === 'EMPTY' || day.state === 'OUT'">
+        <small>{{ weekday(day.date) }}</small>
+        <strong [title]="repeatDayLabel(day)">{{ repeatDayLabel(day) }}</strong>
+      </li>
+    </ol>
+
+    <!-- Where: every next week (default) or the next one only -->
+    <div class="cp-repeat-choices" role="radiogroup" *ngIf="r.source + 1 < weekCount" [attr.aria-label]="ht('Where', 'Où')">
+      <button type="button" role="radio" class="cp-repeat-choice" [class.is-on]="r.mode === 'ALL'" [attr.aria-checked]="r.mode === 'ALL'"
+              [disabled]="r.saving" (click)="setRepeatMode('ALL')">
+        <span class="cp-repeat-dot" aria-hidden="true"></span>
+        <span class="cp-repeat-choice-text">
+          <strong>{{ ht('Every next week', 'Toutes les semaines suivantes') }}</strong>
+          <small>{{ repeatChoiceDetail('ALL') }}</small>
+        </span>
+      </button>
+      <button type="button" role="radio" class="cp-repeat-choice" [class.is-on]="r.mode === 'NEXT'" [attr.aria-checked]="r.mode === 'NEXT'"
+              [disabled]="r.saving" (click)="setRepeatMode('NEXT')">
+        <span class="cp-repeat-dot" aria-hidden="true"></span>
+        <span class="cp-repeat-choice-text">
+          <strong>{{ ht('The next week only', 'Seulement la semaine suivante') }}</strong>
+          <small>{{ repeatChoiceDetail('NEXT') }}</small>
+        </span>
+      </button>
+    </div>
+
+    <!-- What will happen (read from the server, nothing saved yet) -->
+    <div class="cp-repeat-preview" aria-live="polite">
+      <p class="cp-repeat-loading" *ngIf="r.loading">
+        <span class="cp-spinner" aria-hidden="true"></span>{{ ht('Checking the days…', 'Vérification des jours…') }}
+      </p>
+      <p class="cp-repeat-error" *ngIf="!r.loading && r.failed">
+        <i-feather name="wifi-off" class="cp-ico"></i-feather>{{ ht('The days could not be checked.', "Les jours n'ont pas pu être vérifiés.") }}
+        <button type="button" class="cp-link" (click)="retryRepeat()">{{ 'CLIENT_PROGRAMS.RETRY' | translate }}</button>
+      </p>
+      <ng-container *ngIf="!r.loading && !r.failed">
+        <p class="cp-repeat-total" *ngIf="repeatCount; else nothingToFill">
+          <i-feather name="check-circle" class="cp-ico"></i-feather>
+          {{ repeatCount === 1 ? ht('1 day will be filled', '1 jour sera rempli') : ht(repeatCount + ' days will be filled', repeatCount + ' jours seront remplis') }}
+        </p>
+        <ng-template #nothingToFill>
+          <p class="cp-repeat-none">
+            <i-feather name="info" class="cp-ico"></i-feather>{{ ht('Nothing to fill: those days are already planned.', 'Rien à remplir : ces jours sont déjà prévus.') }}
+          </p>
+        </ng-template>
+        <ul class="cp-repeat-weeks" *ngIf="repeatCount && repeatWeeks.length > 1">
+          <li *ngFor="let w of repeatWeeks" [class.is-zero]="!w.count">
+            <span>{{ ht('Week ' + w.week, 'Semaine ' + w.week) }}</span>
+            <span class="cp-repeat-bar" aria-hidden="true"><span [style.width.%]="(w.count / 7) * 100"></span></span>
+            <strong>{{ w.count === 1 ? ht('1 day', '1 jour') : ht(w.count + ' days', w.count + ' jours') }}</strong>
+          </li>
+        </ul>
+        <p class="cp-repeat-kept" *ngFor="let line of repeatKept">{{ line }}</p>
+      </ng-container>
+    </div>
+
+    <footer class="cp-modal-foot">
+      <button type="button" class="cp-btn cp-btn--outline" [disabled]="r.saving" (click)="closeRepeat()">{{ 'CLIENT_PROGRAMS.PICK_CANCEL' | translate }}</button>
+      <button type="button" class="cp-btn cp-btn--brand" [disabled]="r.loading || r.saving || r.failed || !repeatCount" (click)="confirmRepeat()">
+        <i-feather [name]="r.saving ? 'loader' : 'repeat'" class="cp-ico"></i-feather>{{ repeatButton }}
+      </button>
+    </footer>
+  </div>
+</div>
 
 <!-- The « … » menu of a program -->
 <ng-template #menu let-item let-key="key">

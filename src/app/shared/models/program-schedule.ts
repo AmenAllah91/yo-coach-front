@@ -382,6 +382,18 @@ export interface OverviewDay {
   note?: string | null;
   /** The day itself (moving, copying, resting it from the tab); null outside the program. */
   dayId?: string | null;
+  /** The workout's exercises in order, shown on the day's card. Missing on an older server (the card shows the count). */
+  exercises?: OverviewExercise[] | null;
+}
+
+/** An exercise on a day's card: « 8 » / « 8–12 » in its unit, its superset / circuit. */
+export interface OverviewExercise {
+  name: string | null;
+  groupId: string | null;
+  groupType: string | null;
+  sets: number;
+  value: string | null;
+  unit: 'REPS' | 'SECONDS' | 'MINUTES';
 }
 
 export interface OverviewCurrent {

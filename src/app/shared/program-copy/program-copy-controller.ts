@@ -31,6 +31,8 @@ export interface CopyModalState {
   filled: boolean[];
   locked: boolean[];
   sourceLabel: string;
+  /** A week: the weeks chosen when the window opens (the next one, or every week after it for « Répéter »). */
+  preselect: 'next' | 'following';
 }
 
 /** « Semaine 1 · Jour 3 · Programme force » (label of a copied day). */
@@ -96,8 +98,9 @@ export class ProgramCopyController<D> {
     if (this.canCopyDay) this.open('day');
   }
 
-  openWeek(): void {
-    if (this.canDuplicateWeek) this.open('week');
+  /** `repeat`: « Répéter sur les semaines suivantes », every week after this one is chosen at once. */
+  openWeek(repeat = false): void {
+    if (this.canDuplicateWeek) this.open('week', repeat);
   }
 
   openPaste(): void {
@@ -154,7 +157,7 @@ export class ProgramCopyController<D> {
     this.host.restored(target);
   }
 
-  private open(mode: CopyDaysMode): void {
+  private open(mode: CopyDaysMode, repeat = false): void {
     const days = this.host.days();
     this.modal = {
       mode,
@@ -164,6 +167,7 @@ export class ProgramCopyController<D> {
       filled: days.map((day) => this.host.isFilled(day)),
       locked: days.map((day) => this.host.isLocked(day)),
       sourceLabel: this.copied?.label || '',
+      preselect: repeat ? 'following' : 'next',
     };
   }
 }

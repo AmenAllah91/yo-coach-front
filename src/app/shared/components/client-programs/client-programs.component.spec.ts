@@ -145,7 +145,8 @@ describe('ClientProgramsComponent (the week)', () => {
   it('browses the weeks with the arrows and comes back to this week', () => {
     const { component, element, fixture } = create();
     expect(component.shownWeekNumber).toBe(2);
-    expect(element.querySelectorAll('.cp-weeknav button').length).toBe(2);
+    expect(element.querySelectorAll('.cp-weeknav .cp-btn--icon').length).toBe(2);
+    expect(element.querySelector('.cp-weeknav-repeat')).not.toBeNull();
     component.goToWeek(3);
     fixture.detectChanges();
     expect(component.weekDays[0].dayNumber).toBe(15);
@@ -158,12 +159,12 @@ describe('ClientProgramsComponent (the week)', () => {
     const { component, element } = create(false);
     expect(element.querySelector('.cp-weeknav')).toBeNull();
     expect(component.quickEdit).toBeFalse();
-    expect(element.querySelectorAll('.cp-day-plus').length).toBe(4); // the « + » still says « click to fill »
+    expect(element.querySelectorAll('.wr-card.st-empty').length).toBe(4); // the « + » still says « click to fill »
   });
 
   it('shows a « + » on the empty days to come and the line for them, not the alert', () => {
     const { component, element } = create();
-    expect(element.querySelectorAll('.cp-day-plus').length).toBe(4);
+    expect(element.querySelectorAll('.wr-card.st-empty').length).toBe(4);
     expect(component.emptyComingDays.length).toBe(4);
     expect(element.querySelector('.cp-emptyline')).not.toBeNull();
     expect(component.alerts.length).toBe(0);
@@ -202,5 +203,95 @@ describe('ClientProgramsComponent (the week)', () => {
     expect(component.isPickTarget(pastMonday)).toBeTrue();
     component.onDay(pastMonday, item, new Event('click'));
     expect(schedule.copyDays).toHaveBeenCalledWith('P', [{ from: 1, to: 11 }]);
+  });
+
+  it('shows the exercises on a workout card: the first 3 with their sets, then « +N autres »; the count only without them', () => {
+    const { component } = create();
+    const ex = (name: string, groupId: string | null = null) =>
+      ({ name, groupId, groupType: groupId ? 'SUPERSET' : null, sets: 4, value: '8', unit: 'REPS' as const });
+    const day = { date: TODAY, dayNumber: 8, state: 'PLANNED', today: true, title: 'Push', items: 6,
+      exercises: [ex('Bench'), ex('Fly', 'g'), ex('Dips', 'g'), ex('Row', 'g'), ex('Curl'), ex('Plank')] } as unknown as OverviewDay;
+    const lines = component.dayLines(day);
+    expect(lines.map(l => l.label)).toEqual(['A', 'B1', 'B2', '']);
+    expect(lines[0].detail).toBe('4 × 8');
+    expect(lines[2].link).toBe('end');
+    expect(lines[3].detail).toContain('+3');
+    // 4 exercises: all of them rather than « +1 ».
+    expect(component.dayLines({ ...day, exercises: day.exercises!.slice(0, 4) }).length).toBe(4);
+    expect(component.dayLines({ ...day, exercises: null })).toEqual([]);
+    expect(component.calendarWeek[0].cells[0].lines.length).toBe(0);
+  });
+
+  it('repeats the week shown: the preview first (nothing saved), then the copy with « Annuler »', () => {
+    const { component, fixture, element } = create();
+    const copies = [{ from: 8, to: 15 }, { from: 9, to: 16 }, { from: 10, to: 17 }];
+    schedule.copyDays.calls.reset();
+    schedule.copyDays.and.returnValue(of({ copied: [15, 16], skipped: [{ day: 17, reason: 'TAKEN' }], undoId: null }));
+    try {
+      (element.querySelector('.cp-weeknav-repeat') as HTMLElement).click();
+      fixture.detectChanges();
+      // Week 2 of 3: only the next week, its days with something (rest, rest, workout) on the same weekdays.
+      expect(component.repeat!.mode).toBe('NEXT');
+      expect(schedule.copyDays).toHaveBeenCalledWith('P', copies, true);
+      expect(element.querySelector('.cp-repeat-choices')).toBeNull();
+      expect(element.querySelector('.cp-repeat-total')!.textContent).toContain('2');
+      expect(component.repeatKept.length).toBe(1);
+
+      schedule.copyDays.and.returnValue(of({ copied: [15, 16], skipped: [], undoId: 'u9' }));
+      (element.querySelector('.cp-modal-foot .cp-btn--brand') as HTMLElement).click();
+      fixture.detectChanges();
+      expect(schedule.copyDays.calls.mostRecent().args).toEqual(['P', copies]);
+      expect(schedule.announceCalendarChange).toHaveBeenCalledWith('u9', jasmine.any(String), jasmine.any(Array));
+      expect(component.repeat).toBeNull();
+      expect(element.querySelector('.cp-modal')).toBeNull();
+    } finally {
+      schedule.copyDays.and.returnValue(of({ copied: [4], skipped: [], undoId: 'u2' }));
+    }
+  });
+
+  it('no « Répéter » on the last week, nor while choosing a day', () => {
+    const { component, fixture, element } = create();
+    component.goToWeek(3);
+    fixture.detectChanges();
+    expect(element.querySelector('.cp-weeknav-repeat')).toBeNull();
+    component.goToWeek(2);
+    component.pick = { mode: 'MOVE', day: component.weekDays[2], programId: 'P' };
+    fixture.detectChanges();
+    expect(element.querySelector('.cp-weeknav-repeat')).toBeNull();
+  });
+
+  it('missed workouts of the last 3 days: redo on the first empty day, a ready message, hide', () => {
+    localStorage.removeItem('yc-missed-dismissed');
+    try {
+      const { component, fixture, element } = create();
+      const emitted: unknown[] = [];
+      component.action.subscribe(a => emitted.push(a));
+      // Week 1 is all missed: yesterday and the 2 days before are shown, the latest first.
+      const rows = element.querySelectorAll('.cp-missed-row');
+      expect(rows.length).toBe(3);
+      expect(component.missedDays.map(d => d.dayNumber)).toEqual([7, 6, 5]);
+
+      schedule.copyDays.calls.reset();
+      (rows[0].querySelector('.cp-btn--brand') as HTMLElement).click();
+      expect(schedule.copyDays).toHaveBeenCalledWith('P', [{ from: 7, to: 11 }]);
+
+      component.messageForMissed(component.missedDays[0]);
+      const message = emitted.pop() as { type: string; draft: string };
+      expect(message.type).toBe('message');
+      expect(message.draft).toContain('Workout');
+
+      (rows[0].querySelector('.cp-missed-close') as HTMLElement).click();
+      fixture.detectChanges();
+      expect(element.querySelectorAll('.cp-missed-row').length).toBe(2);
+      expect(localStorage.getItem('yc-missed-dismissed')).toContain('P:7');
+    } finally {
+      localStorage.removeItem('yc-missed-dismissed');
+    }
+  });
+
+  it('no missed workout alert for nutrition', () => {
+    const { component } = create();
+    component.kind = 'NUTRITION';
+    expect(component.missedDays).toEqual([]);
   });
 });

@@ -147,14 +147,11 @@ export class ViewSwitchComponent {
   }
 }
 
-/** The editor's choices kept in this browser: the view (Liste / Calendrier) and the cards' content. */
+/**
+ * The editor's choice kept in this browser: the cards' content. The view (Liste / Calendrier) is not kept here: an
+ * editor opens with the coach's setting (day-outlet.ts `startingEditorView`), the switch changes it for the visit.
+ */
 export const CALENDAR_PREFS = {
-  view(key: string): 'list' | 'calendar' {
-    try { return localStorage.getItem(key) === 'calendar' ? 'calendar' : 'list'; } catch { return 'list'; }
-  },
-  setView(key: string, mode: 'list' | 'calendar'): void {
-    try { localStorage.setItem(key, mode); } catch { /* private browsing: kept for this page */ }
-  },
   detailed(key: string): boolean {
     try { return localStorage.getItem(key) !== '1'; } catch { return true; }
   },

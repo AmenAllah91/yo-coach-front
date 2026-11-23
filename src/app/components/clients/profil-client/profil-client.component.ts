@@ -56,6 +56,7 @@ import { ClientNotesComponent } from './overview/client-notes.component';
 import { ClientTagsComponent } from './overview/client-tags.component';
 import { allExercises, capitalizeFirst, estimatedWorkoutMinutes, exerciseCardImage } from '../shared/client-plan-utils';
 import { isWarmupSetType } from '@shared/models/exercise-groups';
+import { plannedMeals } from '@shared/models/calendar-day';
 import {
   NutritionActivity,
   NutritionActivityStatus,
@@ -277,9 +278,12 @@ export class ProfilClientComponent {
     this.openAssignmentModal(action.assignment as FormAssignment);
   }
 
-  /** « Send message »: the header chat panel opens on this client's conversation, the page stays. */
-  openChatPanel(): void {
-    if (this.clientId) this.chatService.openPanelWithClient(this.clientId);
+  /**
+   * « Send message »: the header chat panel opens on this client's conversation, the page stays. {@code draft}: a text
+   * ready in the message field (a missed workout), the coach changes it or sends it.
+   */
+  openChatPanel(draft?: string | null): void {
+    if (this.clientId) this.chatService.openPanelWithClient(this.clientId, draft || undefined);
   }
 
   setTab(tab: TabId) {
@@ -859,6 +863,14 @@ export class ProfilClientComponent {
   submissionsPage = 0;
   submissionsTotalPages = 0;
   submissionsPagesArray: number[] = [];
+  /** Every received check-in of the client; the tab shows a page of it after the filters. */
+  allSubmissions: FormAssignment[] = [];
+  submissionStatusFilter: 'all' | 'pending' | 'reviewed' = 'all';
+  /** Form id, empty = every form. */
+  submissionFormFilter = '';
+  submissionForms: { id: string; name: string }[] = [];
+  private readonly SUBMISSIONS_FETCH_SIZE = 200;
+  private readonly SUBMISSIONS_MAX_EXTRA_PAGES = 4;
 
   assignedPage = 0;
   assignedTotalPages = 0;
@@ -1132,7 +1144,6 @@ export class ProfilClientComponent {
   }
 
   activeSubTab: 'submissions' | 'assigned' | 'scheduled' = 'submissions';
-  submissionSearch = '';
   private notificationAssignmentId: string | null = null;
   assignedSearch = '';
 
@@ -1319,6 +1330,10 @@ export class ProfilClientComponent {
     this.nutritionDashboardLoaded = false;
     this.checkinsLoaded = false;
     this.submissionsLoaded = false;
+    this.allSubmissions = [];
+    this.submissionForms = [];
+    this.submissionStatusFilter = 'all';
+    this.submissionFormFilter = '';
     this.assignedLoaded = false;
     this.openedTabs = new Set<TabId>([this.activeTab]);
     this.clientKey = [this.clientId];
@@ -1611,7 +1626,7 @@ export class ProfilClientComponent {
         if (!dayDate || !this.isSameDate(dayDate, today)) continue;
 
         const targets = day?.dayTargets || {};
-        const meals = day?.meals || [];
+        const meals = plannedMeals(day);
 
         return {
           name: plan?.name || 'Nutrition plan',
@@ -1707,6 +1722,97 @@ export class ProfilClientComponent {
     return this.submissionAssignments;
   }
 
+  /** Received check-ins after the form filter (the status chips count from this). */
+  private get submissionsOfForm(): FormAssignment[] {
+    const formId = this.submissionFormFilter;
+    return formId ? this.allSubmissions.filter(a => a.formId === formId) : this.allSubmissions;
+  }
+
+  /** To review first, then reviewed; newest first in each group. */
+  private get filteredSubmissions(): FormAssignment[] {
+    const rows = this.submissionsOfForm;
+    if (this.submissionStatusFilter === 'pending') return rows.filter(a => a.status !== 'REVIEWED');
+    if (this.submissionStatusFilter === 'reviewed') return rows.filter(a => a.status === 'REVIEWED');
+    return [...rows.filter(a => a.status !== 'REVIEWED'), ...rows.filter(a => a.status === 'REVIEWED')];
+  }
+
+  /** Counts shown on the chips: { all, pending, reviewed } for the chosen form. */
+  get submissionCounts(): { all: number; pending: number; reviewed: number } {
+    const rows = this.submissionsOfForm;
+    const pending = rows.filter(a => a.status !== 'REVIEWED').length;
+    return { all: rows.length, pending, reviewed: rows.length - pending };
+  }
+
+  /** Badge of the tab: every check-in to review, whatever the filters. */
+  get pendingSubmissionsCount(): number {
+    return this.allSubmissions.filter(a => a.status !== 'REVIEWED').length;
+  }
+
+  /** Forms this client has sent, for the filter (only shown with two forms or more). Kept in a field: a new array on every check would rebuild the options. */
+  private refreshSubmissionForms(): void {
+    const names = new Map<string, string>();
+    this.allSubmissions.forEach(a => {
+      if (a.formId && !names.has(a.formId)) names.set(a.formId, a.formName || '');
+    });
+    this.submissionForms = Array.from(names, ([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  /** "To review" / "Reviewed" label before the first card of each group (only when both groups show). */
+  submissionGroupLabel(index: number): string | null {
+    if (this.submissionStatusFilter !== 'all') return null;
+    const rows = this.submissionAssignments;
+    const counts = this.submissionCounts;
+    if (!counts.pending || !counts.reviewed) return null;
+    const reviewed = rows[index]?.status === 'REVIEWED';
+    const previous = index > 0 ? rows[index - 1]?.status === 'REVIEWED' : null;
+    if (previous === reviewed) return null;
+    return reviewed ? 'PROFILE_CHECKINS.GROUP_REVIEWED' : 'PROFILE_CHECKINS.GROUP_TO_REVIEW';
+  }
+
+  /** Card line under the form name: the time, and on time or how many days late (the date is in the tile). */
+  submissionTiming(a: FormAssignment): string {
+    const sentRaw = a.submittedAt || a.assignedAt;
+    const sent = sentRaw ? new Date(sentRaw) : null;
+    if (!sent || Number.isNaN(sent.getTime())) return '';
+    const time = `${String(sent.getHours()).padStart(2, '0')}:${String(sent.getMinutes()).padStart(2, '0')}`;
+    const due = a.dueAt ? new Date(a.dueAt) : null;
+    if (!a.submittedAt || !due || Number.isNaN(due.getTime())) {
+      return this.translate.instant('PROFILE_CHECKINS.SENT_AT', { time });
+    }
+    // Whole days only: the due day counts until its end (older check-ins have a due time at midnight or at the send
+    // time, so a check-in sent later that same day is on time).
+    const dayStart = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const days = Math.round((dayStart(sent) - dayStart(due)) / 86_400_000);
+    if (days <= 0) {
+      return `${time} · ${this.translate.instant('PROFILE_CHECKINS.ON_TIME')}`;
+    }
+    const late = days === 1
+      ? this.translate.instant('PROFILE_CHECKINS.LATE_ONE')
+      : this.translate.instant('PROFILE_CHECKINS.LATE_MANY', { count: days });
+    return `${time} · ${late}`;
+  }
+
+  setSubmissionStatusFilter(filter: 'all' | 'pending' | 'reviewed'): void {
+    this.submissionStatusFilter = filter;
+    this.showSubmissionsPage(0);
+  }
+
+  onSubmissionFormFilterChange(): void {
+    this.showSubmissionsPage(0);
+  }
+
+  /** Cuts the page shown from the filtered list (everything is loaded once, see loadSubmissionsPage). */
+  private showSubmissionsPage(page: number): void {
+    const rows = this.filteredSubmissions;
+    this.submissionsTotalPages = Math.ceil(rows.length / this.PAGE_SIZE);
+    this.submissionsPage = Math.min(Math.max(page, 0), Math.max(this.submissionsTotalPages - 1, 0));
+    const start = this.submissionsPage * this.PAGE_SIZE;
+    this.submissionAssignments = rows.slice(start, start + this.PAGE_SIZE);
+    this.submissionsPagesArray = Array.from({ length: this.submissionsTotalPages }, (_, i) => i);
+    this.syncAssignmentsCache();
+  }
+
   async loadClientAssignments(): Promise<void> {
     if (!this.clientId) return;
 
@@ -1714,37 +1820,52 @@ export class ProfilClientComponent {
     this.loadAssignedPage(0);
   }
 
+  /**
+   * Every received check-in of the client, in one go (rows only, no questions): the "To review" ones go on top
+   * and the filters count without asking the server again. A client rarely has more than a few dozen.
+   */
   loadSubmissionsPage(page: number = this.submissionsPage): void {
     if (!this.clientId) return;
 
     this.loadingAssignments = true;
     this.assignmentsError = null;
-    this.submissionsPage = Math.max(page, 0);
+    const clientId = this.clientId;
+    const fetchPage = (index: number) => this.assignmentsApi.pageOwnerAssignmentsByAssigneeIdStatuses(
+      index,
+      this.SUBMISSIONS_FETCH_SIZE,
+      'submittedAt',
+      'DESC',
+      clientId,
+      ['SUBMITTED', 'REVIEWED'],
+      undefined,
+      true, // shown in place by the section loader
+      true // rows only: no questions, form name included
+    );
 
-    this.assignmentsApi
-      .pageOwnerAssignmentsByAssigneeIdStatuses(
-        this.submissionsPage,
-        this.PAGE_SIZE,
-        'submittedAt',
-        'DESC',
-        this.clientId,
-        ['SUBMITTED', 'REVIEWED'],
-        this.submissionSearch,
-        true, // shown in place by the section loader
-        true // rows only: no questions, form name included
+    fetchPage(0)
+      .pipe(
+        switchMap(first => {
+          const extraPages = Math.min((first.totalPages || 1) - 1, this.SUBMISSIONS_MAX_EXTRA_PAGES);
+          if (extraPages <= 0) return of([first]);
+          return forkJoin([of(first), ...Array.from({ length: extraPages }, (_, i) => fetchPage(i + 1))]);
+        }),
+        takeUntil(this.destroy$)
       )
       .subscribe({
-        next: (res) => {
-          this.submissionAssignments = res.content || [];
-          void this.attachFormNames(this.submissionAssignments);
-          this.submissionsTotalPages = res.totalPages || 0;
-          this.submissionsPage = res.number ?? this.submissionsPage;
-          this.submissionsPagesArray = Array.from({ length: this.submissionsTotalPages }, (_, i) => i);
-          this.syncAssignmentsCache();
+        next: (pages) => {
+          if (clientId !== this.clientId) return;
+          this.allSubmissions = pages.flatMap(res => res.content || []);
+          this.refreshSubmissionForms();
+          // An older server sends no names: they fill in afterwards.
+          void this.attachFormNames(this.allSubmissions).then(() => this.refreshSubmissionForms());
+          if (this.submissionFormFilter && !this.allSubmissions.some(a => a.formId === this.submissionFormFilter)) {
+            this.submissionFormFilter = '';
+          }
+          this.showSubmissionsPage(page);
           this.loadingAssignments = false;
           this.submissionsLoaded = true;
           if (this.notificationAssignmentId) {
-            const assignment = this.submissionAssignments.find(item => item.id === this.notificationAssignmentId);
+            const assignment = this.allSubmissions.find(item => item.id === this.notificationAssignmentId);
             if (assignment) {
               this.activeSubTab = 'submissions';
               this.openAssignmentModal(assignment);
@@ -1948,17 +2069,13 @@ export class ProfilClientComponent {
       });
   }
 
-  onSubmissionSearchChange(): void {
-    this.loadSubmissionsPage(0);
-  }
-
   onAssignedSearchChange(): void {
     this.loadAssignedPage(0);
   }
 
   changeSubmissionsPage(page: number): void {
     if (page < 0 || page >= this.submissionsTotalPages || page === this.submissionsPage) return;
-    this.loadSubmissionsPage(page);
+    this.showSubmissionsPage(page);
   }
 
   changeAssignedPage(page: number): void {

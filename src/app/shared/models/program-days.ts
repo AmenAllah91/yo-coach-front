@@ -13,6 +13,22 @@ import { ExerciseSet } from './exercice.models';
  */
 export type ProgramDayState = 'FILLED' | 'REST' | 'EMPTY' | 'INVALID';
 
+/**
+ * The days in the order of the calendar. The editors show the days in the order of the list and number them by their
+ * place in it; a day moved on the calendar changes its number, and a program saved before the server sorted its list
+ * may still have it in the old order. With one number per day (1, 2, 3…), the numbers decide; else the list does.
+ */
+export function daysInCalendarOrder<T extends { dayNumber?: number | null }>(days: T[] | null | undefined): T[] {
+  const list = days || [];
+  const seen = new Set<number>();
+  for (const day of list) {
+    const number = Number(day?.dayNumber);
+    if (!Number.isInteger(number) || number < 1 || seen.has(number)) return list;
+    seen.add(number);
+  }
+  return [...list].sort((a, b) => Number(a.dayNumber) - Number(b.dayNumber));
+}
+
 /** Day numbers are 1-based, in the order of the list. */
 export interface ProgramSummary {
   totalDays: number;

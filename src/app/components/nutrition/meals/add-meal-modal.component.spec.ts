@@ -8,8 +8,16 @@ import { allIcons } from 'angular-feather/icons';
 import { TranslateModule } from '@ngx-translate/core';
 import { MealsService } from 'app/service/meals.service';
 import { NutritionService } from 'app/service/nutrition.service';
+import { defaultServingOf } from '@shared/models/nutrition-math';
 
 const auth = { extractRoles: () => Promise.resolve(['ROLE_COACH']) } as any;
+
+/** A food chosen in the Add Food modal: one serving of its main unit. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function pick(component: AddMealModalComponent, food: any): void {
+  const serving = defaultServingOf(food);
+  component.onFoodPicked({ name: food.name, quantity: serving.size, unit: serving.unit, servingId: serving.id ?? null, serving, foodRef: food });
+}
 
 describe('Meals create and edit validation', () => {
   let component: AddMealModalComponent;
@@ -23,7 +31,7 @@ describe('Meals create and edit validation', () => {
     component = new AddMealModalComponent(nutrition, service, { instant: (key: string) => key } as any, auth);
     component.choose('recipe');
     component.name = ' Lunch ';
-    component.addFood(food);
+    pick(component, food);
   });
 
   it('requires a trimmed title, meal type, ingredients and servings >= 1', () => {
@@ -51,7 +59,7 @@ describe('Meals create and edit validation', () => {
   });
 
   it('prevents adding duplicate database foods and rejects renamed manual duplicates', () => {
-    component.addFood({ ...food }); expect(component.ingredients.length).toBe(1);
+    pick(component, { ...food }); expect(component.ingredients.length).toBe(1);
     component.addManualIngredient();
     Object.assign(component.ingredients[1], { name: ' RICE ', quantity: 1, unit: 'g' });
     expect(component.canSave).toBeFalse(); expect(component.canSaveDraft).toBeFalse();
@@ -210,7 +218,7 @@ describe('Meal ingredient servings', () => {
     component = new AddMealModalComponent(nutrition, meals, { instant: (key: string) => (key === 'FOOD_UNIT_PIECE' ? 'pièce' : key) } as any, auth);
     component.choose('foods');
     component.name = 'Petit-déjeuner';
-    component.addFood(eggs());
+    pick(component, eggs());
   });
 
   it('starts on the main serving and switches to another one with its own values', () => {

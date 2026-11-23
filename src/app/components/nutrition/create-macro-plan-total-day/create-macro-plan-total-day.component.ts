@@ -6,6 +6,8 @@ import { nutritionCopyController } from '../nutrition-day-copy';
 import { NutritionDraftState } from '../nutrition-draft-state';
 import { AfterViewChecked, Component, DoCheck, ElementRef, HostListener, OnInit, ViewChild, inject } from '@angular/core';
 import { ActiveDayRail } from '@shared/program-calendar/active-day-rail';
+import { ProgramStructureRailComponent } from '@shared/program-structure-rail/program-structure-rail.component';
+import { nutritionRailWeeks } from '../nutrition-rail';
 import { ConfirmDialogService } from '@shared/components/confirm-dialog/confirm-dialog.service';
 import { LeavesUnsavedChanges, warnBeforeUnload } from '@config/guard/unsaved-changes.guard';
 import { NutritionClientMode } from '../nutrition-client-mode';
@@ -30,7 +32,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 @Component({
   selector: 'app-create-macro-plan-total-day',
   standalone: true,
-  imports: [ProgramCalendarComponent, DayWindowHeadComponent, DayWindowFootComponent, ViewSwitchComponent, 
+  imports: [ProgramStructureRailComponent, ProgramCalendarComponent, DayWindowHeadComponent, DayWindowFootComponent, ViewSwitchComponent, 
     FeatherModule,
     NgForOf,
     NgIf,
@@ -340,6 +342,11 @@ export class CreateMacroPlanTotalDayComponent implements OnInit, DoCheck, AfterV
     this.selectedDay = this.days[0] || null;
   }
 
+  /** Semaines et jours de « Structure du programme » (même composant que l'éditeur de séances). */
+  get railWeeks() {
+    return nutritionRailWeeks(this.draft, this.days, this.nutritionWeeks, this.translate);
+  }
+
   get nutritionWeeks(): Array<{ weekNumber: number; days: Array<{ day: MealDay; index: number }> }> {
     const weeks: Array<{ weekNumber: number; days: Array<{ day: MealDay; index: number }> }> = [];
 
@@ -644,6 +651,25 @@ selectDay(day: MealDay) {
       SAVE PLAN
   ------------------------------------------------*/
   savePlan() {
+    this.draft.error = '';
+    if (!this.planName.trim()) {
+      this.draft.error = this.translate.instant('NUTRITION_PLAN_NAME_REQUIRED');
+      return;
+    }
+    // The day and meal to fix, translated, before sending (R2), as the plan of foods does; an empty meal never blocks.
+    const dayValidation = this.draft.firstIssue(this.days);
+    if (dayValidation) {
+      this.draft.error = dayValidation;
+      return;
+    }
+    // Whole grams: MacroTargets is an Integer on CE (a typed 12.5 was cut to 12 by the server, not rounded).
+    this.days.forEach(day => {
+      const t = day.dayTargets;
+      if (!t) return;
+      t.proteinG = Math.round(Number(t.proteinG) || 0);
+      t.carbsG = Math.round(Number(t.carbsG) || 0);
+      t.fatG = Math.round(Number(t.fatG) || 0);
+    });
     this.days.forEach(day => this.updateCaloriesForDay(day));
     this.clientMode.refreshDates(this.days);
 

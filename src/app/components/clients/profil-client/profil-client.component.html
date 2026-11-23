@@ -609,7 +609,7 @@
         [clientName]="fullName"
         (assignNew)="openAssignProgramModal('WORKOUT', $event)"
         (openCalendar)="openCalendarAt('workout', $event)"
-        (message)="openChatPanel()"
+        (message)="openChatPanel($event)"
       />
     </div>
 
@@ -620,7 +620,7 @@
         [clientName]="fullName"
         (assignNew)="openAssignProgramModal('NUTRITION', $event)"
         (openCalendar)="openCalendarAt('nutrition', $event)"
-        (message)="openChatPanel()"
+        (message)="openChatPanel($event)"
       />
     </div>
     </ng-container>
@@ -640,6 +640,13 @@
             (click)="setSubTab('submissions')"
           >
             {{ 'SUBMISSIONS' | translate }}
+            <span
+              class="subtab-badge subtab-badge--pending"
+              *ngIf="pendingSubmissionsCount > 0"
+              [title]="'PROFILE_CHECKINS.TO_REVIEW' | translate"
+            >
+              {{ pendingSubmissionsCount }}
+            </span>
           </button>
 
           <button
@@ -669,29 +676,69 @@
 
       <app-section-loader *ngIf="activeSubTab === 'submissions' && !submissionsLoaded"></app-section-loader>
       <div *ngIf="activeSubTab === 'submissions' && submissionsLoaded">
-        <div class="checkins-toolbar">
-          <div class="search-input-wrapper full-width">
-            <i class="fas fa-search"></i>
-            <input
-              type="text"
-              [placeholder]="'SEARCH_SUBMISSIONS' | translate"
-              [(ngModel)]="submissionSearch"
-              (ngModelChange)="onSubmissionSearchChange()"
-            />
+        <div class="checkins-filters" *ngIf="allSubmissions.length">
+          <div class="checkins-chips" role="group">
+            <button
+              type="button"
+              class="checkins-chip"
+              [class.checkins-chip--active]="submissionStatusFilter === 'all'"
+              [attr.aria-pressed]="submissionStatusFilter === 'all'"
+              (click)="setSubmissionStatusFilter('all')"
+            >
+              {{ 'PROFILE_CHECKINS.ALL' | translate }}
+              <span class="checkins-chip-count">{{ submissionCounts.all }}</span>
+            </button>
+            <button
+              type="button"
+              class="checkins-chip checkins-chip--pending"
+              [class.checkins-chip--active]="submissionStatusFilter === 'pending'"
+              [attr.aria-pressed]="submissionStatusFilter === 'pending'"
+              (click)="setSubmissionStatusFilter('pending')"
+            >
+              {{ 'PROFILE_CHECKINS.TO_REVIEW' | translate }}
+              <span class="checkins-chip-count">{{ submissionCounts.pending }}</span>
+            </button>
+            <button
+              type="button"
+              class="checkins-chip"
+              [class.checkins-chip--active]="submissionStatusFilter === 'reviewed'"
+              [attr.aria-pressed]="submissionStatusFilter === 'reviewed'"
+              (click)="setSubmissionStatusFilter('reviewed')"
+            >
+              {{ 'PROFILE_CHECKINS.REVIEWED' | translate }}
+              <span class="checkins-chip-count">{{ submissionCounts.reviewed }}</span>
+            </button>
           </div>
+
+          <select
+            *ngIf="submissionForms.length > 1"
+            class="checkins-form-select"
+            [attr.aria-label]="'PROFILE_CHECKINS.FORM_FILTER' | translate"
+            [(ngModel)]="submissionFormFilter"
+            (ngModelChange)="onSubmissionFormFilterChange()"
+          >
+            <option value="">{{ 'PROFILE_CHECKINS.ALL_FORMS' | translate }}</option>
+            <option *ngFor="let f of submissionForms" [value]="f.id">{{ f.name || ('PROFILE_CHECKINS.UNNAMED_FORM' | translate) }}</option>
+          </select>
         </div>
 
+        <p class="checkins-empty" *ngIf="!allSubmissions.length">{{ 'PROFILE_CHECKINS.EMPTY' | translate }}</p>
+        <p class="checkins-empty" *ngIf="allSubmissions.length && !submissionsList.length">{{ 'PROFILE_CHECKINS.EMPTY_FILTER' | translate }}</p>
+
         <div class="checkin-cards">
-          <app-checkin-card
-            *ngFor="let a of submissionsList"
-            (click)="openSubmissionAssignment(a)"
-            [date]="a.submittedAt || a.assignedAt"
-            [lang]="currentLang"
-            [tone]="a.status === 'REVIEWED' ? 'success' : 'warning'"
-            [title]="a.formName"
-            [subtitle]="('SUBMITTED_ON' | translate) + ' ' + ((a.submittedAt || a.assignedAt) | date: 'd MMM · HH:mm')"
-            [status]="(a.status === 'REVIEWED' ? 'REVIEWED' : 'PENDING_REVIEW') | translate"
-          ></app-checkin-card>
+          <ng-container *ngFor="let a of submissionsList; let i = index">
+            <div class="checkins-group-label" *ngIf="submissionGroupLabel(i) as label">{{ label | translate }}</div>
+            <app-checkin-card
+              (click)="openSubmissionAssignment(a)"
+              [date]="a.submittedAt || a.assignedAt"
+              [lang]="currentLang"
+              [tone]="a.status === 'REVIEWED' ? 'success' : 'warning'"
+              [emphasis]="a.status !== 'REVIEWED'"
+              [title]="a.formName"
+              [subtitle]="submissionTiming(a)"
+              [status]="(a.status === 'REVIEWED' ? 'PROFILE_CHECKINS.CHIP_REVIEWED' : 'PROFILE_CHECKINS.CHIP_TO_REVIEW') | translate"
+            ></app-checkin-card>
+          </ng-container>
         </div>
 
         <div class="profile-pagination" *ngIf="submissionsTotalPages > 1">

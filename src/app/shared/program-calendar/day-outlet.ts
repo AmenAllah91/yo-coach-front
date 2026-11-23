@@ -1,4 +1,5 @@
 import { ActivatedRoute, Router, UrlSegment, UrlSegmentGroup } from '@angular/router';
+import { CoachSettingsService } from 'app/service/coach-settings.service';
 
 /**
  * A day of a client's program edited over the page that asked for it (the client's profile): the editor is shown in
@@ -46,14 +47,26 @@ export function requestedDayNumber(route: ActivatedRoute): number {
   return Number(route.snapshot.paramMap.get('day') || route.snapshot.queryParamMap.get('day')) || 0;
 }
 
-/** « Tout le programme » from the window: the editor's full page on this day, back to the page underneath after. */
+/**
+ * The view an editor opens with: over a page (outlet), the calendar, whose day window is all that shows; `?view=list`
+ * when « Tout le programme » asked for the list; else the coach's choice in Settings › Preferences (« Liste » by
+ * default). The switch on the editor's page then changes it for this visit only.
+ */
+export function startingEditorView(route: ActivatedRoute, settings: CoachSettingsService): 'list' | 'calendar' {
+  if (inDayOutlet(route)) return 'calendar';
+  const asked = route.snapshot.queryParamMap.get('view');
+  if (asked === 'list' || asked === 'calendar') return asked;
+  return settings.getProgramEditorView();
+}
+
+/** « Tout le programme » from the window: the editor's full page, in list on this day, back to the page underneath after. */
 export function openFullEditor(router: Router, route: ActivatedRoute, dayNumber: number): void {
   const kind = (route.snapshot.url[0]?.path || 'workout') as DayOutletKind;
   const clientId = route.snapshot.paramMap.get('idClient') || '';
   const planId = route.snapshot.paramMap.get('id') || '';
   const returnUrl = pageUnderneath(router);
   const tree = router.createUrlTree(['/clients', FULL_EDITOR[kind] || 'create-workout', clientId, 'edit', planId], {
-    queryParams: { day: dayNumber || null, returnUrl },
+    queryParams: { day: dayNumber || null, view: 'list', returnUrl },
   });
   // The full page only: the day window is not kept over it.
   delete tree.root.children[DAY_OUTLET];

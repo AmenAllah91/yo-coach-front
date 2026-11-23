@@ -136,7 +136,7 @@ this.translate.use(lang);}
         .pipe(takeUntil(this.destroy$))
         .subscribe((config) => this.applyNotificationSetting(config.notifications));
       this.coachSettingsService.loadConfig(true).subscribe({
-        error: () => this.applyNotificationSetting({ enabled: false }),
+        error: () => this.applyNotificationSetting({ enabled: true }),
       });
     });
 
@@ -314,8 +314,8 @@ this.translate.use(lang);}
   }
 
   private applyNotificationSetting(preferences: any): void {
-    this.notificationPreferences = preferences || { enabled: false };
-    this.notificationsEnabled = this.notificationPreferences.enabled === true;
+    this.notificationPreferences = preferences || { enabled: true };
+    this.notificationsEnabled = this.notificationPreferences.enabled !== false;
     if (!this.notificationsEnabled) {
       this.clearHeaderNotifications();
     } else {

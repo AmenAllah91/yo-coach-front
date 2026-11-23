@@ -110,9 +110,20 @@
       [attr.title]="'CALENDAR_HELP' | translate"
       (click)="toggleHelp()"
     ><span class="material-icons" aria-hidden="true">help_outline</span></button>
-    <button type="button" class="dp-button" *ngIf="currentView !== 'month'" (click)="openCopyWeek()">
-      <span class="material-icons" aria-hidden="true">content_copy</span>{{ 'CALENDAR_COPY_WEEK' | translate }}
-    </button>
+    <!-- « Copier une semaine »: the workout week or the nutrition week (both in the week shown: a small menu asks). -->
+    <div class="copy-week" *ngIf="currentView !== 'month'" (click)="$event.stopPropagation()">
+      <button type="button" class="dp-button" aria-haspopup="menu" [attr.aria-expanded]="copyWeekMenu" (click)="onCopyWeekClick($event)">
+        <span class="material-icons" aria-hidden="true">content_copy</span>{{ 'CALENDAR_COPY_WEEK' | translate }}
+      </button>
+      <div class="wr-menu__list copy-week__list" role="menu" *ngIf="copyWeekMenu">
+        <button type="button" role="menuitem" class="wr-menu__item" (click)="openCopyWeek('workout')">
+          <span class="material-icons wr-menu__ico" aria-hidden="true">fitness_center</span>{{ 'CALENDAR_COPY_WEEK_WORKOUT' | translate }}
+        </button>
+        <button type="button" role="menuitem" class="wr-menu__item" (click)="openCopyWeek('nutrition')">
+          <span class="material-icons wr-menu__ico" aria-hidden="true">restaurant</span>{{ 'CALENDAR_COPY_WEEK_NUTRITION' | translate }}
+        </button>
+      </div>
+    </div>
   </div>
 
   <!--
@@ -952,6 +963,27 @@
           [(ngModel)]="createProgramName"
           [placeholder]="(calendarType === 'workout' ? 'WORKOUT_PROGRAM_EXAMPLE' : 'NUTRITION_PROGRAM_EXAMPLE') | translate"
         />
+      </div>
+
+      <!-- Nutrition: the kind of plan first (as « Créer » in the library), it decides which editor opens the days. -->
+      <div class="form-group" *ngIf="calendarType === 'nutrition' && createProgramKinds.length > 1">
+        <span class="form-label">{{ 'CALENDAR_NUTRITION_TYPE' | translate }} *</span>
+        <div class="calendar-create-kinds" role="radiogroup" [attr.aria-label]="'CALENDAR_NUTRITION_TYPE' | translate">
+          <button
+            type="button"
+            role="radio"
+            class="calendar-create-kind"
+            *ngFor="let option of createProgramKinds"
+            [class.is-selected]="createProgramKind === option.kind"
+            [attr.aria-checked]="createProgramKind === option.kind"
+            (click)="createProgramKind = option.kind"
+          >
+            <span class="material-icons calendar-create-kind__icon" aria-hidden="true">{{ option.icon }}</span>
+            <span class="calendar-create-kind__title">{{ option.title | translate }}</span>
+            <span class="calendar-create-kind__text">{{ option.text | translate }}</span>
+            <span class="material-icons calendar-create-kind__check" aria-hidden="true">{{ createProgramKind === option.kind ? 'radio_button_checked' : 'radio_button_unchecked' }}</span>
+          </button>
+        </div>
       </div>
 
       <div class="form-group">

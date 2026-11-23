@@ -57,6 +57,8 @@ export class ProgramCalendarComponent<T = any> implements AfterViewChecked {
   @Output() addWeek = new EventEmitter<void>();
   @Output() deleteWeek = new EventEmitter<number>();
   @Output() duplicateWeek = new EventEmitter<CalendarWeek<T>>();
+  /** « Répéter sur les semaines suivantes »: the copy window, the following weeks already chosen. */
+  @Output() repeatWeek = new EventEmitter<CalendarWeek<T>>();
   @Output() dayAction = new EventEmitter<{ type: CalendarDayAction; day: T }>();
   @Output() detailedChange = new EventEmitter<boolean>();
 
@@ -67,6 +69,11 @@ export class ProgramCalendarComponent<T = any> implements AfterViewChecked {
   dropDay: T | null = null;
   menuDay: T | null = null;
   weekMenu: number | null = null;
+  /**
+   * « Déplacer » of the ⋮ (the editors): the day to move; the next day clicked takes it (the two days swap, as a
+   * drag does). A drag needs a mouse: on a tablet or a phone this is the way to move a day.
+   */
+  moving: T | null = null;
   private scrolled = false;
 
   ht(en: string, fr: string): string {
@@ -111,6 +118,32 @@ export class ProgramCalendarComponent<T = any> implements AfterViewChecked {
   @HostListener('document:keydown.escape')
   onEscape(): void {
     this.closeMenus();
+    this.moving = null;
+  }
+
+  /** While a day is picked: by the page (the profile), or by « Déplacer » here. */
+  pickOf(cell: CalendarCell<T>): 'target' | 'source' | 'dim' | null {
+    if (cell.pick) return cell.pick;
+    if (!this.moving) return null;
+    if (cell.day === this.moving) return 'source';
+    return cell.locked || this.readOnly ? 'dim' : 'target';
+  }
+
+  /** A click on a card: its window; while moving a day: the day that takes it (the day itself: cancelled). */
+  onCardClick(cell: CalendarCell<T>): void {
+    const moved = this.moving;
+    if (!moved) {
+      this.openDay.emit(cell.day);
+      return;
+    }
+    this.moving = null;
+    if (cell.day !== moved && !cell.locked && !this.readOnly) this.swap.emit({ from: moved, to: cell.day });
+  }
+
+  get movingText(): string {
+    return this.isWorkout
+      ? this.ht('Click the day where the workout goes.', 'Cliquez sur le jour où mettre la séance.')
+      : this.ht('Click the day where this day goes.', 'Cliquez sur le jour où mettre ce jour.');
   }
 
   get hasMenu(): boolean {
@@ -131,12 +164,22 @@ export class ProgramCalendarComponent<T = any> implements AfterViewChecked {
 
   act(type: CalendarDayAction, day: T): void {
     this.menuDay = null;
+    // « Déplacer » of the editors' menu is done here (the page's own menu, the profile, has its own).
+    if (type === 'move' && !this.menuItems) {
+      this.moving = day;
+      return;
+    }
     this.dayAction.emit({ type, day });
   }
 
   onDuplicateWeek(week: CalendarWeek<T>): void {
     this.weekMenu = null;
     this.duplicateWeek.emit(week);
+  }
+
+  onRepeatWeek(week: CalendarWeek<T>): void {
+    this.weekMenu = null;
+    this.repeatWeek.emit(week);
   }
 
   onDeleteWeek(week: number): void {
@@ -151,7 +194,7 @@ export class ProgramCalendarComponent<T = any> implements AfterViewChecked {
   // ---------- Drag a card onto another day: the two days swap ----------
 
   onDragStart(event: DragEvent, cell: CalendarCell<T>): void {
-    if (!cell.movable) {
+    if (!cell.movable || this.moving) {
       event.preventDefault();
       return;
     }
@@ -190,6 +233,8 @@ export class ProgramCalendarComponent<T = any> implements AfterViewChecked {
   menuOf(cell: CalendarCell<T>): CalendarMenuItem[] {
     if (this.menuItems) return this.menuItems(cell);
     const items: CalendarMenuItem[] = [];
+    // An empty day has nothing to move (another day is moved onto it).
+    if (cell.hasContent) items.push({ type: 'move', label: this.ht('Move', 'Déplacer'), icon: 'move' });
     if (this.canCopy) items.push({ type: 'copy', label: this.translate.instant('COPY_DAYS.BUTTON_COPY_DAY'), icon: 'copy', disabled: !cell.hasContent });
     items.push({ type: 'rest', label: this.restLabel(cell), icon: cell.rest ? (this.isWorkout ? 'activity' : 'coffee') : (this.isWorkout ? 'moon' : 'flag') });
     if (this.canClear && !cell.rest) items.push({ type: 'clear', label: this.translate.instant('DAY_MENU_CLEAR'), icon: 'x-circle', disabled: !cell.hasContent });

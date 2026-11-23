@@ -68,10 +68,16 @@
     box-shadow: -12px 0 32px rgba(15, 23, 42, .18);
   }
   .np-root.np-layout.is-cal-editing .np-drawer-slot .wkdrawer { width: 100% !important; height: 100% !important; max-width: none; }
+  /* The window does not jump: its left edge stays put, only its right edge steps back if the picker would cover it.
+     On a small screen the left edge moves just enough to keep the window 720px wide. */
+  .np-root.np-layout.is-cal-editing .np-main > .np-card.np-card--day { transition: left .2s ease, right .2s ease; }
   .np-root.np-layout.is-cal-editing.exercise-drawer-open .np-main > .np-card.np-card--day {
-    left: max(16px, calc((100vw - var(--exercise-drawer-width) - 960px) / 2));
-    right: calc(var(--exercise-drawer-width) + 16px);
+    left: max(16px, min(calc((100vw - 960px) / 2), calc(100vw - var(--exercise-drawer-width) - 16px - 720px)));
+    right: max(16px, calc((100vw - 960px) / 2), calc(var(--exercise-drawer-width) + 16px));
   }
+}
+@media (min-width: 901px) and (prefers-reduced-motion: reduce) {
+  .np-root.np-layout.is-cal-editing .np-main > .np-card.np-card--day { transition: none; }
 }
 .np-root.is-cal-editing .wkmove-toast { z-index: 1070; }
 

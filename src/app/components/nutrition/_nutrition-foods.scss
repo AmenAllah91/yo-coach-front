@@ -110,6 +110,16 @@
   white-space: nowrap;
 }
 
+/* 2026-11-23: a line the client swapped for an equivalent: what the coach had planned. */
+.np-foods__replaced {
+  display: block;
+  overflow: hidden;
+  color: light-dark(#64748b, #a5abb4);
+  font-size: 11px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+}
+
 /* Wide: the quantity and the macros are cells of the row grid. */
 .np-foods__meta {
   display: contents;

@@ -47,8 +47,22 @@ svg {
   border-bottom: 1px solid light-dark(#e6e9ee, #34383e);
 }
 
-.afm__head h3 {
+.afm__titles {
   flex: 1 1 auto;
+  min-width: 0;
+}
+
+.afm__target {
+  margin: 2px 0 0;
+  overflow: hidden;
+  color: light-dark(#64748b, #a5abb4);
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.afm__head h3 {
   margin: 0;
   color: light-dark(#0f172a, #e8ecf6);
   font-size: 22px;
@@ -233,6 +247,42 @@ svg {
 .afm__badge--muted {
   color: light-dark(#64748b, #a5abb4);
   background: light-dark(#f1f5f9, #15181d);
+}
+
+.afm__badge--ok {
+  color: light-dark(#15803d, #4ade80);
+  background: light-dark(#dcfce7, #14301e);
+}
+
+/* keepOpen: « Poulet ajouté. Vous pouvez en ajouter un autre. » above the search. */
+.afm__added-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  color: light-dark(#15803d, #4ade80);
+  background: light-dark(#f0fdf4, #12261a);
+  font-size: 13px;
+  font-weight: 600;
+  animation: afm-note-in 0.2s ease-out;
+}
+
+.afm__added-note svg {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.5;
+}
+
+@keyframes afm-note-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .afm__added-note { animation: none; }
 }
 
 .afm__chevron {
@@ -439,6 +489,23 @@ svg {
   gap: 12px;
 }
 
+.afm__foot--done {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.afm__count {
+  color: light-dark(#0f172a, #e8ecf6);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.afm__foot--done .afm__btn {
+  min-width: 140px;
+}
+
 .afm__btn {
   height: 48px;
   padding: 0 20px;
@@ -508,4 +575,12 @@ svg {
   .afm__foot {
     padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
   }
+}
+
+/* More than the list shows: the coach types more letters. */
+.afm__more {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  text-align: center;
+  color: light-dark(#64748b, #a5abb4);
 }

@@ -244,6 +244,8 @@ export class CopyDaysModalComponent implements OnChanges {
    * already planned stay as they are (the editor replaces them).
    */
   @Input() emptyOnly = false;
+  /** A week: the weeks chosen when the window opens (the next one; « Répéter »: every week after it). */
+  @Input() preselect: 'next' | 'following' = 'next';
   @Output() close = new EventEmitter<void>();
   @Output() confirm = new EventEmitter<DayCopy[]>();
   /** « Copier vers un autre programme » (mode day). */
@@ -267,8 +269,10 @@ export class CopyDaysModalComponent implements OnChanges {
   /** The host passes values set once when it opens the modal: a change starts a new selection. */
   ngOnChanges(): void {
     this.selected.clear();
-    // Most common case: the week goes onto the next one.
-    if (this.mode === 'week') this.selectNextWeek();
+    // Most common case: the week goes onto the next one; « Répéter »: onto every week after it.
+    if (this.mode !== 'week') return;
+    if (this.preselect === 'following') this.selectFollowingWeeks();
+    else this.selectNextWeek();
   }
 
   /** Every copy the selection asks for (empty source days and locked targets left out). */

@@ -60,6 +60,11 @@ export class NutritionDraftState {
   private overlapChecked = false;
   /** What the coach edits, given by the builder (the same fields as its save). */
   editedPlan?: () => Partial<MealPlan>;
+  /**
+   * After a save: the days the client did while the editor was open (the server kept them, a save never erases them)
+   * are shown done. True when a day changed on the screen.
+   */
+  clientDaysKept?: (saved: MealPlan) => boolean;
   /** The plan as last loaded or saved: leaving with something else asks first. */
   private readonly savedContent = new SavedContent();
 
@@ -220,8 +225,11 @@ export class NutritionDraftState {
       next: saved => {
         this.planId = saved.id || payload.id || this.planId;
         this.savedAt = new Date();
+        const untouched = !!this.editedPlan && nutritionContent(this.editedPlan()) === sent;
         this.savedContent.remember(sent);
         this.saving = false;
+        // What the client did meanwhile comes from the server: not a change of the coach.
+        if (this.clientDaysKept?.(saved) && untouched && this.editedPlan) this.savedContent.remember(nutritionContent(this.editedPlan()));
         if (saved?.endDate) this.savedEnd = String(saved.endDate).slice(0, 10);
         this.scheduleAnnouncer?.((saved as any)?.scheduleChanges, (saved as any)?.scheduleUndoId);
 
@@ -241,6 +249,12 @@ export class NutritionDraftState {
         if (isLockedError(err)) {
           this.readOnly = true;
           this.error = this.tr('ASSIGN_FLOW.LOCKED_ERROR', 'This program is finished or was replaced: it can no longer be changed.');
+          return;
+        }
+        // The client did, meanwhile, a day this save moves or removes: nothing is saved, the page must be read again.
+        if (err?.error?.code === 'DAY_DONE') {
+          this.error = this.tr('PROGRAM_SAVE_DAY_DONE',
+            'Your client did a day that you moved or removed in the meantime. Nothing was saved: reload the page to see it, then make your change again.');
           return;
         }
         // A refusal on the day rules (another tab, an older version): same handling as before saving.

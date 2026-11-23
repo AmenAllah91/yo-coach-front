@@ -13,15 +13,19 @@ import { TranslateModule } from '@ngx-translate/core';
 export class DeleteClientModalComponent {
   @Input() isVisible = false;
   @Input() clientName = '';
+  /** The removal is being saved: buttons disabled, a second click does nothing. */
+  @Input() busy = false;
 
   @Output() onClose = new EventEmitter<void>();
   @Output() onConfirm = new EventEmitter<void>();
 
   closeModal() {
+    if (this.busy) return;
     this.onClose.emit();
   }
 
   confirmDelete() {
+    if (this.busy) return;
     this.onConfirm.emit();
   }
 }

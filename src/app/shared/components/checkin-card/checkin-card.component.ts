@@ -13,7 +13,7 @@ export type CheckinCardTone = 'warning' | 'success' | 'danger' | 'info' | 'neutr
   imports: [CommonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="ci-card" [attr.data-tone]="tone" [class.ci-card--link]="clickable">
+    <div class="ci-card" [attr.data-tone]="tone" [class.ci-card--link]="clickable" [class.ci-card--emphasis]="emphasis">
       <div class="ci-tile" aria-hidden="true">
         <span class="ci-tile-small">{{ weekday }}</span>
         <span class="ci-tile-day">{{ day }}</span>
@@ -41,6 +41,9 @@ export type CheckinCardTone = 'warning' | 'success' | 'danger' | 'info' | 'neutr
     .ci-card[data-tone='danger'] { --tone: #c2412d; --tone-soft: rgba(194, 65, 45, .09); }
     .ci-card[data-tone='info'] { --tone: #1f8fbd; --tone-soft: rgba(31, 143, 189, .1); }
     .ci-card--link { cursor: pointer; }
+    /* Needs the coach (e.g. a check-in to review): border in the status colour. */
+    .ci-card--emphasis { border-color: color-mix(in srgb, var(--tone) 45%, transparent); box-shadow: inset 3px 0 0 var(--tone); }
+    .ci-card--emphasis.ci-card--link:hover { border-color: var(--tone); }
     .ci-card--link:hover { border-color: light-dark(#cbd5e1, #363e47); box-shadow: 0 3px 10px rgba(15, 23, 42, .05); }
     .ci-tile {
       flex: none; width: 50px; padding: 6px 0; border-radius: 10px; background: var(--tone-soft); color: var(--tone);
@@ -65,6 +68,8 @@ export class CheckinCardComponent {
   @Input() status: string | null = null;
   @Input() tone: CheckinCardTone = 'neutral';
   @Input() clickable = true;
+  /** Stands out (coloured border): something waits for the coach. */
+  @Input() emphasis = false;
   /** yyyy-MM-dd or ISO instant. */
   @Input() set date(value: string | Date | null | undefined) {
     const date = value ? new Date(value) : null;
@@ -93,6 +98,8 @@ export class CheckinCardComponent {
     }
     this.weekday = date.toLocaleDateString(this.locale, { weekday: 'short' }).replace('.', '');
     this.day = String(date.getDate()).padStart(2, '0');
-    this.month = date.toLocaleDateString(this.locale, { month: 'short' }).replace('.', '');
+    // en-GB writes "Sept" while every other month has 3 letters: the month comes from en-US ("Sep").
+    const monthLocale = this.locale === 'en-GB' ? 'en-US' : this.locale;
+    this.month = date.toLocaleDateString(monthLocale, { month: 'short' }).replace('.', '');
   }
 }

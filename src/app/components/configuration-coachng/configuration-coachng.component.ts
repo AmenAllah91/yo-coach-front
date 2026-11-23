@@ -763,7 +763,7 @@ export class ConfigurationCoachngComponent implements OnInit {
   }
 
   private syncNotificationToggles(): void {
-    this.browserNotificationsEnabled = this.config.notifications.enabled === true;
+    this.browserNotificationsEnabled = this.config.notifications.enabled !== false;
     this.emailNotifications.forEach((item) => {
       item.enabled = (this.config.notifications as any)[item.key] !== false;
     });

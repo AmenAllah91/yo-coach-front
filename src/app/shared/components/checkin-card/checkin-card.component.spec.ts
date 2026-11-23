@@ -20,6 +20,17 @@ describe('CheckinCardComponent', () => {
     expect(element.querySelector('.ci-chip')!.textContent!.trim()).toBe('To review');
   });
 
+  it('writes September with 3 letters in English, like the other months', () => {
+    const element = render({ lang: 'en', date: '2026-09-30T09:00:00', title: 'Form' });
+    expect(element.querySelector('.ci-tile')!.textContent).toContain('Sep');
+    expect(element.querySelector('.ci-tile')!.textContent).not.toContain('Sept');
+  });
+
+  it('stands out when something waits for the coach', () => {
+    const element = render({ date: '2026-09-30T09:00:00', title: 'Form', emphasis: true });
+    expect(element.querySelector('.ci-card')!.classList).toContain('ci-card--emphasis');
+  });
+
   it('keeps a placeholder tile without date', () => {
     const element = render({ date: null, title: 'Form' });
     expect(element.querySelector('.ci-tile-day')!.textContent!.trim()).toBe('--');

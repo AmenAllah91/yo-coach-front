@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -26,23 +26,35 @@ export type AddedFood = Pick<Food, 'name' | 'quantity' | 'unit' | 'servingId' | 
   templateUrl: './add-food-modal.component.html',
   styleUrls: ['./add-food-modal.component.scss'],
 })
-export class AddFoodModalComponent implements OnInit, OnDestroy {
+export class AddFoodModalComponent implements OnInit, AfterViewInit, OnDestroy {
   /** Administrators may add a unit to a catalogue food; a coach only to their own foods. */
   @Input() canEditCatalog = false;
   /** Foods already in the meal: shown, but cannot be added twice. */
   @Input() excludedIds: string[] = [];
+  /** Stays open after an add (back to the list, search selected) so several foods go in one opening; « Terminé » closes it. */
+  @Input() keepOpen = false;
+  /** The meal the foods go to, shown under the title. */
+  @Input() targetName = '';
   @Output() added = new EventEmitter<AddedFood>();
   @Output() closed = new EventEmitter<void>();
 
   step: 'list' | 'detail' = 'list';
   search = '';
   foods: any[] = [];
+  /** More foods match than the list shows (the server sends the first 100): the coach should type more. */
+  truncated = false;
   loading = false;
   page = 0;
   readonly pageSize = 5;
   selectedFood: any | null = null;
   validationMessage = '';
+  /** keepOpen: the foods added during this opening (ids, for the « Ajouté » badge) and the last one's name. */
+  addedIds: string[] = [];
+  addedCount = 0;
+  lastAddedName = '';
   readonly serving = new PlanFoodServing(() => this.canEditCatalog);
+
+  @ViewChild('searchInput') private searchInput?: ElementRef<HTMLInputElement>;
   readonly newServingOption = NEW_SERVING_OPTION;
 
   private readonly searches = new Subject<string>();
@@ -56,6 +68,11 @@ export class AddFoodModalComponent implements OnInit, OnDestroy {
       this.searches.pipe(debounceTime(250), distinctUntilChanged()).subscribe((search) => this.load(search)),
     );
     this.load('');
+  }
+
+  /** The cursor goes in the search at once (the autofocus attribute is ignored in a modal added after the page load). */
+  ngAfterViewInit(): void {
+    setTimeout(() => this.searchInput?.nativeElement.focus());
   }
 
   ngOnDestroy(): void {
@@ -95,6 +112,11 @@ export class AddFoodModalComponent implements OnInit, OnDestroy {
     return !!food?.id && this.excludedIds.includes(String(food.id));
   }
 
+  /** Added during this opening: badged, still clickable (the same food may go twice in a meal). */
+  wasAdded(food: any): boolean {
+    return !!food?.id && this.addedIds.includes(String(food.id));
+  }
+
   foodImage(food: any): string {
     return food?.imageUrl || food?.image || food?.photoUrl || '';
   }
@@ -117,6 +139,16 @@ export class AddFoodModalComponent implements OnInit, OnDestroy {
     this.closed.emit();
   }
 
+  /** Échap closes the unit form first, then the modal, and goes no further: the day window under it stays open. */
+  onEscape(event: Event): void {
+    event.stopPropagation();
+    if (this.serving.formOpen) {
+      this.serving.formOpen = false;
+      return;
+    }
+    this.close();
+  }
+
   createServing(serving: FoodServing): void {
     this.serving.create(serving, (id, draft) => this.nutritionService.addFoodServing(id, draft), (food) => {
       this.selectedFood = food;
@@ -136,29 +168,43 @@ export class AddFoodModalComponent implements OnInit, OnDestroy {
       return;
     }
     this.added.emit(food);
+    if (!this.keepOpen) return;
+    if (this.selectedFood.id && !this.wasAdded(this.selectedFood)) this.addedIds.push(String(this.selectedFood.id));
+    this.addedCount++;
+    this.lastAddedName = this.selectedFood.name || '';
+    this.backToList();
+    // The next search replaces the previous one: typing « riz » after « poulet » needs no erasing.
+    setTimeout(() => this.searchInput?.nativeElement.select());
   }
 
   /** Cached list shown at once, refreshed in the background. */
   private load(search: string): void {
     this.page = 0;
+    // The answer of an older search must never replace this one (« poulet » typed, then erased quickly).
+    this.request?.unsubscribe();
     // Loaded less than 30 s ago (prefetch, previous opening): used as is, no request.
-    const recent = this.nutritionService.pickerFoodsSnapshot(search, 30_000);
+    const recent = this.nutritionService.pickerFoodsResult(search, 30_000);
     if (recent) {
-      this.foods = recent;
+      this.show(recent);
       this.loading = false;
       return;
     }
-    const known = this.nutritionService.pickerFoodsSnapshot(search);
-    if (known) this.foods = known;
+    const known = this.nutritionService.pickerFoodsResult(search);
+    if (known) this.show(known);
     this.loading = !known;
-    this.request?.unsubscribe();
     this.request = this.nutritionService.loadPickerFoods(search).subscribe({
-      next: (foods) => {
-        this.foods = foods;
+      next: () => {
+        const result = this.nutritionService.pickerFoodsResult(search);
+        if (result) this.show(result);
         this.loading = false;
         if (this.page >= this.totalPages) this.page = 0;
       },
       error: () => (this.loading = false),
     });
+  }
+
+  private show(result: { foods: any[]; truncated: boolean }): void {
+    this.foods = result.foods;
+    this.truncated = result.truncated;
   }
 }

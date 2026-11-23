@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
-import { ClientService, Client, ClientStatus } from '../service/client.service';
+import { ClientService, Client, ClientListSort, ClientStatus } from '../service/client.service';
+import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import { AuthService } from '../config/auth.service';
 import { environment } from '../../environments/environment';
 import { WorkoutPlanService } from '../service/workout-plan.service';
@@ -44,18 +45,24 @@ interface StatusCountResponse {
     RouterLink,
   ],
 })
-export class ClientsComponent implements OnInit {
+export class ClientsComponent implements OnInit, OnDestroy {
+  /** The page of clients shown: searched, sorted and paged by the server (2026-11-23), never filtered here. */
   clients: Client[] = [];
-  filteredClients: Client[] = [];
   searchTerm: string = '';
   statusFilter: ClientStatus | 'ALL' = 'ACTIVE';
-  programFilter = 'ALL';
-  /** Label chosen in the filter (null: every client). The coach's labels are private (2026-11-18). */
-  goalFilter = 'ALL';
+  /** Order of the list, chosen above it (name A to Z by default). */
+  sortOrder: ClientListSort = 'name';
+  /** Typing in the search box: one request 300 ms after the last key, back to the first page. */
+  private readonly searchTyped = new Subject<string>();
+  private searchSubscription?: Subscription;
+  /** Number of the last list request: an older answer arriving late is ignored. */
+  private listRequest = 0;
   showAddModal = false;
   showDeleteModal = false;
   selectedClient: Client | null = null;
   clientToDelete: Client | null = null;
+  /** Removal from the list in progress: a second click does nothing. */
+  isRemoving = false;
   isLoading = false;
   openDropdownId: string | null = null;
   /** Last activity and 4-week adherence by client id (filled after the page of clients). */
@@ -310,13 +317,24 @@ export class ClientsComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.searchSubscription = this.searchTyped
+      .pipe(debounceTime(300), distinctUntilChanged())
+      .subscribe(() => {
+        this.currentPage = 0;
+        this.loadClients();
+      });
     this.loadClients();
     // Labels shown under each client's name.
-    this.clientNotes.allTags().subscribe({ next: () => this.applyFilters(), error: () => {} });
+    this.clientNotes.allTags().subscribe({ next: () => undefined, error: () => {} });
     this.loadInvitations();
     // "/clients?tab=requests": link of the new-request notification and email (also while already on this page).
     if (this.route.snapshot.queryParamMap.get('tab') !== 'requests') this.loadJoinRequests();
     this.route.queryParamMap.subscribe((params) => { if (params.get('tab') === 'requests') this.openRequests(); });
+  }
+
+  ngOnDestroy(): void {
+    this.searchSubscription?.unsubscribe();
+    clearTimeout(this.profilePrefetchTimer);
   }
 
   goBack(): void {
@@ -338,11 +356,13 @@ export class ClientsComponent implements OnInit {
       this.loadStatusCounts(coachId);
 
       const statusParam = this.statusFilter === 'ALL' ? undefined : this.statusFilter;
+      const request = ++this.listRequest;
 
       this.clientService
-        .getClientsByCoach(coachId, this.currentPage, this.pageSize, statusParam, true)
+        .getClientsByCoach(coachId, this.currentPage, this.pageSize, statusParam, true, this.searchTerm, this.sortOrder)
         .subscribe({
           next: (response) => {
+            if (request !== this.listRequest) return; // a newer search or page was asked meanwhile
             const clientsData = response.content || response;
             this.clients = clientsData.map((client: Client) => ({
                 ...client,
@@ -359,12 +379,12 @@ export class ClientsComponent implements OnInit {
                 this.currentPage = 0;
               }
 
-            this.applyFilters();
             this.enrichClientPhotos(this.clients);
             this.loadClientStats(this.clients);
             this.isLoading = false;
           },
           error: (error) => {
+            if (request !== this.listRequest) return;
             console.error('Error loading clients:', error);
             this.isLoading = false;
           },
@@ -419,27 +439,14 @@ export class ClientsComponent implements OnInit {
     return client?.id ? this.clientNotes.tagsOf(client.id) : [];
   }
 
+  /** Clients: searched by the server in the whole list. Requests and invitations (all loaded) filter at once. */
   onSearch() {
-    this.applyFilters();
+    this.searchTyped.next(this.searchTerm.trim());
   }
 
-  applyFilters() {
-    const term = this.searchTerm.trim().toLowerCase();
-
-    this.filteredClients = this.clients.filter((client) => {
-      const status = this.normalizeStatus(client.clientStatus);
-      const matchesStatus = this.statusFilter === 'ALL' || status === this.statusFilter;
-      const matchesSearch =
-        !term ||
-        client.firstName?.toLowerCase().includes(term) ||
-        client.lastName?.toLowerCase().includes(term) ||
-        client.email?.toLowerCase().includes(term);
-
-      const matchesProgram =
-        this.programFilter === 'ALL' || this.getClientProgram(client) === this.programFilter;
-
-      return matchesStatus && matchesSearch && matchesProgram;
-    });
+  onSortChange() {
+    this.currentPage = 0;
+    this.loadClients();
   }
 
   setStatusFilter(status: ClientStatus) {
@@ -453,8 +460,7 @@ export class ClientsComponent implements OnInit {
 
   clearFilters() {
     this.searchTerm = '';
-    this.programFilter = 'ALL';
-    this.goalFilter = 'ALL';
+    this.searchTyped.next('');
     this.statusFilter = 'ACTIVE';
     this.currentPage = 0;
     this.loadClients();
@@ -546,27 +552,39 @@ export class ClientsComponent implements OnInit {
     }
   }
 
+  /** "Remove from my list" (2026-11-23): never offered for the example client. */
   deleteClient(client: Client) {
+    if (client.demo) return;
     this.clientToDelete = client;
     this.showDeleteModal = true;
     this.openDropdownId = null;
   }
 
+  /**
+   * The client leaves the coach's lists; their account and history are not erased (CE detaches them). One call at a
+   * time; a failure keeps the window open with a message.
+   */
   confirmDelete() {
-    if (this.clientToDelete) {
-      this.clientService.deleteClient(this.clientToDelete.id!).subscribe({
-        next: () => {
-          this.loadClients();
-          this.closeDeleteModal();
-        },
-        error: (error) => {
-          console.error('Error deleting client:', error);
-        },
-      });
-    }
+    const client = this.clientToDelete;
+    if (!client?.id || this.isRemoving) return;
+    this.isRemoving = true;
+    this.clientService.deleteClient(client.id).subscribe({
+      next: () => {
+        this.isRemoving = false;
+        this.toastService.success(this.translate.instant('CLIENT_REMOVED_TOAST', { name: client.firstName || '' }));
+        this.closeDeleteModal();
+        this.loadClients();
+      },
+      error: (error) => {
+        this.isRemoving = false;
+        console.error('Error removing client:', error);
+        this.toastService.error(this.translate.instant('UNEXPECTED_ERROR_RETRY'));
+      },
+    });
   }
 
   closeDeleteModal() {
+    if (this.isRemoving) return;
     this.showDeleteModal = false;
     this.clientToDelete = null;
   }
@@ -809,12 +827,5 @@ export class ClientsComponent implements OnInit {
     return client.currentProgramName || client.lastProgramName || client.program || '';
   }
 
-  getProgramOptions(): string[] {
-    const programs = this.clients
-      .map((client) => this.getClientProgram(client))
-      .filter((program) => !!program);
-
-    return Array.from(new Set(programs));
-  }
 
 }

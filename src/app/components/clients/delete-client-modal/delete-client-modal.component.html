@@ -1,23 +1,26 @@
+<!-- "Remove from my list" (2026-11-23): the client leaves the coach's lists; nothing is erased. -->
 <div class="modal-overlay" [class.show]="isVisible" (click)="closeModal()">
   <div class="modal-content delete" (click)="$event.stopPropagation()">
     <div class="modal-header">
       <h2>{{ 'DELETE_CLIENT' | translate }}</h2>
-      <button class="close-btn" (click)="closeModal()">
+      <button class="close-btn" (click)="closeModal()" [disabled]="busy">
         <i-feather name="x"></i-feather>
       </button>
     </div>
 
     <div class="modal-body">
       <div class="delete-icon">
-        <i-feather name="trash-2" size="24"></i-feather>
+        <i-feather name="user-minus" size="24"></i-feather>
       </div>
       <h3>{{ 'ARE_YOU_SURE' | translate }}</h3>
       <p>{{ 'DELETE_CLIENT_CONFIRMATION' | translate:{ name: clientName } }}</p>
     </div>
 
     <div class="modal-footer">
-      <button class="cancel-btn" (click)="closeModal()">{{ 'CANCEL' | translate }}</button>
-      <button class="confirm-btn danger" (click)="confirmDelete()">{{ 'DELETE' | translate }}</button>
+      <button class="cancel-btn" (click)="closeModal()" [disabled]="busy">{{ 'CANCEL' | translate }}</button>
+      <button class="confirm-btn danger" (click)="confirmDelete()" [disabled]="busy">
+        {{ (busy ? 'SAVING' : 'DELETE_CLIENT') | translate }}
+      </button>
     </div>
   </div>
 </div>

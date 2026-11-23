@@ -4,6 +4,7 @@ import { Observable, Subject, finalize, shareReplay, tap } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { environment } from '../../environments/environment';
 import { ToastAction, ToastService } from './toast.service';
+import { forgetAllDayWindowPlans } from '@shared/program-calendar/day-window-prefetch';
 import {
   AssignResult,
   ClientSchedulePreview,
@@ -64,6 +65,8 @@ export interface ClientCalendarPeriod {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   mealPlans: any[];
   checkIns?: CalendarCheckIn[];
+  /** Today for the server (yyyy-MM-dd), the day its rules use; absent from an older server. */
+  today?: string | null;
 }
 
 /** Two days that changed places; `restedDayId`: the day left empty in the middle, made a rest day. */
@@ -72,7 +75,7 @@ export interface CalendarSwapResult {
   restedDayId: string | null;
 }
 
-/** Days copied (day numbers) and the ones that received nothing, with why (OUTSIDE, DONE, PAST, TAKEN, EMPTY_SOURCE). */
+/** Days copied (day numbers) and the ones that received nothing, with why (OUTSIDE, DONE, PAST, TAKEN, EMPTY_SOURCE, INVALID_SOURCE). */
 export interface CalendarRestResult {
   rested: number[];
   skipped: { day: number; reason: string }[];
@@ -98,7 +101,10 @@ export class ProgramScheduleService {
   /** Fired after an assignment or an « Annuler ». */
   readonly changed$ = new Subject<void>();
 
-  constructor(private http: HttpClient, private toasts: ToastService, private translate: TranslateService) {}
+  constructor(private http: HttpClient, private toasts: ToastService, private translate: TranslateService) {
+    // First to hear a change: the programs read ahead for the day window are out of date (day-window-prefetch.ts).
+    this.changed$.subscribe(() => forgetAllDayWindowPlans());
+  }
 
   preview(request: SchedulePreviewRequest): Observable<ClientSchedulePreview[]> {
     return this.http.post<ClientSchedulePreview[]>(`${this.url}/preview`, {

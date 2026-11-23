@@ -1,0 +1,85 @@
+<aside class="np-aside psr">
+  <div class="np-aside__head">
+    <button type="button" class="np-mobile-structure-close" (click)="closePanel.emit()" [attr.aria-label]="'CLOSE_WEEKS' | translate"><i-feather name="x" class="np-ico"></i-feather></button>
+    <h2 class="np-h6">{{ 'PROGRAM_STRUCTURE' | translate }}</h2>
+    <p class="np-aside__sub">{{ 'WEEKS_DAYS_COUNT' | translate:{ weeks: weeks.length, days: days.length } }}</p>
+    <button type="button" class="np-link" (click)="toggleAll.emit()">
+      <i-feather [name]="allExpanded ? 'minimize-2' : 'maximize-2'" class="np-ico"></i-feather>
+      {{ (allExpanded ? 'COLLAPSE_ALL' : 'EXPAND_ALL') | translate }}
+    </button>
+  </div>
+
+  <div
+    class="np-aside__body"
+    cdkDropList
+    [cdkDropListData]="days"
+    [cdkDropListDisabled]="readOnly"
+    (cdkDropListDropped)="dayDrop.emit($event)"
+  >
+    <div class="np-week-card" *ngFor="let week of weeks; trackBy: trackByWeek" [class.has-active]="hasActive(week)">
+      <button
+        type="button"
+        class="np-week-card__head"
+        (click)="weekToggle.emit(week)"
+        [attr.aria-expanded]="!week.collapsed"
+      >
+        <div class="np-week-card__head-top">
+          <i-feather [name]="week.collapsed ? 'chevron-right' : 'chevron-down'" class="np-week-card__chevron"></i-feather>
+          <strong>{{ week.label }}</strong>
+          <span class="np-week-range" *ngIf="week.range">{{ week.range }}</span>
+          <span class="np-week-card__count" [title]="'PROGRAM_DAYS_FILLED' | translate:{ count: week.ready, total: 7 }">{{ 'PROGRAM_DAYS_FILLED_SHORT' | translate:{ count: week.ready, total: 7 } }}</span>
+        </div>
+      </button>
+      <button
+        type="button"
+        class="np-week-card__dup"
+        *ngIf="!readOnly && days.length > 7"
+        [disabled]="!week.ready"
+        [title]="'COPY_DAYS.BUTTON_DUPLICATE_WEEK' | translate"
+        [attr.aria-label]="'COPY_DAYS.BUTTON_DUPLICATE_WEEK' | translate"
+        (click)="weekDuplicate.emit({ week: week.week, event: $event })"
+      >
+        <i-feather name="copy" class="np-week-card__dupico"></i-feather>
+      </button>
+
+      <ng-container *ngIf="!week.collapsed">
+        <ng-container *ngFor="let item of week.days; trackBy: trackByDay">
+          <div class="np-dayrow" cdkDrag [class.is-active]="isActive(item)">
+            <button
+              type="button"
+              class="np-day"
+              [class.is-active]="isActive(item)"
+              [attr.aria-current]="isActive(item) ? 'true' : null"
+              (click)="select(item)"
+            >
+              <span class="np-day-state" [class.ready]="item.state === 'FILLED'" [class.rest]="item.state === 'REST'" [class.invalid]="item.state === 'INVALID'" [class.gap]="item.state === 'GAP'">
+                <span *ngIf="item.state === 'FILLED'" class="np-ready-check" aria-hidden="true">✓</span>
+                <i-feather *ngIf="item.state !== 'FILLED'" [name]="icon(item.state)"></i-feather>
+              </span>
+              <span class="np-day__topline">
+                <span class="np-day__title">{{ item.title }}</span>
+                <span class="np-day__dateLine" *ngIf="item.date">{{ item.date }}</span>
+              </span>
+              <small class="np-day__meta" [class.is-warning]="item.state === 'INVALID' || item.state === 'GAP'">
+                {{ metaKey(item.state) | translate }}
+              </small>
+            </button>
+          </div>
+        </ng-container>
+      </ng-container>
+    </div>
+
+    <button class="np-btn np-btn--dash np-btn--ghost np-btn--full" *ngIf="!readOnly" [disabled]="!canAddWeek" (click)="addWeek.emit()">
+      <i-feather name="plus" class="np-ico"></i-feather>
+      {{ addWeekLabel }}
+    </button>
+
+    <div class="np-stack" *ngIf="!readOnly">
+      <!-- « Copier ce jour » vers les jours choisis. -->
+      <button class="np-rowbtn" [disabled]="!canCopyDay" (click)="copyDay.emit()">
+        <span>{{ 'COPY_DAYS.BUTTON_COPY_DAY' | translate }}</span>
+        <i-feather name="copy" class="np-ico"></i-feather>
+      </button>
+    </div>
+  </div>
+</aside>

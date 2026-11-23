@@ -1,6 +1,7 @@
 import { TranslateService } from '@ngx-translate/core';
 import { totalMacros } from '@shared/models/nutrition-math';
 import { isWarmupSetType } from '@shared/models/exercise-groups';
+import { plannedMeals } from '@shared/models/calendar-day';
 
 /**
  * Workout and nutrition days as the coach follows them (profile dashboard, coach dashboard): built from the
@@ -278,7 +279,8 @@ export function buildNutritionActivities(plans: any[]): NutritionActivity[] {
       const scheduledDate = resolveProgramDayDate(day, planStart, index);
       if (!scheduledDate || scheduledDate.getTime() > today) return;
 
-      const meals = (day?.meals || []).map((meal: any) => {
+      // The meals the client sees: an empty one can never be reported, it would keep the day from being done.
+      const meals = plannedMeals(day).map((meal: any) => {
         const macros = resolveNutritionMealMacros(meal);
         return { ...meal, ...macros };
       });

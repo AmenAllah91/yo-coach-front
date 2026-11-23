@@ -1,4 +1,5 @@
 import { ActiveDayRail } from '@shared/program-calendar/active-day-rail';
+import { ProgramStructureRailComponent, RailWeek } from '@shared/program-structure-rail/program-structure-rail.component';
 import { CopyDaysModalComponent } from '@shared/program-copy/copy-days-modal.component';
 import { ClientProgramDatesComponent } from '@shared/components/client-program-dates/client-program-dates.component';
 import { workoutDayActive } from '@shared/models/client-day-activity';
@@ -44,7 +45,7 @@ import { findExerciseLog } from 'app/components/clients/profil-client/client-act
 import { exerciseLines } from '@shared/models/calendar-day';
 import { CalendarLine, CalendarWeek, buildCalendarWeeks, calendarColumns, todayColumn } from '@shared/program-calendar/program-calendar.model';
 import { CalendarDayWindow } from '@shared/program-calendar/day-window';
-import { closeDayOutlet, inDayOutlet, openFullEditor, requestedDayNumber } from '@shared/program-calendar/day-outlet';
+import { closeDayOutlet, inDayOutlet, openFullEditor, requestedDayNumber, startingEditorView } from '@shared/program-calendar/day-outlet';
 import { dayWindowPlan, forgetDayWindowPlan } from '@shared/program-calendar/day-window-prefetch';
 import { CALENDAR_PREFS, DayWindowFootComponent, DayWindowHeadComponent, ViewSwitchComponent } from '@shared/program-calendar/day-window-bars.component';
 import { CalendarDayAction, ProgramCalendarComponent } from '@shared/program-calendar/program-calendar.component';
@@ -75,10 +76,21 @@ const EXERCISE_DISPLAY_FIELDS = new Set(['image', 'imageUrl', 'thumbnailUrl', 'p
  * the client (`clients/create-workout/:idClient`): then each day has its date, a finished or stopped program opens
  * read-only, and a longer program asks before it reaches the next one.
  */
+/**
+ * The « Day N » title follows the place of the day; a title the coach wrote (« Push », « Jambes ») stays. Before, every
+ * save of a library program put « Day N » back on every day.
+ */
+function renumberDayTitle(day: { title?: string; name?: string }, index: number): void {
+  const title = (day.title ?? '').trim();
+  if (title && !/^(day|jour)\s+\d+$/i.test(title)) return;
+  day.title = `Day ${(index % 7) + 1}`;
+  day.name = day.title;
+}
+
 @Component({
   selector: 'app-create-workout',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule, SectionLoaderComponent, EmptyDaysModalComponent, ProgramOverflowComponent, CopyDaysModalComponent, CopiedDayBannerComponent, ClientProgramDatesComponent, ExerciseProgressDetailComponent, ProgramCalendarComponent, DayWindowHeadComponent, DayWindowFootComponent, ViewSwitchComponent],
+  imports: [CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule, SectionLoaderComponent, EmptyDaysModalComponent, ProgramOverflowComponent, CopyDaysModalComponent, CopiedDayBannerComponent, ClientProgramDatesComponent, ExerciseProgressDetailComponent, ProgramCalendarComponent, DayWindowHeadComponent, DayWindowFootComponent, ViewSwitchComponent, ProgramStructureRailComponent],
   templateUrl: './create-workout.component.html',
   styleUrls: ['./create-workout.component.scss', '../../../shared/program-calendar/_program-calendar-editor.scss', '../_builder-rail-active.scss'],
 })
@@ -831,8 +843,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
       day.date = this.toIsoDate(current);
       day.dayOfWeek = current.toLocaleDateString(locale, { weekday: 'long' });
       day.dayNumber = index + 1;
-      day.title = `Day ${(index % 7) + 1}`;
-      day.name = day.title;
+      renumberDayTitle(day, index);
     });
     this.endDate = this.days.length ? this.days[this.days.length - 1].date || this.startDate : this.startDate;
   }
@@ -1026,6 +1037,25 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
     const fmt = (d: Date) =>
       d.toLocaleDateString(this.translate.currentLang?.toLowerCase().startsWith('fr') ? 'fr-FR' : 'en-US', { month: 'short', day: 'numeric' });
     return `${fmt(dates[0])} – ${fmt(dates[dates.length - 1])}`;
+  }
+
+  /** Semaines et jours de « Structure du programme » (composant commun avec les éditeurs nutrition). */
+  get railWeeks(): RailWeek<{ label: string; days: WorkoutDay[] }, WorkoutDay>[] {
+    return this.workoutWeeks.map((week) => ({
+      week,
+      key: week.label,
+      label: this.getWeekDisplayLabel(week.label),
+      range: this.isClientMode ? this.getWeekDateRange(week) : '',
+      ready: this.getWeekReadyCount(week.days),
+      collapsed: this.isWeekCollapsed(week.label),
+      days: week.days.map((d) => ({
+        day: d,
+        id: d.id,
+        title: this.getDayDisplayTitle(d),
+        date: this.isClientMode ? this.getRailDateLabel(d) : '',
+        state: this.dayRailState(d),
+      })),
+    }));
   }
 
   getSelectedDayDateLabel(): string {
@@ -2008,7 +2038,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
   }
 
   /** ⧉ d'une semaine (colonne de gauche) : elle devient la semaine choisie, puis la fenêtre « Dupliquer la semaine » s'ouvre. */
-  duplicateWeek(week: { days: WorkoutDay[] }, ev?: Event) {
+  duplicateWeek(week: { days: WorkoutDay[] }, ev?: Event, repeat = false) {
     ev?.stopPropagation();
     const days = week?.days || [];
     if (!days.length) return;
@@ -2016,18 +2046,18 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
       const first = days.find((d) => !['EMPTY', 'GAP'].includes(this.dayRailState(d))) || days[0];
       this.selectDay(first);
     }
-    this.copy.openWeek();
+    this.copy.openWeek(repeat);
   }
 
   // ---------- Mode Calendrier (shared/program-calendar) : une ligne par semaine, une colonne par jour ----------
   // Le calendrier sert à voir et ranger le programme ; un clic sur un jour ouvre sa fenêtre (l'éditeur du jour).
 
-  private static readonly VIEW_KEY = 'yc.workoutEditor.view';
   private static readonly COMPACT_KEY = 'yc.workoutEditor.calendarCompact';
 
   /** Ouvert par-dessus la fiche du client (outlet « day », day-outlet.ts) : seulement la fenêtre du jour. */
   readonly embedded = inDayOutlet(this.route);
-  viewMode: 'list' | 'calendar' = this.embedded ? 'calendar' : CALENDAR_PREFS.view(CreateWorkoutComponent.VIEW_KEY);
+  /** À l'ouverture : le choix du coach dans Paramètres › Préférences ; le bouton Liste | Calendrier vaut pour cette visite. */
+  viewMode: 'list' | 'calendar' = startingEditorView(this.route, this.historySettings);
   calendarDetailed = CALENDAR_PREFS.detailed(CreateWorkoutComponent.COMPACT_KEY);
   @ViewChild(ProgramCalendarComponent) private calendar?: ProgramCalendarComponent<WorkoutDay>;
   private calendarCache: CalendarWeek<WorkoutDay>[] | null = null;
@@ -2059,7 +2089,6 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
     this.win.reset();
     this.dayMenuOpen = false;
     this.mobileStructureOpen = false;
-    CALENDAR_PREFS.setView(CreateWorkoutComponent.VIEW_KEY, mode);
   }
 
   setCalendarDetailed(on: boolean): void {
@@ -2071,8 +2100,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
   private showDayInList(): void {
     const day = this.selectedDay;
     if (this.embedded) {
-      // Par-dessus la fiche : la page complète de l'éditeur, en mode Liste sur ce jour.
-      CALENDAR_PREFS.setView(CreateWorkoutComponent.VIEW_KEY, 'list');
+      // Par-dessus la fiche : la page complète de l'éditeur, en mode Liste sur ce jour (`?view=list`).
       openFullEditor(this.router, this.route, this.days.indexOf(day as WorkoutDay) + 1);
       return;
     }
@@ -2153,8 +2181,9 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
     else this.clearDay();
   }
 
-  onCalendarDuplicateWeek(week: CalendarWeek<WorkoutDay>): void {
-    this.duplicateWeek({ days: week.days });
+  /** `repeat`: « Répéter sur les semaines suivantes » (the same window, every week after this one chosen). */
+  onCalendarDuplicateWeek(week: CalendarWeek<WorkoutDay>, repeat = false): void {
+    this.duplicateWeek({ days: week.days }, undefined, repeat);
   }
 
   // ---------- Semaines entières : jamais de semaine à moitié ----------
@@ -2230,8 +2259,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
     } else {
       this.days.forEach((day, index) => {
         day.dayNumber = index + 1;
-        day.title = `Day ${(index % 7) + 1}`;
-        day.name = day.title;
+        renumberDayTitle(day, index);
       });
     }
     return true;
@@ -2493,9 +2521,40 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
     return true;
   }
 
+  /**
+   * The client did a day while the editor was open: the server kept it as the client did it (a save never erases it).
+   * The editor shows it done at once, and says so. `untouched`: nothing changed while the save was on its way.
+   */
+  private showClientDays(saved: WorkoutDay[] | null | undefined, untouched: boolean): void {
+    const taken = this.facade.takeClientDays(saved);
+    if (!taken.length) return;
+    this.refreshDates();
+    // Their content is the server's: not a change of the coach.
+    if (untouched) this.savedContent.remember(this.content());
+    const labels = taken.map((day) => [this.weekDayLabel(day), this.getRailDateLabel(day)].filter(Boolean).join(' · ')).join(', ');
+    this.toast.show({
+      type: 'info',
+      title: this.ht('Your client trained while you were editing', "Votre client s'est entraîné pendant votre modification"),
+      message: this.ht(`${labels}: kept as your client did it.`, `${labels} : gardé comme votre client l'a fait.`),
+      duration: 10000,
+    });
+  }
+
   /** A refusal of the server on the day rules (another tab, an older version): same handling as before saving. */
   private onSaveError(error: unknown): void {
     this.savingDraft = false;
+    // The client did, meanwhile, a day this save moves or removes: nothing is saved, the page must be read again.
+    // Saved meanwhile on another device (two devices): nothing is saved, what the coach typed stays on the page.
+    if ((error as { status?: number; error?: { code?: string } })?.error?.code === 'PLAN_CHANGED') {
+      this.saveError = this.translate.instant('WORKOUT_SAVE_PLAN_CHANGED');
+      return;
+    }
+    if ((error as { status?: number; error?: { code?: string } })?.error?.code === 'DAY_DONE') {
+      this.saveError = this.ht(
+        'Your client did a day that you moved or removed in the meantime. Nothing was saved: reload the page to see it, then make your change again.',
+        "Entre-temps, votre client a fait un jour que vous avez déplacé ou supprimé. Rien n'est enregistré : rechargez la page pour le voir, puis refaites votre changement.");
+      return;
+    }
     const refused = programDaysError(error);
     if (refused?.code === 'PROGRAM_GAP') {
       this.emptyDaysPrompt = refused.days;
@@ -2543,8 +2602,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
       day.date = undefined;
       day.dayOfWeek = undefined;
       day.dayNumber = index + 1;
-      day.title = `Day ${(index % 7) + 1}`;
-      day.name = day.title;
+      renumberDayTitle(day, index);
     });
     this.facade.syncPlanDays();
 
@@ -2621,7 +2679,9 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
     request.subscribe({
       next: (res) => {
         if (this.destroyed) return;
+        const untouched = this.content() === sent;
         this.markSaved(sent);
+        this.showClientDays(res?.workoutDays, untouched);
         if (!this.facade.plan.id && res?.id) {
           this.facade.setPlan({ ...this.facade.plan, id: res.id });
           this.location.replaceState(`/clients/create-workout/${this.clientId}/edit/${res.id}`);

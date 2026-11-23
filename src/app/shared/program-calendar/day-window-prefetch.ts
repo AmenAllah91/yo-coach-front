@@ -40,6 +40,15 @@ export function dayWindowPlan<T>(planId: string, read: () => Observable<T>): Obs
   return (known.plan$ as Observable<T>).pipe(map((plan) => structuredClone(plan)));
 }
 
+/**
+ * A program changed on the server (a day moved, copied, made a rest day, « Annuler », a save…): nothing read before
+ * is good any more. Without this, a day opened right after a quick change showed the program of before, and saving
+ * it undid the change.
+ */
+export function forgetAllDayWindowPlans(): void {
+  entries.clear();
+}
+
 /** The window closed (maybe after a save): the next click reads the program again. */
 export function forgetDayWindowPlan(planId: string | null | undefined): void {
   if (planId) entries.delete(planId);

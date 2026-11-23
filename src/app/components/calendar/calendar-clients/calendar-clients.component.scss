@@ -1691,6 +1691,68 @@
   font-size: 20px;
 }
 
+/* The kind of a nutrition program: 3 choices side by side (one under the other on a phone), the brand's blue when chosen. */
+.calendar-create-kinds {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.calendar-create-kind {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid light-dark(#dbe4ef, #333a43);
+  border-radius: 10px;
+  background: light-dark(#ffffff, #171a1f);
+  color: light-dark(#0f172a, #e6e8eb);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.calendar-create-kind:hover {
+  border-color: #44b4df;
+}
+
+.calendar-create-kind.is-selected {
+  border-color: #44b4df;
+  background: light-dark(#eef8fd, #1b2a33);
+  box-shadow: 0 0 0 1px #44b4df;
+}
+
+.calendar-create-kind__icon {
+  font-size: 20px;
+  color: #44b4df;
+}
+
+.calendar-create-kind__title {
+  padding-right: 22px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.calendar-create-kind__text {
+  color: light-dark(#64748b, #979da5);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.calendar-create-kind__check {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 18px;
+  color: light-dark(#94a3b8, #6b7280);
+}
+
+.calendar-create-kind.is-selected .calendar-create-kind__check {
+  color: #44b4df;
+}
+
 @media (max-width: 640px) {
   .calendar-create-date-grid {
     grid-template-columns: 1fr;
