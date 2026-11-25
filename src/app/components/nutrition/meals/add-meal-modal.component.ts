@@ -23,6 +23,7 @@ import { ServingUnitPipe } from '../food-servings/serving-unit.pipe';
 import { AuthService } from '@config/auth.service';
 import { AddedFood, AddFoodModalComponent } from '../add-food-modal/add-food-modal.component';
 import { MealTotalsComponent } from '../meal-totals/meal-totals.component';
+import { MacroChartComponent } from '@shared/components/macro-chart/macro-chart.component';
 import { ToastService } from 'app/service/toast.service';
 import { ConfirmDialogService } from '@shared/components/confirm-dialog/confirm-dialog.service';
 import { LEAVE_UNSAVED, LeavesUnsavedChanges, SavedContent } from '@config/guard/unsaved-changes.guard';
@@ -56,7 +57,7 @@ interface IngredientRow {
 @Component({
   selector: 'app-add-meal-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule, FoodServingFormComponent, ServingUnitPipe, AddFoodModalComponent, MealTotalsComponent],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule, FoodServingFormComponent, ServingUnitPipe, AddFoodModalComponent, MealTotalsComponent, MacroChartComponent],
   templateUrl: './add-meal-modal.component.html',
   styleUrls: ['./add-meal-modal.component.scss', '../_nutrition-foods.scss'],
 })

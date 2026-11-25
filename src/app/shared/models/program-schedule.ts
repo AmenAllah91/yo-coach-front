@@ -212,6 +212,14 @@ export function isLockedError(error: any): boolean {
   return error?.status === 409 && (error?.error?.code === 'PROGRAM_LOCKED');
 }
 
+/**
+ * The server refusal to delete a client program the client already did sessions of (409, audit workouts M4): its
+ * history stays; the message is CLIENT_PROGRAMS.REMOVE_HAS_ACTIVITY.
+ */
+export function isHasActivityError(error: any): boolean {
+  return error?.status === 409 && error?.error?.code === 'PROGRAM_HAS_ACTIVITY';
+}
+
 /** The server refusal to move a program the client already started (409). */
 export function isStartedError(error: any): boolean {
   return error?.status === 409 && (error?.error?.code === 'PROGRAM_STARTED');

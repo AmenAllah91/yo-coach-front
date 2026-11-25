@@ -25,12 +25,15 @@ import { DeleteModalComponent } from './delete-modal/delete-modal.component';
 import { ToastService } from 'app/service/toast.service';
 import { WorkoutAiDialogComponent } from './workout-ai-dialog/workout-ai-dialog.component';
 import { AiQuotaComponent } from 'app/components/ai-quota/ai-quota.component';
-import { WorkoutAiDraft, workoutDraftWeeks } from 'app/service/workout-ai.service';
+import { MAX_PROGRAM_WEEKS, WorkoutAiDraft, workoutDraftWeeks } from 'app/service/workout-ai.service';
 
+import { programFileOpenErrorKey, programFileProblem, programFileSaveName, programFileUploadErrorKey } from '@shared/models/program-file-check';
+import { ProgramFileViewerComponent } from '@shared/components/program-file-viewer/program-file-viewer.component';
+import { isFilePlan } from '@shared/models/program-file-check';
 @Component({
   selector: 'app-program-library',
   standalone: true,
-  imports: [WriteActionDirective, EmptyStateComponent,
+  imports: [WriteActionDirective, EmptyStateComponent, ProgramFileViewerComponent,
     CommonModule,
     FormsModule,
     FeatherModule,
@@ -53,7 +56,8 @@ export class ProgramLibraryComponent implements OnInit {
   programs: WorkoutPlan[] = [];
   allPrograms: WorkoutPlan[] = [];
   searchTerm = '';
-  programTypeFilter: 'ALL' | 'APP' | 'PDF' | 'EXCEL' = 'ALL';
+  /** « Programmes » (APP) | « Fichiers » (FILES): the PDF / Excel never mixed with the programs (lot 3). ALL: templates. */
+  programTypeFilter: 'ALL' | 'APP' | 'FILES' | 'PDF' | 'EXCEL' = 'APP';
   currentPage = 0;
   pageSize = 12;
   totalPages = 0;
@@ -109,6 +113,8 @@ export class ProgramLibraryComponent implements OnInit {
   importProgramDescription = '';
   importSaving = false;
   importError = '';
+  /** Upload progress of the file being sent (0-100, audit PDF/Excel 2026-11-23, lot 3). */
+  uploadPercent = 0;
   assignImportedProgram = false;
   notifyImportedClients = true;
   importAssignStartDate = '';
@@ -116,7 +122,6 @@ export class ProgramLibraryComponent implements OnInit {
   importClients: Client[] = [];
   selectedImportClientIds: string[] = [];
   importClientsLoading = false;
-  showFilePreviewModal = false;
   previewProgram: WorkoutPlan | null = null;
   selectedLibraryFileProgram: WorkoutPlan | null = null;
   workoutFileEnabled = true;
@@ -190,9 +195,7 @@ export class ProgramLibraryComponent implements OnInit {
 
   private applyWorkoutFileSetting(): void {
     this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
-    if (!this.workoutFileEnabled && this.programTypeFilter !== 'APP') {
-      this.programTypeFilter = 'ALL';
-    }
+    if (!this.workoutFileEnabled && this.activeTab !== 'templates') this.programTypeFilter = 'APP';
   }
 
   /** Always called with loadPrograms, whose answer already gives the count of the open tab: only the other one is asked. */
@@ -264,7 +267,8 @@ export class ProgramLibraryComponent implements OnInit {
       }
 
       const type = this.getProgramTypeKey(program);
-      const matchesType = this.programTypeFilter === 'ALL' || type === this.programTypeFilter;
+      const matchesType = this.programTypeFilter === 'ALL'
+        || (this.programTypeFilter === 'FILES' ? type === 'PDF' || type === 'EXCEL' : type === this.programTypeFilter);
       const searchable = [program.name, program.details, program.originalFileName, this.getProgramTypeLabel(program)]
         .filter(Boolean)
         .join(' ')
@@ -496,8 +500,17 @@ export class ProgramLibraryComponent implements OnInit {
     this.programToDelete = null;
   }
 
+  /**
+   * « Créer un programme »: the choice Builder / IA / PDF-Excel (audit PDF/Excel 2026-11-24). Before, the button went
+   * straight to the builder's window and the import of a PDF / Excel (and the AI card) could no longer be reached.
+   * A YoCoach template is a program made in the app: straight to the builder.
+   */
   createProgram() {
-    this.openWorkoutCreateModal();
+    if (this.publicTemplates || this.activeTab === 'templates') {
+      this.openWorkoutCreateModal();
+      return;
+    }
+    this.showCreateTypeModal = true;
   }
 
   /** IA-33: the AI program (questions in a dialog, then the editor opens with the draft, nothing saved). */
@@ -543,7 +556,7 @@ export class ProgramLibraryComponent implements OnInit {
     const name = this.createWorkoutName.trim();
     if (!name) return;
 
-    const durationWeeks = Math.max(1, Math.min(Number(this.createWorkoutDurationWeeks) || 4, 12));
+    const durationWeeks = Math.max(1, Math.min(Number(this.createWorkoutDurationWeeks) || 4, MAX_PROGRAM_WEEKS));
 
     this.showWorkoutCreateModal = false;
     // The editor opens at once and creates the program itself, in the background (autoCreate): no full-screen wait
@@ -596,14 +609,9 @@ export class ProgramLibraryComponent implements OnInit {
   }
 
   setImportFile(file: File) {
-    const ext = (file.name.split('.').pop() || '').toLowerCase();
-    if (!['pdf', 'xls', 'xlsx'].includes(ext)) {
-      this.importError = this.translate.instant('WORKOUT_FILE_TYPE_ERROR');
-      this.importFile = null;
-      return;
-    }
-    if (file.size > 25 * 1024 * 1024) {
-      this.importError = this.translate.instant('WORKOUT_FILE_SIZE_ERROR');
+    const problem = programFileProblem(file);
+    if (problem) {
+      this.importError = this.translate.instant(problem);
       this.importFile = null;
       return;
     }
@@ -670,13 +678,15 @@ export class ProgramLibraryComponent implements OnInit {
       return;
     }
 
+    this.uploadPercent = 0;
     this.importSaving = true;
     this.workoutService
       .createFileWorkout(
         this.importFile,
         this.importProgramName.trim(),
         this.importProgramDescription?.trim() || '',
-        this.activeTab === 'templates'
+        this.activeTab === 'templates',
+        percent => (this.uploadPercent = percent)
       )
       .subscribe({
         next: (createdProgram: WorkoutPlan) => {
@@ -725,15 +735,14 @@ export class ProgramLibraryComponent implements OnInit {
           });
         },
         error: (error) => {
-          console.error('Error saving file workout:', error);
           this.importSaving = false;
-          this.importError = this.translate.instant('WORKOUT_FILE_UPLOAD_ERROR');
+          this.importError = this.translate.instant(programFileUploadErrorKey(error));
         },
       });
   }
 
   isFileProgram(program: WorkoutPlan | null | undefined): boolean {
-    return !!program && String(program.workoutPlanMode || '').toUpperCase() === 'FILE';
+    return isFilePlan(program);
   }
 
   getProgramResourceLabel(program: WorkoutPlan): string {
@@ -763,377 +772,78 @@ export class ProgramLibraryComponent implements OnInit {
     return `${(value / (1024 * 1024)).toFixed(1)} MB`;
   }
 
+  /** The shared viewer (audit PDF/Excel 2026-11-23, lot 2): before, a pop-up with its own PDF / Excel reader. */
   previewFileProgram(program: WorkoutPlan) {
-    this.previewProgram = program;
-    this.showFilePreviewModal = true;
     this.openDropdownId = null;
+    this.previewProgram = program;
   }
 
   closeFilePreviewModal() {
     this.previewProgram = null;
-    this.showFilePreviewModal = false;
+  }
+
+  openProgramFile(program: WorkoutPlan) {
+    this.previewFileProgram(program);
   }
 
   private async fetchProgramFileBlob(program: WorkoutPlan): Promise<Blob> {
-    // Same secure blob loading as client > Workouts, with a timeout so the popup
-    // never stays blocked on "Chargement du fichier..." forever.
-    return await Promise.race([
-      firstValueFrom(this.workoutService.getWorkoutFileBlob(program)),
-      new Promise<Blob>((_, reject) =>
-        setTimeout(() => reject(new Error('FILE_LOAD_TIMEOUT')), 30000)
-      ),
-    ]);
+    return await firstValueFrom(this.workoutService.getWorkoutFileBlob(program));
   }
 
-  private getWorkoutFileExtension(program: WorkoutPlan): string {
-    const name = String(program.originalFileName || program.fileName || '').toLowerCase();
-    const resourceType = String(program.resourceType || '').toUpperCase();
+  // ---- « Renommer » / « Remplacer » a library file (audit PDF/Excel 2026-11-23, lot 3)
+  libraryReplaceSaving = false;
+  libraryReplacePercent = 0;
+  private libraryReplaceTarget: WorkoutPlan | null = null;
 
-    if (resourceType === 'PDF' || name.endsWith('.pdf')) return 'pdf';
-    if (resourceType === 'EXCEL' || resourceType === 'XLSX' || name.endsWith('.xlsx')) return 'xlsx';
-    if (resourceType === 'XLS' || name.endsWith('.xls')) return 'xls';
-
-    return resourceType.toLowerCase() || 'file';
-  }
-
-  private isExcelProgram(program: WorkoutPlan): boolean {
-    const ext = this.getWorkoutFileExtension(program);
-    return ext === 'xls' || ext === 'xlsx' || ext === 'excel';
-  }
-
-  private isPdfProgram(program: WorkoutPlan): boolean {
-    return this.getWorkoutFileExtension(program) === 'pdf';
-  }
-
-  private escapeHtml(value: any): string {
-    return String(value ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-  }
-
-  private buildFileViewerShell(title: string, subtitle: string, body: string): string {
-    return `<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>${this.escapeHtml(title)}</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f5f7fb;
-      color: #0f172a;
-    }
-    .viewer-header {
-      min-height: 64px;
-      padding: 14px 20px;
-      background: #ffffff;
-      border-bottom: 1px solid #dbe3ea;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-    .viewer-title {
-      min-width: 0;
-    }
-    .viewer-title h1 {
-      margin: 0;
-      font-size: 17px;
-      font-weight: 800;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .viewer-title p {
-      margin: 3px 0 0;
-      font-size: 12px;
-      color: #64748b;
-    }
-    .viewer-badge {
-      border: 1px solid #bae6fd;
-      background: #e0f2fe;
-      color: #0284c7;
-      border-radius: 999px;
-      padding: 6px 10px;
-      font-size: 12px;
-      font-weight: 800;
-      white-space: nowrap;
-    }
-    .viewer-body {
-      padding: 18px;
-    }
-    .pdf-frame {
-      width: 100%;
-      height: calc(100vh - 104px);
-      border: 1px solid #dbe3ea;
-      border-radius: 12px;
-      background: #ffffff;
-    }
-    .excel-toolbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 12px;
-      flex-wrap: wrap;
-    }
-    .excel-info {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .excel-info strong { font-size: 14px; }
-    .excel-info span { font-size: 12px; color: #64748b; }
-    .excel-table-wrap {
-      width: 100%;
-      max-height: calc(100vh - 150px);
-      overflow: auto;
-      border: 1px solid #dbe3ea;
-      border-radius: 12px;
-      background: #ffffff;
-    }
-    table {
-      border-collapse: collapse;
-      min-width: 100%;
-      width: max-content;
-      font-size: 13px;
-    }
-    th, td {
-      border: 1px solid #e2e8f0;
-      padding: 8px 10px;
-      min-width: 96px;
-      max-width: 260px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    thead th {
-      position: sticky;
-      top: 0;
-      z-index: 2;
-      background: #f1f5f9;
-      color: #475569;
-      font-weight: 900;
-      text-align: center;
-    }
-    .row-index {
-      position: sticky;
-      left: 0;
-      z-index: 3;
-      min-width: 48px;
-      width: 48px;
-      background: #f8fafc;
-      color: #64748b;
-      text-align: center;
-      font-weight: 900;
-    }
-    tbody .row-index { z-index: 1; }
-    tbody tr:nth-child(even) td { background: #fbfdff; }
-    tbody tr:hover td,
-    tbody tr:hover .row-index { background: #eff6ff; }
-    .empty {
-      padding: 60px 20px;
-      text-align: center;
-      color: #64748b;
-    }
-    @media (max-width: 768px) {
-      .viewer-header { padding: 12px; }
-      .viewer-title h1 { font-size: 14px; }
-      .viewer-body { padding: 10px; }
-      .pdf-frame { height: calc(100vh - 92px); border-radius: 10px; }
-      .excel-table-wrap { max-height: calc(100vh - 132px); }
-      th, td { min-width: 72px; max-width: 150px; padding: 7px 8px; font-size: 11px; }
-      .row-index { min-width: 36px; width: 36px; }
-    }
-  </style>
-</head>
-<body>
-  <div class="viewer-header">
-    <div class="viewer-title">
-      <h1>${this.escapeHtml(title)}</h1>
-      <p>${this.escapeHtml(subtitle)}</p>
-    </div>
-  </div>
-  <div class="viewer-body">
-    ${body}
-  </div>
-</body>
-</html>`;
-  }
-
-  private async openPdfBlobInNewWindow(program: WorkoutPlan, blob: Blob, popup: Window): Promise<void> {
-    const pdfBlob = blob.type === 'application/pdf'
-      ? blob
-      : new Blob([blob], { type: 'application/pdf' });
-
-    const blobUrl = window.URL.createObjectURL(pdfBlob);
-
-    // Important: navigate the popup directly to the PDF blob.
-    // This uses Chrome's native PDF viewer and avoids the about:blank iframe freeze.
-    popup.location.href = blobUrl;
-
-    setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10 * 60 * 1000);
-  }
-
-  private excelColumnName(index: number): string {
-    let name = '';
-    let n = index + 1;
-
-    while (n > 0) {
-      const r = (n - 1) % 26;
-      name = String.fromCharCode(65 + r) + name;
-      n = Math.floor((n - 1) / 26);
-    }
-
-    return name;
-  }
-
-  private async openExcelBlobInNewWindow(program: WorkoutPlan, blob: Blob, popup: Window): Promise<void> {
-    const arrayBuffer = await blob.arrayBuffer();
-    const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-    const sheetName = workbook.SheetNames?.[0] || '';
-    const sheet = workbook.Sheets[sheetName];
-
-    const rawRows = sheet
-      ? (XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' }) as any[][])
-      : [];
-
-    const rows = rawRows
-      .filter((row) => row.some((cell) => String(cell || '').trim() !== ''))
-      .slice(0, 300);
-
-    const maxColumns = Math.min(
-      30,
-      Math.max(1, ...rows.map((row) => row.length), 1)
-    );
-
-    const headers = Array.from({ length: maxColumns })
-      .map((_, index) => `<th>${this.excelColumnName(index)}</th>`)
-      .join('');
-
-    const bodyRows = rows.length
-      ? rows.map((row, rowIndex) => {
-          const cells = Array.from({ length: maxColumns })
-            .map((_, colIndex) => `<td>${this.escapeHtml(row[colIndex] ?? '')}</td>`)
-            .join('');
-
-          return `<tr><th class="row-index">${rowIndex + 1}</th>${cells}</tr>`;
-        }).join('')
-      : `<tr><td colspan="${maxColumns + 1}" class="empty">${this.translate.instant('EMPTY_SHEET')}</td></tr>`;
-
-    const title = program.originalFileName || program.fileName || program.name || 'Workout Excel';
-    const displayedRows = this.translate.instant('ROWS_DISPLAYED', { count: rows.length });
-    const sheetsInFile = this.translate.instant('SHEETS_IN_FILE', { count: workbook.SheetNames?.length || 0 });
-    const subtitle = `${program.name || this.translate.instant('WORKOUT_PROGRAM')} · ${sheetName || 'Excel'} · ${displayedRows}`;
-
-    const table = `
-      <div class="excel-toolbar">
-        <div class="excel-info">
-          <strong>${this.escapeHtml(sheetName || this.translate.instant('SHEET_ONE'))}</strong>
-          <span>${displayedRows}${workbook.SheetNames?.length > 1 ? ' · ' + sheetsInFile : ''}</span>
-        </div>
-        <span class="viewer-badge">${this.translate.instant('EXCEL_PREVIEW')}</span>
-      </div>
-      <div class="excel-table-wrap">
-        <table>
-          <thead>
-            <tr><th class="row-index"></th>${headers}</tr>
-          </thead>
-          <tbody>${bodyRows}</tbody>
-        </table>
-      </div>
-    `;
-
-    popup.document.open();
-    popup.document.write(this.buildFileViewerShell(title, subtitle, table));
-    popup.document.close();
-  }
-
-  async openProgramFile(program: WorkoutPlan) {
+  renameLibraryFile(plan: WorkoutPlan): void {
     this.openDropdownId = null;
+    const current = plan?.name || '';
+    const name = window.prompt(this.translate.instant('PROGRAM_FILES.RENAME_PROMPT'), current)?.trim();
+    if (!name || name === current || !plan?.id) return;
+    this.workoutService.updateWorkoutFileDetails(plan.id, name, (plan as any).details || '').subscribe({
+      next: () => {
+        this.toast.success(this.translate.instant('PROGRAM_FILES.RENAMED'));
+        this.loadPrograms();
+      },
+      error: (error: unknown) => this.toast.error(this.translate.instant(programFileUploadErrorKey(error))),
+    });
+  }
 
-    const popup = window.open('', '_blank');
+  replaceLibraryFile(plan: WorkoutPlan): void {
+    this.openDropdownId = null;
+    if (!plan?.id || this.libraryReplaceSaving) return;
+    if (!window.confirm(this.translate.instant('PROGRAM_FILES.LIBRARY_REPLACE_CONFIRM'))) return;
+    this.libraryReplaceTarget = plan;
+    const input = document.getElementById('library-workout-replace-input') as HTMLInputElement | null;
+    if (input) {
+      input.value = '';
+      input.click();
+    }
+  }
 
-    if (!popup) {
-      alert(this.translate.instant('POPUP_BLOCKED_ERROR'));
+  onLibraryReplaceSelected(event: Event): void {
+    const file = (event.target as HTMLInputElement)?.files?.[0];
+    const plan = this.libraryReplaceTarget;
+    if (!file || !plan?.id) return;
+    const problem = programFileProblem(file);
+    if (problem) {
+      this.toast.error(this.translate.instant(problem));
       return;
     }
-
-    popup.document.open();
-    popup.document.write(`
-      <!doctype html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>${this.translate.instant('LOADING_FILE')}</title>
-        <style>
-          body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:0;padding:36px;color:#111827;background:#fff}
-          .loader{font-size:20px;font-weight:500}
-          .hint{margin-top:12px;color:#64748b;font-size:14px}
-        </style>
-      </head>
-      <body>
-        <div class="loader">${this.translate.instant('LOADING_FILE')}</div>
-        <div class="hint">${this.translate.instant('PREPARING_SECURE_PREVIEW')}</div>
-      </body>
-      </html>
-    `);
-    popup.document.close();
-
-    try {
-      const blob = await this.fetchProgramFileBlob(program);
-
-      if (this.isExcelProgram(program)) {
-        await this.openExcelBlobInNewWindow(program, blob, popup);
-        return;
-      }
-
-      if (this.isPdfProgram(program)) {
-        await this.openPdfBlobInNewWindow(program, blob, popup);
-        return;
-      }
-
-      const blobUrl = window.URL.createObjectURL(blob);
-      popup.location.href = blobUrl;
-      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 10 * 60 * 1000);
-    } catch (error) {
-      console.error('Error opening workout file:', error);
-
-      popup.document.open();
-      popup.document.write(`
-        <!doctype html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <title>${this.translate.instant('FILE_OPEN_ERROR_TITLE')}</title>
-          <style>
-            body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:0;padding:36px;color:#111827;background:#fff}
-            .box{max-width:560px;border:1px solid #fecaca;background:#fef2f2;color:#991b1b;border-radius:14px;padding:22px}
-            h1{font-size:20px;margin:0 0 8px}
-            p{margin:0;color:#7f1d1d;line-height:1.5}
-          </style>
-        </head>
-        <body>
-          <div class="box">
-            <h1>${this.translate.instant('FILE_OPEN_ERROR_TITLE')}</h1>
-            <p>${this.translate.instant('FILE_OPEN_ERROR_DETAILS')}</p>
-          </div>
-        </body>
-        </html>
-      `);
-      popup.document.close();
-
-      alert(this.translate.instant('FILE_OPEN_ERROR'));
-    }
+    this.libraryReplaceSaving = true;
+    this.libraryReplacePercent = 0;
+    this.workoutService.replaceWorkoutFile(plan.id, file, percent => (this.libraryReplacePercent = percent)).subscribe({
+      next: () => {
+        this.libraryReplaceSaving = false;
+        this.libraryReplaceTarget = null;
+        this.toast.success(this.translate.instant('PROGRAM_FILES.REPLACE_DONE'));
+        this.loadPrograms();
+      },
+      error: (error: unknown) => {
+        this.libraryReplaceSaving = false;
+        this.toast.error(this.translate.instant(programFileUploadErrorKey(error)));
+      },
+    });
   }
 
   async downloadProgramFile(program: WorkoutPlan) {
@@ -1144,14 +854,13 @@ export class ProgramLibraryComponent implements OnInit {
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = program.originalFileName || program.fileName || `${program.name || 'workout-program'}.${this.getWorkoutFileExtension(program)}`;
+      link.download = programFileSaveName(program);
       document.body.appendChild(link);
       link.click();
       link.remove();
       setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000);
     } catch (error) {
-      console.error('Error downloading workout file:', error);
-      alert(this.translate.instant('FILE_DOWNLOAD_ERROR'));
+      this.toast.error(this.translate.instant(programFileOpenErrorKey(error)));
     }
   }
 
@@ -1160,8 +869,8 @@ export class ProgramLibraryComponent implements OnInit {
     return this.programs || [];
   }
 
-  setProgramTypeFilter(type: 'ALL' | 'APP' | 'PDF' | 'EXCEL') {
-    if (!this.workoutFileEnabled && (type === 'PDF' || type === 'EXCEL')) {
+  setProgramTypeFilter(type: 'ALL' | 'APP' | 'FILES' | 'PDF' | 'EXCEL') {
+    if (!this.workoutFileEnabled && (type === 'PDF' || type === 'EXCEL' || type === 'FILES')) {
       return;
     }
 
@@ -1502,9 +1211,8 @@ export class ProgramLibraryComponent implements OnInit {
   setActiveTab(tab: string) {
     this.activeTab = tab;
     this.currentPage = 0;
-    if (tab === 'templates') {
-      this.programTypeFilter = 'ALL';
-    }
+    // Templates: everything; my library: « Programmes » first, the files in their own tab.
+    this.programTypeFilter = tab === 'templates' ? 'ALL' : 'APP';
     this.loadPrograms();
   }
 

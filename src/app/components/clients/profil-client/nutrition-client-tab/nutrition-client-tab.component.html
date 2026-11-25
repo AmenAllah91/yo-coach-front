@@ -6,6 +6,9 @@
   (action)="onProgramAction($event)"
 ></app-client-programs>
 
+<input id="profile-nutrition-replace-file-input" type="file" [accept]="programFileAccept" hidden
+  (change)="onReplaceFileSelected($event)" />
+
 <app-remove-program-confirm
   *ngIf="removeTarget"
   [item]="removeTarget"
@@ -38,3 +41,5 @@
   (closed)="closeChangeDatesModal()"
   (saved)="onDatesSaved()"
 ></app-change-dates-modal>
+
+<app-program-file-viewer *ngIf="viewerPlan" [plan]="viewerPlan" kind="nutrition" (closed)="viewerPlan = null"></app-program-file-viewer>

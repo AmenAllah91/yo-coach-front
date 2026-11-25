@@ -294,7 +294,7 @@ export class MySubscriptionComponent implements OnInit, OnDestroy {
     if (this.payingInvoiceId != null || !this.isPayable(invoice)) return;
     this.payingInvoiceId = invoice.id;
     this.actionError = '';
-    // The system chooses Flouci (SUB-20).
+    // The system chooses the method (Flouci, ClicToPay, Stripe; SUB-20).
     this.billing.initiateInvoicePayment(invoice.id).subscribe({
       next: (response) => {
         const url = response?.redirectUrl?.trim();

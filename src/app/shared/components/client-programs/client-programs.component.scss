@@ -578,3 +578,62 @@
   .cp-missed { margin: 12px 14px 0; }
   .cp-missed-actions { width: 100%; }
 }
+
+// « Programmes » | « Fichiers » (audit PDF/Excel 2026-11-23, lot 3).
+.cp-tabs {
+  display: inline-flex;
+  gap: 4px;
+  margin: 4px 0 14px;
+  padding: 4px;
+  border-radius: 12px;
+  background: light-dark(#eef1f4, #23282d);
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 34px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: light-dark(#475569, #bfc5ce);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+
+    &.is-active {
+      background: light-dark(#fff, #1d2125);
+      color: light-dark(#0f172a, #e8ecf6);
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+    }
+  }
+}
+
+.cp-tabs-count {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: light-dark(#e2e8f0, #33383e);
+  font-size: 11.5px;
+  line-height: 20px;
+}
+
+.cp-filenote {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: light-dark(#eff6ff, #1c2a3d);
+  color: light-dark(#1e3a8a, #b8cff5);
+  font-size: 13.5px;
+
+  span {
+    flex: 1;
+  }
+}
+

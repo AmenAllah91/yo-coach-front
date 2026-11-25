@@ -7,6 +7,7 @@ describe('CustomFoodsComponent servings', () => {
   const translate: any = { instant: (key: string) => (key === 'FOOD_UNIT_PIECE' ? 'pièce' : key) };
   let service: jasmine.SpyObj<any>;
   let component: CustomFoodsComponent;
+  let confirmDialog: jasmine.SpyObj<any>;
 
   const legacyEggs = (): Food => ({
     id: 'eggs', name: 'Œufs', calories: 143, protein: 12.6, carbs: 0.7, fat: 9.5, fiber: null,
@@ -29,7 +30,9 @@ describe('CustomFoodsComponent servings', () => {
     service.getFoods.and.returnValue(of({ content: [] }));
     const auth = jasmine.createSpyObj('AuthService', ['extractRoles']);
     auth.extractRoles.and.resolveTo(['ROLE_COACH']);
-    component = new CustomFoodsComponent(service, translate, auth);
+    confirmDialog = jasmine.createSpyObj('ConfirmDialogService', ['ask']);
+    confirmDialog.ask.and.resolveTo(false);
+    component = new CustomFoodsComponent(service, translate, auth, confirmDialog);
   });
 
   it('opens a historical food on its initial serving shown as grams', async () => {
@@ -179,5 +182,32 @@ describe('CustomFoodsComponent servings', () => {
     expect(component.mainServingOf(eggsWithServings()).id).toBe('initial');
     expect(component.servingCount(eggsWithServings())).toBe(2);
     expect(component.servingCount(legacyEggs())).toBe(1);
+  });
+
+  it('closes an untouched add window at once, asks before losing what was typed', async () => {
+    component.openAddModal();
+    await component.requestCloseAddModal();
+    expect(confirmDialog.ask).not.toHaveBeenCalled();
+    expect(component.showAddModal).toBeFalse();
+
+    component.openAddModal();
+    component.foodName = 'Pain';
+    await component.requestCloseAddModal();
+    expect(confirmDialog.ask).toHaveBeenCalledTimes(1);
+    expect(component.showAddModal).toBeTrue();
+    expect(component.foodName).toBe('Pain');
+
+    confirmDialog.ask.and.resolveTo(true);
+    component.onEscape();
+    await Promise.resolve(); await Promise.resolve();
+    expect(component.showAddModal).toBeFalse();
+    expect(component.foodName).toBe('');
+  });
+
+  it('does not ask when an existing food is opened then closed unchanged', async () => {
+    component.editFood(eggsWithServings());
+    await component.requestCloseAddModal();
+    expect(confirmDialog.ask).not.toHaveBeenCalled();
+    expect(component.showAddModal).toBeFalse();
   });
 });

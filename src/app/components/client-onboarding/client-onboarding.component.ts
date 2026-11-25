@@ -61,9 +61,10 @@ export class ClientOnboardingComponent implements OnInit {
     this.profileForm = fb.group({
       birthDate: ['', [Validators.required, birthDateValidator]],
       gender: ['', Validators.required],
-      phoneNumber: ['', [Validators.required, phoneValidator]],
+      // 2026-11-23: the phone and the goal weight are optional (a value given is still checked).
+      phoneNumber: ['', [phoneValidator]],
       currentWeight: [null, [Validators.required, Validators.min(1), Validators.max(500)]],
-      goalWeight: [null, [Validators.required, Validators.min(1), Validators.max(500)]],
+      goalWeight: [null, [Validators.min(1), Validators.max(500)]],
       mainObjective: ['', Validators.required],
     });
     const locale = String(navigator.language || '').toUpperCase();

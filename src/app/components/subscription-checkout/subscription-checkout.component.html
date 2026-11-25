@@ -133,9 +133,9 @@
       <app-payment-incident-notice></app-payment-incident-notice>
       <button type="button" class="btn-pay" [disabled]="!selectedPlan || paying || paymentsPaused" (click)="pay()">
         <span *ngIf="paying" class="spinner small"></span>
-        {{ (paying ? 'CHECKOUT_REDIRECTING' : nothingToPay ? 'CHECKOUT_ACTIVATE_FREE' : savedCard ? 'MY_SUB_PAY_WITH_CARD' : paymentMethod === 'STRIPE' ? 'CHECKOUT_PAY_BY_CARD' : 'CHECKOUT_PAY_WITH_FLOUCI') | translate: { card: savedCard } }}
+        {{ (paying ? 'CHECKOUT_REDIRECTING' : nothingToPay ? 'CHECKOUT_ACTIVATE_FREE' : savedCard ? 'MY_SUB_PAY_WITH_CARD' : paymentMethod === 'STRIPE' || paymentMethod === 'CLICTOPAY' ? 'CHECKOUT_PAY_BY_CARD' : 'CHECKOUT_PAY_WITH_FLOUCI') | translate: { card: savedCard } }}
       </button>
-      <p class="secure"><i-feather name="lock"></i-feather>{{ (paymentMethod === 'STRIPE' ? 'CHECKOUT_SECURE_STRIPE' : 'CHECKOUT_SECURE_FLOUCI') | translate }}</p>
+      <p class="secure"><i-feather name="lock"></i-feather>{{ (paymentMethod === 'STRIPE' ? 'CHECKOUT_SECURE_STRIPE' : paymentMethod === 'CLICTOPAY' ? 'CHECKOUT_SECURE_CLICTOPAY' : 'CHECKOUT_SECURE_FLOUCI') | translate }}</p>
     </ng-container>
   </ng-container>
 </section>

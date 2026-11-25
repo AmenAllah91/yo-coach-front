@@ -134,7 +134,7 @@
     </div>
   </div>
   <!-- Add/Edit Food Modal -->
-  <div class="modal-overlay" [class.show]="showAddModal" (click)="closeAddModal()">
+  <div class="modal-overlay" [class.show]="showAddModal" (click)="requestCloseAddModal()">
     <div class="modal-content food-modal" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <div class="food-modal__icon"><i-feather name="coffee"></i-feather></div>
@@ -142,7 +142,7 @@
           <h2>{{ (editingFood ? 'EDIT_FOOD_ITEM_TITLE' : 'ADD_CUSTOM_FOOD_TITLE') | translate }}</h2>
           <p>{{ 'CUSTOM_FOOD_MODAL_SUBTITLE' | translate }}</p>
         </div>
-        <button class="close-btn" type="button" [attr.aria-label]="'CLOSE' | translate" (click)="closeAddModal()">
+        <button class="close-btn" type="button" [attr.aria-label]="'CLOSE' | translate" (click)="requestCloseAddModal()">
           <i-feather name="x"></i-feather>
         </button>
       </div>
@@ -324,7 +324,7 @@
       </div>
 
       <div class="modal-footer">
-        <button class="cancel-btn" (click)="closeAddModal()">{{ 'CANCEL' | translate }}</button>
+        <button class="cancel-btn" (click)="requestCloseAddModal()">{{ 'CANCEL' | translate }}</button>
         <button class="confirm-btn primary" [disabled]="!canSave" [attr.aria-busy]="isSaving" (click)="saveFood()">{{ (editingFood ? 'UPDATE' : 'ADD_CUSTOM_FOOD_ACTION') | translate }}</button>
       </div>
     </div>

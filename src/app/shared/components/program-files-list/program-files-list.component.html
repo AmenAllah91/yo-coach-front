@@ -1,0 +1,81 @@
+<section class="pfl">
+  <header class="pfl-head">
+    <div>
+      <h3 class="pfl-title">{{ 'PROGRAM_FILES.LIST_TITLE' | translate }}</h3>
+      <p class="pfl-sub">{{ 'PROGRAM_FILES.LIST_SUBTITLE' | translate }}</p>
+    </div>
+    <ng-container *ngIf="writable && can('import')">
+      <button *ngFor="let kind of kinds" type="button" class="pfl-btn pfl-btn--brand" (click)="emit('import', undefined, kind)">
+        <i-feather name="upload"></i-feather>
+        {{ (bothKinds ? (kind === 'WORKOUT' ? 'PROGRAM_FILES.IMPORT_WORKOUT' : 'PROGRAM_FILES.IMPORT_NUTRITION') : 'PROGRAM_FILES.IMPORT') | translate }}
+      </button>
+    </ng-container>
+  </header>
+
+  <div *ngIf="loading" class="pfl-state"><span class="pfl-spinner" aria-hidden="true"></span></div>
+  <p *ngIf="!loading && failed" class="pfl-state pfl-state--error">{{ 'PROGRAM_FILES.ERROR_NETWORK' | translate }}</p>
+
+  <div *ngIf="!loading && !failed && !all.length" class="pfl-empty">
+    <span class="pfl-empty__icon" aria-hidden="true"><i-feather name="file-text"></i-feather></span>
+    <p>{{ 'PROGRAM_FILES.LIST_EMPTY' | translate }}</p>
+  </div>
+
+  <ng-container *ngIf="!loading">
+    <div *ngFor="let section of sections" class="pfl-section">
+      <p class="pfl-label">{{ section.title | translate }} <b>{{ section.rows.length }}</b></p>
+
+      <article *ngFor="let row of section.rows; trackBy: trackRow" class="pfl-row" [class.pfl-row--current]="section.key === 'current'">
+        <span class="pfl-badge" [class.pfl-badge--excel]="row.item.fileKind === 'EXCEL'">{{ row.item.fileKind === 'EXCEL' ? 'XLS' : 'PDF' }}</span>
+
+        <div class="pfl-main">
+          <strong class="pfl-name">{{ row.item.name }}</strong>
+          <span class="pfl-meta">
+            <ng-container *ngIf="bothKinds">{{ (row.kind === 'WORKOUT' ? 'PROGRAM_FILES.KIND_WORKOUT' : 'PROGRAM_FILES.KIND_NUTRITION') | translate }} · </ng-container>{{ dates(row) }}
+          </span>
+
+          <div *ngIf="section.key !== 'upcoming'" class="pfl-progress">
+            <span *ngIf="week(row) as w" class="pfl-week">{{ 'PROGRAM_FILES.DAY_CARD_WEEK' | translate: { week: w.week, weeks: w.weeks } }}</span>
+            <span class="pfl-done">
+              {{ row.item.doneDays ? ('PROGRAM_FILES.DONE_OF' | translate: { done: row.item.doneDays, days: daysSoFar(row) }) : ('PROGRAM_FILES.NO_DONE_YET' | translate) }}
+            </span>
+            <span class="pfl-bar" *ngIf="daysSoFar(row)" aria-hidden="true"><span [style.width.%]="progress(row)"></span></span>
+          </div>
+        </div>
+
+        <div class="pfl-actions">
+          <button type="button" class="pfl-btn" (click)="open(row)">
+            <i-feather name="eye"></i-feather><span>{{ 'PROGRAM_FILES.DAY_CARD_OPEN' | translate }}</span>
+          </button>
+          <div class="pfl-menu-wrap">
+            <button type="button" class="pfl-icon" (click)="toggleMenu(row, $event)" [attr.aria-expanded]="menuFor === row.item.id"
+              [attr.aria-label]="'PROGRAM_FILES.MORE' | translate"><i-feather name="more-vertical"></i-feather></button>
+            <div class="pfl-menu" *ngIf="menuFor === row.item.id" role="menu" (click)="$event.stopPropagation()">
+              <button type="button" role="menuitem" *ngIf="can('preview')" (click)="emit('preview', row)">
+                <i-feather name="smartphone"></i-feather>{{ 'PROGRAM_FILES.PREVIEW_AS_CLIENT' | translate }}
+              </button>
+              <button type="button" role="menuitem" (click)="download(row)">
+                <i-feather name="download"></i-feather>{{ 'PROGRAM_FILES.VIEWER_DOWNLOAD' | translate }}
+              </button>
+              <ng-container *ngIf="writable && !locked(row)">
+                <button type="button" role="menuitem" *ngIf="can('rename')" (click)="emit('rename', row)">
+                  <i-feather name="edit-2"></i-feather>{{ 'PROGRAM_FILES.RENAME' | translate }}
+                </button>
+                <button type="button" role="menuitem" *ngIf="can('replace')" (click)="emit('replace', row)">
+                  <i-feather name="refresh-cw"></i-feather>{{ 'PROGRAM_FILES.REPLACE' | translate }}
+                </button>
+                <button type="button" role="menuitem" *ngIf="can('dates')" (click)="emit('dates', row)">
+                  <i-feather name="calendar"></i-feather>{{ 'PROGRAM_FILES.CHANGE_DATES' | translate }}
+                </button>
+              </ng-container>
+              <button type="button" role="menuitem" class="is-danger" *ngIf="writable && can('remove')" (click)="emit('remove', row)">
+                <i-feather name="trash-2"></i-feather>{{ 'PROGRAM_FILES.REMOVE' | translate }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </ng-container>
+</section>
+
+<app-program-file-viewer *ngIf="viewer" [plan]="viewer.plan" [kind]="viewer.kind" (closed)="viewer = null"></app-program-file-viewer>

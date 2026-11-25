@@ -220,7 +220,9 @@ export class AssignmentsApiService {
     search?: string,
     skipLoader = false,
     /** Lists only: the server leaves out the frozen questions and the answers in progress (rows show names only). */
-    summary = false
+    summary = false,
+    /** The check-ins page: active clients only (archived left out), as the badge and the dashboard count them. */
+    activeClients = false
   ): Observable<PageResponse<FormAssignment>> {
     let params = new HttpParams()
       .set('page', page)
@@ -228,6 +230,7 @@ export class AssignmentsApiService {
       .set('sortBy', sortBy)
       .set('direction', direction);
     if (summary) params = params.set('summary', 'true');
+    if (activeClients) params = params.set('activeClients', 'true');
 
     if (assigneeId) params = params.set('assigneeId', assigneeId);
     statuses.forEach((status) => {

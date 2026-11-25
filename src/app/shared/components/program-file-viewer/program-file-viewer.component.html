@@ -1,0 +1,80 @@
+<div class="pfv-backdrop" *ngIf="mode === 'overlay'; else body" (click)="close()">
+  <div class="pfv pfv--overlay" role="dialog" aria-modal="true" [attr.aria-label]="title" (click)="$event.stopPropagation()">
+    <header class="pfv-head">
+      <span class="pfv-badge" [class.pfv-badge--excel]="type === 'EXCEL'">{{ type === 'EXCEL' ? 'Excel' : 'PDF' }}</span>
+      <div class="pfv-head__copy">
+        <h2 class="pfv-title">{{ title }}</h2>
+        <p class="pfv-sub" *ngIf="fileName && fileName !== title">{{ fileName }}</p>
+      </div>
+      <button type="button" class="pfv-icon" (click)="download()" [disabled]="!!error || loading"
+        [attr.aria-label]="'PROGRAM_FILES.VIEWER_DOWNLOAD' | translate" [title]="'PROGRAM_FILES.VIEWER_DOWNLOAD' | translate">
+        <i-feather name="download"></i-feather>
+      </button>
+      <button type="button" class="pfv-icon" (click)="close()" [attr.aria-label]="'CLOSE' | translate">
+        <i-feather name="x"></i-feather>
+      </button>
+    </header>
+    <ng-container *ngTemplateOutlet="body"></ng-container>
+  </div>
+</div>
+
+<ng-template #body>
+  <div class="pfv-body" [class.pfv-body--embedded]="mode === 'embedded'">
+    <div *ngIf="loading" class="pfv-state"><span class="pfv-spinner" aria-hidden="true"></span>{{ 'PROGRAM_FILES.VIEWER_LOADING' | translate }}</div>
+
+    <div *ngIf="!loading && error" class="pfv-state pfv-state--error">
+      <i-feather name="alert-circle"></i-feather>
+      <span>{{ error | translate }}</span>
+    </div>
+
+    <p *ngIf="notice" class="pfv-notice">{{ notice | translate }}</p>
+
+    <!-- PDF: always in the page (the canvas must exist before drawing), hidden while loading. -->
+    <section class="pfv-pdf" [hidden]="loading || !!error || type !== 'PDF'">
+      <div class="pfv-pdf__frame"><canvas #pdfCanvas></canvas></div>
+      <div class="pfv-bar">
+        <button type="button" class="pfv-icon" [disabled]="pdfPage <= 1" (click)="goToPage(-1)"
+          [attr.aria-label]="'PROGRAM_FILES.VIEWER_PREVIOUS' | translate"><i-feather name="chevron-left"></i-feather></button>
+        <span class="pfv-caption">{{ 'PROGRAM_FILES.VIEWER_PAGE' | translate: { page: pdfPage, pages: pdfPages || '—' } }}</span>
+        <button type="button" class="pfv-icon" [disabled]="pdfPages > 0 && pdfPage >= pdfPages" (click)="goToPage(1)"
+          [attr.aria-label]="'PROGRAM_FILES.VIEWER_NEXT' | translate"><i-feather name="chevron-right"></i-feather></button>
+        <span class="pfv-spacer"></span>
+        <button type="button" class="pfv-icon" (click)="zoom(-25)" [disabled]="pdfZoom <= 50"
+          [attr.aria-label]="'PROGRAM_FILES.VIEWER_ZOOM_OUT' | translate"><i-feather name="zoom-out"></i-feather></button>
+        <span class="pfv-caption pfv-caption--zoom">{{ pdfZoom }} %</span>
+        <button type="button" class="pfv-icon" (click)="zoom(25)" [disabled]="pdfZoom >= 300"
+          [attr.aria-label]="'PROGRAM_FILES.VIEWER_ZOOM_IN' | translate"><i-feather name="zoom-in"></i-feather></button>
+        <button type="button" class="pfv-icon" (click)="openInNewTab()"
+          [attr.aria-label]="'PROGRAM_FILES.VIEWER_NEW_TAB' | translate" [title]="'PROGRAM_FILES.VIEWER_NEW_TAB' | translate">
+          <i-feather name="external-link"></i-feather></button>
+      </div>
+    </section>
+
+    <section class="pfv-excel" *ngIf="!loading && !error && type === 'EXCEL' && view">
+      <div *ngIf="sheets.length > 1" class="pfv-tabs" role="tablist">
+        <button *ngFor="let name of sheets" type="button" role="tab" [attr.aria-selected]="name === sheet"
+          [class.active]="name === sheet" (click)="showSheet(name)">{{ name }}</button>
+      </div>
+      <p *ngIf="view.hiddenRows || view.hiddenColumns" class="pfv-notice">
+        {{ 'PROGRAM_FILES.VIEWER_LIMIT' | translate: { rows: view.rows.length } }}
+        <button type="button" class="pfv-link" (click)="download()">{{ 'PROGRAM_FILES.VIEWER_DOWNLOAD' | translate }}</button>
+      </p>
+      <p *ngIf="!view.rows.length" class="pfv-state">{{ 'PROGRAM_FILES.VIEWER_EMPTY_SHEET' | translate }}</p>
+      <div class="pfv-grid" *ngIf="view.rows.length">
+        <table>
+          <thead>
+            <tr><th class="pfv-corner"></th><th *ngFor="let column of view.columns">{{ column }}</th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of view.rows; trackBy: trackRow">
+              <th>{{ row.number }}</th>
+              <td *ngFor="let cell of row.cells" [attr.colspan]="cell.colspan > 1 ? cell.colspan : null"
+                [attr.rowspan]="cell.rowspan > 1 ? cell.rowspan : null" [class.pfv-merged]="cell.colspan > 1 || cell.rowspan > 1"
+                [title]="cell.text.length > 40 ? cell.text : ''">{{ cell.text }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</ng-template>

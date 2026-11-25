@@ -1,16 +1,15 @@
-import { Component, ElementRef, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { MacroChartComponent } from '@shared/components/macro-chart/macro-chart.component';
+import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { FeatherModule } from 'angular-feather';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { Subscription, catchError, forkJoin, map, of } from 'rxjs';
-import * as XLSX from 'xlsx';
 import { environment } from '@env/environment';
 import { NutritionService } from 'app/service/nutrition.service';
 import { MealplanDayService } from 'app/service/mealplan-day.service';
 import { FoodReplacementGroupItem, FoodReplacementGroupsService } from 'app/service/food-replacement-groups.service';
-import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { DocumentService } from 'app/service/document.service';
 import { ClientThemeService } from 'app/core/service/client-theme.service';
 import { CompletionCelebrationComponent } from '../shared/completion-celebration.component';
@@ -19,8 +18,11 @@ import { WeekMark, WeekStripComponent, addDays, mondayOf } from '../shared/week-
 import { HistoryTimelineComponent } from '../shared/history-timeline.component';
 import {
   NutritionTotals, capitalizeFirst, clientVisibleMeals, consumedTotals, dateKey, foodMacros, isMealReported,
-  mealMacros, mealReportStatus, planDate, programWeek, targetTotals,
+  mealMacros, mealPortion, mealReportStatus, planDate, portionLabel, programWeek, targetTotals,
 } from '../shared/client-plan-utils';
+
+/** A day with only macros (no meal): one free photo of the day, sent as the meal « day » (CE MealDayServiceImpl.DAY_PHOTO_ID). */
+const DAY_PHOTO = { id: 'day', name: '' };
 
 /** Days during which the client can correct a finished day (ClientDayRules.CLIENT_EDIT_DAYS on the server). */
 const CLIENT_EDIT_DAYS = 7;
@@ -29,23 +31,29 @@ type MealStatus = 'AS_PLANNED' | 'MODIFIED' | 'SKIPPED';
 interface DayItem { plan: any; day: any; date: Date; }
 /** One day of the week shown: its date and what is planned on it (nothing = empty line). */
 interface WeekRow { key: string; date: Date; today: boolean; selected: boolean; items: DayItem[]; }
-interface FileProgram { plan: any; type: 'PDF' | 'EXCEL'; isCurrent: boolean; }
+interface FileProgram { plan: any; type: 'PDF' | 'EXCEL'; isCurrent: boolean; upcoming: boolean; }
 interface ReplacementOption { item: FoodReplacementGroupItem; groupId?: string; quantity: number; name: string; calories: number; protein: number; carbs: number; fat: number; }
 
 /**
  * Client nutrition, same content and logic as the mobile NutritionScreen and NutritionDetailScreen: month list
- * (upcoming / past), nutrition files, the day page (summary ring, meals with recipe, foods and swaps, meal
+ * (upcoming / past), nutrition files, the day page (macro charts, meals with recipe, foods and swaps, meal
  * reports and photos, daily feedback, complete day / off-plan).
  */
+import { programFileOpenErrorKey } from '@shared/models/program-file-check';
+import { fileProgramWeek, isFilePlan } from '@shared/models/program-file-check';
+import { isoDate } from '@shared/models/program-schedule';
+import { ProgramFileViewerComponent } from '@shared/components/program-file-viewer/program-file-viewer.component';
 @Component({
   selector: 'app-client-nutrition',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule, CompletionCelebrationComponent, WeekStripComponent, HistoryTimelineComponent],
+  imports: [MacroChartComponent, CommonModule, FormsModule, FeatherModule, TranslateModule, ProgramFileViewerComponent, CompletionCelebrationComponent, WeekStripComponent, HistoryTimelineComponent],
   templateUrl: './client-nutrition.component.html',
   styleUrl: './client-nutrition.component.scss',
 })
 export class ClientNutritionComponent implements OnInit, OnDestroy {
   @Input() previewClientId = '';
+  /** The tab to open first (the coach's « Voir comme mon client » on a file: « Fichiers »). */
+  @Input() startTab: 'program' | 'files' = 'program';
   @Input() previewMode = false;
 
   view: 'list' | 'history' | 'files' | 'file' | 'day' = 'list';
@@ -57,7 +65,8 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
   weekStart = mondayOf(new Date());
   selectedDate = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
   plans: any[] = [];
-  filesEnabled = false;
+  /** The program files given by the coach are always shown (audit PDF/Excel, G1): a failed settings read hid them. */
+  filesEnabled = true;
   toast: { message: string; tone: 'success' | 'error' | 'info' } | null = null;
 
   // Day page
@@ -80,6 +89,12 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
   reportMeal: any | null = null;
   reportStatus: MealStatus = 'AS_PLANNED';
   reportNote = '';
+  readonly dayPhoto = DAY_PHOTO;
+  /** Part of a « modified » meal eaten: ¼, ½, ¾ or all (1, the default). */
+  reportPortion = 1;
+  readonly portionOptions: { value: number; label: string }[] = [
+    { value: 0.25, label: '¼' }, { value: 0.5, label: '½' }, { value: 0.75, label: '¾' }, { value: 1, label: '' },
+  ];
 
   // Food swap sheet
   loadingSwapFoodId: string | null = null;
@@ -93,19 +108,9 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
 
   // Files
   openedFile: FileProgram | null = null;
-  fileLoading = false;
-  fileError = '';
-  excelSheets: string[] = [];
-  excelSheet = '';
-  excelRows: any[][] = [];
-  excelHeaders: string[] = [];
-  pdfCurrentPage = 1;
-  pdfTotalPages = 0;
-  pdfZoom = 100;
-  @ViewChild('pdfCanvas') pdfCanvas?: ElementRef<HTMLCanvasElement>;
-  private pdfDocument: any = null;
-  private pdfRenderTask: any = null;
-  private workbook: XLSX.WorkBook | null = null;
+  private fileReturnView: 'list' | 'files' = 'files';
+  fileDoneBusy: string | null = null;
+  private startTabPicked = false;
 
   private clientId = sessionStorage.getItem('userId') || '';
   private initialDayId = '';
@@ -120,7 +125,6 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     private nutritionService: NutritionService,
     private mealplanDayService: MealplanDayService,
     private replacementGroups: FoodReplacementGroupsService,
-    private coachSettings: CoachSettingsService,
     private documents: DocumentService,
     private translate: TranslateService,
     private route: ActivatedRoute,
@@ -151,7 +155,6 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     if (this.toastTimer) clearTimeout(this.toastTimer);
     this.subscriptions.unsubscribe();
     this.plansRequest?.unsubscribe();
-    this.revokeFile();
     document.body.classList.remove('client-workout-detail-open');
   }
 
@@ -170,7 +173,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
           this.plans = [...full].sort((a, b) =>
             (planDate(b.createdAt)?.getTime() ?? -Infinity) - (planDate(a.createdAt)?.getTime() ?? -Infinity));
           this.loading = false;
-          this.loadCoachSettings();
+          this.pickStartTab();
           this.openInitialTarget();
         }));
       },
@@ -188,22 +191,18 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
       : of(plan)));
   }
 
-  private loadCoachSettings(): void {
-    const coachId = this.plans.map(plan => String(plan?.coach?.id || plan?.coachId || '').trim()).find(Boolean);
-    if (!coachId) { this.filesEnabled = false; return; }
-    this.subscriptions.add(this.coachSettings.getConfigForCoach(coachId, true).pipe(catchError(() => of(null))).subscribe(config => {
-      const nutrition: any = (config as any)?.nutrition;
-      this.filesEnabled = !!config && nutrition?.nutritionFileEnabled !== false;
-    }));
-  }
-
   private openInitialTarget(): void {
     if (this.openedInitial || this.view === 'day') return;
     if (this.initialPlanId) {
       const plan = this.plans.find(item => item.id === this.initialPlanId);
       if (plan) {
         this.openedInitial = true;
-        if (this.isFileProgram(plan)) { this.view = 'files'; return; }
+        if (this.isFileProgram(plan)) {
+          // From the home card: the file itself opens (« Retour » comes back to the week).
+          const file = this.filePrograms.find(item => item.plan.id === plan.id);
+          if (file) this.openFile(file); else this.view = 'files';
+          return;
+        }
         const first = plan.mealDays?.[0];
         const focus = planDate(plan.startDate) || (first ? this.dayDate(plan, first) : null);
         if (focus) { this.month = new Date(focus.getFullYear(), focus.getMonth(), 1); this.showWeekOf(focus); }
@@ -524,29 +523,36 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
   // Files (mobile _filesEntry / _openFilesPage)
   // -------------------------------------------------------------------------
   isFileProgram(plan: any): boolean {
-    const mode = String(plan?.nutritionPlanMode || '').toUpperCase();
-    const type = String(plan?.resourceType || '').toUpperCase();
-    return mode === 'FILE' || ['PDF', 'EXCEL', 'XLS', 'XLSX'].includes(type) || !!plan?.fileName || !!plan?.fileUrl;
+    return isFilePlan(plan);
   }
 
   private fileType(plan: any): 'PDF' | 'EXCEL' {
     const type = String(plan?.resourceType || '').toUpperCase();
     if (['XLS', 'XLSX', 'EXCEL'].includes(type)) return 'EXCEL';
     if (type === 'PDF') return 'PDF';
-    const combined = [plan?.originalFileName || plan?.fileName, plan?.fileContentType, plan?.fileUrl].map(v => String(v || '').toLowerCase()).join(' ');
-    if (combined.includes('pdf')) return 'PDF';
-    return /xlsx|xls|excel|spreadsheet/.test(combined) ? 'EXCEL' : 'PDF';
+    const name = String(plan?.originalFileName || plan?.fileName || '').toLowerCase().trim();
+    if (/\.xlsx?$/.test(name)) return 'EXCEL';
+    if (name.endsWith('.pdf')) return 'PDF';
+    return /spreadsheet|excel/.test(String(plan?.fileContentType || '').toLowerCase()) ? 'EXCEL' : 'PDF';
   }
 
+  /** Started and not ended (its real end when another program took its place). A future file is « À venir ». */
   private isCurrentFile(plan: any): boolean {
-    const end = planDate(plan?.endDate);
-    return !end || end.getTime() >= this.today.getTime();
+    const start = planDate(plan?.startDate);
+    const end = planDate(plan?.stoppedAt) || planDate(plan?.endDate);
+    const today = this.today.getTime();
+    return (!start || start.getTime() <= today) && (!end || end.getTime() >= today);
+  }
+
+  private isUpcomingFile(plan: any): boolean {
+    const start = planDate(plan?.startDate);
+    return !!start && start.getTime() > this.today.getTime();
   }
 
   get filePrograms(): FileProgram[] {
     if (!this.filesEnabled) return [];
     return this.plans.filter(plan => this.isFileProgram(plan))
-      .map(plan => ({ plan, type: this.fileType(plan), isCurrent: this.isCurrentFile(plan) }) as FileProgram)
+      .map(plan => ({ plan, type: this.fileType(plan), isCurrent: this.isCurrentFile(plan), upcoming: this.isUpcomingFile(plan) }) as FileProgram)
       .sort((a, b) => {
         if (a.isCurrent !== b.isCurrent) return a.isCurrent ? -1 : 1;
         const ad = (planDate(a.plan.startDate) || planDate(a.plan.createdAt) || new Date(0)).getTime();
@@ -555,7 +561,8 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
       });
   }
   get currentFiles(): FileProgram[] { return this.filePrograms.filter(file => file.isCurrent); }
-  get historyFiles(): FileProgram[] { return this.filePrograms.filter(file => !file.isCurrent); }
+  get upcomingFiles(): FileProgram[] { return this.filePrograms.filter(file => file.upcoming); }
+  get historyFiles(): FileProgram[] { return this.filePrograms.filter(file => !file.isCurrent && !file.upcoming); }
   get filesSummary(): string {
     const n = this.filePrograms.length; const active = this.currentFiles.length; const s = n > 1 ? 's' : '';
     return this.fr ? `${n} document${s} de votre coach${active > 0 ? ` · ${active} actif${active > 1 ? 's' : ''}` : ''}`
@@ -577,81 +584,76 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     return bytes < 1024 * 1024 ? `${Math.round(bytes / 1024)} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
-  openFile(file: FileProgram): void { this.openedFile = file; this.view = 'file'; this.loadFile(); }
-  closeFile(): void { this.revokeFile(); this.openedFile = null; this.view = 'files'; }
+  /** The file opens in the shared viewer (audit PDF/Excel 2026-11-23, lot 2): sharp PDF, Excel read here. */
+  /** A client with only PDF / Excel programs lands on « Fichiers ». */
+  private pickStartTab(): void {
+    if (this.startTabPicked || this.view !== 'list') return;
+    this.startTabPicked = true;
+    if (!this.filePrograms.length) return;
+    // No program built in the app running or to come, but a file is: the files open first (2026-11-24).
+    const builderLive = this.builderPlans.some(plan => this.isCurrentFile(plan) || this.isUpcomingFile(plan));
+    const fileLive = this.currentFiles.length > 0 || this.upcomingFiles.length > 0;
+    if (this.startTab === 'files' || !this.builderPlans.length || (!builderLive && fileLive)) this.view = 'files';
+  }
 
-  private revokeFile(): void { this.pdfDocument = null; this.workbook = null; }
+  /** The programs built in the app (not a PDF / Excel). */
+  get builderPlans(): any[] { return this.plans.filter(plan => !this.isFileProgram(plan)); }
 
-  private loadFile(): void {
-    const file = this.openedFile;
-    if (!file) return;
-    this.revokeFile();
-    this.fileLoading = true;
-    this.fileError = '';
-    this.subscriptions.add(this.nutritionService.downloadNutritionFile(file.plan).subscribe({
-      next: async (blob: Blob) => {
-        try {
-          if (file.type === 'EXCEL') {
-            this.workbook = XLSX.read(await blob.arrayBuffer(), { type: 'array' });
-            this.excelSheets = this.workbook.SheetNames || [];
-            this.showExcelSheet(this.excelSheets[0] || '');
-          } else {
-            const pdf = blob.type === 'application/pdf' ? blob : new Blob([blob], { type: 'application/pdf' });
-            const pdfjs: any = await import('pdfjs-dist');
-            pdfjs.GlobalWorkerOptions.workerSrc = 'assets/pdf.worker.min.mjs';
-            this.pdfDocument = await pdfjs.getDocument({ data: await pdf.arrayBuffer() }).promise;
-            this.pdfTotalPages = this.pdfDocument.numPages || 0;
-            this.pdfCurrentPage = 1;
-            setTimeout(() => this.renderPdfPage(), 0);
-          }
-        } catch (error: any) {
-          this.fileError = this.t(`Could not open file: ${error?.message || error}`, `Impossible d’ouvrir le fichier : ${error?.message || error}`);
-        }
-        this.fileLoading = false;
+  /** « Programme » | « Fichiers » only when the client has both; one kind alone is shown without tabs (2026-11-24). */
+  get showPlanTabs(): boolean { return this.filePrograms.length > 0 && this.builderPlans.length > 0; }
+
+  /** « Votre coach vous a envoyé 2 fichiers. » under an empty week. */
+  get filesSentLine(): string {
+    const n = this.filePrograms.length;
+    return n > 1 ? this.t(`Your coach sent you ${n} files.`, `Votre coach vous a envoyé ${n} fichiers.`)
+      : this.t('Your coach sent you a file.', 'Votre coach vous a envoyé un fichier.');
+  }
+
+  openFiles(): void { this.view = 'files'; }
+
+  /** Opened from the files list or from a day card: « Retour » goes back there. */
+  openFile(file: FileProgram): void {
+    this.fileReturnView = this.view === 'list' ? 'list' : 'files';
+    this.openedFile = file;
+    this.view = 'file';
+  }
+  closeFile(): void { this.openedFile = null; this.view = this.fileReturnView; }
+
+  /** Week N of M of a file program today. */
+  fileWeek(file: FileProgram): { week: number; weeks: number } | null {
+    return fileProgramWeek(file.plan, isoDate(new Date()));
+  }
+
+  fileDoneCount(file: FileProgram): number {
+    return new Set<string>((file.plan.fileDoneDates || []).map((d: string) => String(d).slice(0, 10))).size;
+  }
+
+  isFileDoneToday(file: FileProgram): boolean {
+    const today = isoDate(new Date());
+    return (file.plan.fileDoneDates || []).some((d: string) => String(d).slice(0, 10) === today);
+  }
+
+  /** « J'ai fait » on a file program (audit PDF/Excel 2026-11-23, lot 3): shown at once, undone if the server refuses. */
+  toggleFileDone(file: FileProgram): void {
+    if (this.fileDoneBusy || !file.plan?.id) return;
+    const today = isoDate(new Date());
+    const before: string[] = [...(file.plan.fileDoneDates || [])];
+    const done = !this.isFileDoneToday(file);
+    file.plan.fileDoneDates = done ? [...before, today] : before.filter(d => String(d).slice(0, 10) !== today);
+    this.fileDoneBusy = file.plan.id;
+    this.subscriptions.add(this.nutritionService.markNutritionFileDay(file.plan.id, today, done).subscribe({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      next: (plan: any) => {
+        this.fileDoneBusy = null;
+        if (plan?.fileDoneDates) file.plan.fileDoneDates = plan.fileDoneDates;
       },
-      error: (error: any) => {
-        this.fileLoading = false;
-        this.fileError = this.t(`Could not open file: ${error?.message || error}`, `Impossible d’ouvrir le fichier : ${error?.message || error}`);
+      error: () => {
+        this.fileDoneBusy = null;
+        file.plan.fileDoneDates = before;
+        this.showToast(this.t('Could not save. Please try again.', 'Enregistrement impossible. Réessayez.'), 'error');
       },
     }));
   }
-
-  showExcelSheet(name: string): void {
-    this.excelSheet = name;
-    const sheet = this.workbook?.Sheets[name];
-    if (!sheet) { this.excelHeaders = []; this.excelRows = []; return; }
-    const rows = (XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' }) as any[][])
-      .filter(row => row.some(cell => String(cell || '').trim() !== '')).slice(0, 200);
-    const columns = Math.min(26, Math.max(1, ...rows.map(row => row.length)));
-    this.excelHeaders = Array.from({ length: columns }, (_, index) => String.fromCharCode(65 + index));
-    this.excelRows = rows.map(row => Array.from({ length: columns }, (_, index) => row[index] ?? ''));
-  }
-
-  async renderPdfPage(): Promise<void> {
-    const canvas = this.pdfCanvas?.nativeElement;
-    if (!this.pdfDocument || !canvas) return;
-    try { this.pdfRenderTask?.cancel(); } catch { /* finished already */ }
-    const context = canvas.getContext('2d');
-    if (!context) return;
-    const page = await this.pdfDocument.getPage(this.pdfCurrentPage);
-    const available = Math.max(280, (canvas.parentElement?.clientWidth || 800) - 16);
-    const base = page.getViewport({ scale: 1 });
-    const viewport = page.getViewport({ scale: (available / base.width) * (this.pdfZoom / 100) });
-    canvas.width = Math.floor(viewport.width);
-    canvas.height = Math.floor(viewport.height);
-    this.pdfRenderTask = page.render({ canvasContext: context, viewport });
-    try { await this.pdfRenderTask.promise; } catch { /* cancelled by a newer render */ }
-    this.pdfRenderTask = null;
-  }
-
-  pdfPage(delta: number): void {
-    const next = this.pdfCurrentPage + delta;
-    if (next < 1 || (this.pdfTotalPages && next > this.pdfTotalPages)) return;
-    this.pdfCurrentPage = next;
-    this.renderPdfPage();
-  }
-
-  pdfZoomBy(delta: number): void { this.pdfZoom = Math.min(200, Math.max(50, this.pdfZoom + delta)); this.renderPdfPage(); }
 
   downloadFile(file: FileProgram): void {
     this.subscriptions.add(this.nutritionService.downloadNutritionFile(file.plan).subscribe({
@@ -665,7 +667,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
         setTimeout(() => URL.revokeObjectURL(url), 60_000);
         this.showToast(this.t(`File downloaded: ${link.download}`, `Fichier téléchargé : ${link.download}`), 'success');
       },
-      error: (error: any) => this.showToast(this.t(`Could not download file: ${error?.message || error}`, `Impossible de télécharger le fichier : ${error?.message || error}`), 'error'),
+      error: (error: any) => this.showToast(this.translate.instant(programFileOpenErrorKey(error, true)), 'error'),
     }));
   }
 
@@ -682,6 +684,8 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     this.expandedMeal = clientVisibleMeals(day).length ? 0 : null;
     this.editing = false;
     this.view = 'day';
+    // The free photo of a day with only macros has the same id on every day.
+    this.mealPhotoUrls.delete(DAY_PHOTO.id);
     if (!this.previewMode) document.body.classList.add('client-workout-detail-open');
     window.scrollTo({ top: 0 });
     this.loadFoodImages();
@@ -708,16 +712,8 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
   get isMacroTotalDay(): boolean { return this.visibleMeals.length === 0; }
   get reported(): number { return this.visibleMeals.filter(meal => isMealReported(this.day, meal)).length; }
   get dayTarget(): NutritionTotals { return targetTotals(this.day); }
-  get consumed(): NutritionTotals {
-    if (this.isMacroTotalDay) {
-      const t = this.day?.dayTargets || {};
-      return { calories: Number(t.calories || 0), protein: Number(t.proteinG || 0), carbs: Number(t.carbsG || 0), fat: Number(t.fatG || 0) };
-    }
-    return consumedTotals(this.day);
-  }
-  ratio(value: number, goal: number): number { return goal > 0 ? Math.min(Math.max(value / goal, 0), 1) : 0; }
-  /** Stroke offset of the calories ring (r = 47, circumference ≈ 295.3). */
-  ringOffset(value: number, goal: number): number { return 295.3 * (1 - this.ratio(value, goal)); }
+  /** A day with only macros (no meal) has nothing to count: only its target is shown, never a « consumed ». */
+  get consumed(): NutritionTotals { return consumedTotals(this.day); }
 
   get headerTitle(): string {
     if (!this.item) return '';
@@ -736,7 +732,8 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     const description = String(this.day?.description || '').trim();
     if (description) return description;
     const t = this.day?.dayTargets || {};
-    const p = Number(t.proteinG || 0); const c = Number(t.carbsG || 0); const f = Number(t.fatG || 0);
+    // Compared in kcal (P×4, G×4, L×9), not in grams: 90 g of fat weigh more than 160 g of protein.
+    const p = Number(t.proteinG || 0) * 4; const c = Number(t.carbsG || 0) * 4; const f = Number(t.fatG || 0) * 9;
     if (p >= c && p >= f) return this.t('High Protein', 'Riche en protéines');
     if (c <= p && c <= f) return this.t('Low Carb', 'Faible en glucides');
     if (f >= p && f >= c) return this.t('Higher Fat', 'Plus riche en lipides');
@@ -760,7 +757,10 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     const status = this.mealStatus(meal);
     switch (status) {
       case 'AS_PLANNED': return { label: this.t('As planned', 'Comme prévu'), color: '#1E8E4E' };
-      case 'MODIFIED': return { label: this.t('Modified', 'Modifié'), color: '#D97706' };
+      case 'MODIFIED': {
+        const part = portionLabel(mealPortion(this.day, meal));
+        return { label: this.t('Modified', 'Modifié') + (part ? ` · ${part}` : ''), color: '#D97706' };
+      }
       case 'SKIPPED': return { label: this.t('Skipped', 'Sauté'), color: 'var(--yc-text-secondary)' };
       default: return { label: status, color: 'var(--yc-text-secondary)' };
     }
@@ -829,7 +829,8 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
   private loadMealPhotos(): void {
     const item = this.item;
     if (!item) return;
-    for (const meal of item.day.meals || []) {
+    const meals = [...(item.day.meals || []), ...(clientVisibleMeals(item.day).length ? [] : [DAY_PHOTO])];
+    for (const meal of meals) {
       if (!String(this.mealLog(meal)?.photoPath ?? meal?.photoPath ?? '').trim()) continue;
       this.subscriptions.add(this.mealplanDayService.getMealPhotoUrl(item.plan.id, item.day.id, meal.id).pipe(catchError(() => of(null))).subscribe(result => {
         if (result?.photoUrl) this.mealPhotoUrls.set(meal.id, this.absolute(result.photoUrl));
@@ -878,6 +879,7 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     this.reportStatus = (this.mealStatus(meal) as MealStatus) || 'AS_PLANNED';
     if (!['AS_PLANNED', 'MODIFIED', 'SKIPPED'].includes(this.reportStatus)) this.reportStatus = 'AS_PLANNED';
     this.reportNote = this.mealNote(meal);
+    this.reportPortion = mealPortion(this.day, meal);
   }
 
   get reportTitle(): string {
@@ -896,7 +898,9 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     const note = this.reportNote.trim();
     const logs: any[] = [...(day.clientMealLogs || [])];
     const index = logs.findIndex(log => String(log?.mealId) === String(meal.id));
-    const next = { ...(index >= 0 ? logs[index] : {}), mealId: meal.id, status: this.reportStatus, note };
+    const next: any = { ...(index >= 0 ? logs[index] : {}), mealId: meal.id, status: this.reportStatus, note };
+    // The part eaten only goes with a « modified » meal (the server drops it otherwise).
+    if (this.reportStatus === 'MODIFIED') next.portion = this.reportPortion; else delete next.portion;
     if (index >= 0) logs[index] = next; else logs.push(next);
     day.clientMealLogs = logs;
     // A correction of a finished day keeps its status (completed, off-plan): only an open day becomes in progress.
@@ -1139,12 +1143,16 @@ export class ClientNutritionComponent implements OnInit, OnDestroy {
     const preview = document.querySelector('.cn-pdf-document');
     if (!preview) return;
     const win = window.open('', '_blank', 'width=960,height=800');
-    if (!win) return;
+    if (!win) { this.showToast(this.translate.instant('PROGRAM_FILES.POPUP_BLOCKED'), 'error'); return; }
     const title = String(this.item?.plan?.name || 'nutrition-plan').replace(/[<>&"']/g, '');
     win.document.write(`<!doctype html><html><head><title>${title}</title><style>${PDF_PRINT_STYLES}</style></head><body>${preview.outerHTML}</body></html>`);
     win.document.close();
     win.focus();
-    setTimeout(() => win.print(), 250);
+    // Printed once the page is drawn (it was printed after 250 ms, sometimes before).
+    let printed = false;
+    const print = () => { if (!printed) { printed = true; win.print(); } };
+    win.addEventListener('load', () => setTimeout(print, 50));
+    setTimeout(print, 1500);
   }
 
   // -------------------------------------------------------------------------
@@ -1170,4 +1178,6 @@ const PDF_PRINT_STYLES = `
   .cn-pdf-totals{padding:8px 12px;font-size:11px;color:#546175;border-bottom:1px solid #eef1f4}
   .cn-pdf-meal{padding:8px 12px 2px;font-size:12px;font-weight:700}
   table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:5px 12px;border-top:1px solid #eef1f4;text-align:left}th{color:#7d889b;font-size:9px;text-transform:uppercase}
+  .cn-pdf-empty{margin:0;padding:12px;text-align:center;color:#7d889b;font-size:11px;font-style:italic}
+  .cn-pdf-intro{color:#546175;line-height:1.5;white-space:pre-line}
 `;

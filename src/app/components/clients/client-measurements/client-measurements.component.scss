@@ -237,7 +237,7 @@
 
   &__line {
     fill: none;
-    stroke: light-dark(#0c86c8, #4fb5fa);
+    stroke: var(--yc-primary);
     stroke-width: 2.2;
     stroke-linejoin: round;
     stroke-linecap: round;
@@ -257,15 +257,15 @@
     height: 6.4px;
     border-radius: 50%;
     background: light-dark(#fff, #1d2125);
-    border: 1.6px solid #0c86c8;
+    border: 1.6px solid var(--yc-primary);
     transform: translate(-50%, -50%);
 
     &.last {
       width: 10px;
       height: 10px;
-      background: #0c86c8;
+      background: var(--yc-primary);
       border: 2px solid light-dark(#fff, #2f3339);
-      box-shadow: 0 0 0 1px #0c86c8;
+      box-shadow: 0 0 0 1px var(--yc-primary);
     }
   }
 

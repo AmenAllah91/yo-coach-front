@@ -248,11 +248,9 @@
                 </span>
                 <span class="qm__share">{{ macroShare(macro.key) }} %</span>
               </label>
-              <div class="qm__bar" aria-hidden="true">
-                <i class="qm__dot--protein" [style.width.%]="macroShare('protein')"></i>
-                <i class="qm__dot--carbs" [style.width.%]="macroShare('carbs')"></i>
-                <i class="qm__dot--fat" [style.width.%]="macroShare('fat')"></i>
-              </div>
+              <!-- Donut that fills up as the coach types, like MyFitnessPal. -->
+              <app-macro-chart class="qm__chart" [legend]="false" [calories]="quickMacros.calories"
+                               [protein]="quickMacros.protein" [carbs]="quickMacros.carbs" [fat]="quickMacros.fat"></app-macro-chart>
             </div>
           </div>
 
@@ -525,6 +523,8 @@
       </section>
 
       <p class="save-error" *ngIf="saveError">{{ saveError }}</p>
+      <!-- The plans already made hold a copy of this meal: it does not change there. -->
+      <p class="meal-copies-note" *ngIf="isEditing" role="note">{{ 'LIBRARY_COPIES_MEAL' | translate }}</p>
     </main>
 
     <footer class="meal-modal__footer" [class.meal-modal__footer--choice]="step === 'choice'">

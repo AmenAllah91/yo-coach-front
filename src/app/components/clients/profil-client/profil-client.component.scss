@@ -2950,8 +2950,8 @@ body.client-preview-open { overflow: hidden; }
   .client-picker__trigger { width: 100%; min-width: 0; height: 40px; padding: 4px 10px; border-radius: 8px; gap: 8px; }
   .client-picker__avatar { width: 28px; height: 28px; border-radius: 7px; font-size: 9px; }
   .client-picker__selected { gap: 0; }
-  .client-picker__selected small { font-size: 8px; line-height: 10px; }
-  .client-picker__selected strong { font-size: 10px; line-height: 13px; }
+  .client-picker__selected small { font-size: 11px; line-height: 14px; }
+  .client-picker__selected strong { font-size: 13px; line-height: 16px; }
   .client-picker__chevron { font-size: 9px; }
   .client-picker__menu { top: calc(100% + 8px); right: auto; left: 0; width: 100%; border-radius: 9px; }
   .client-picker__search { height: 38px; margin: 6px; padding: 0 9px; border-width: 2px; border-radius: 8px; gap: 7px; }

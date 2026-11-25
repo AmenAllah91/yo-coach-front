@@ -183,7 +183,7 @@ export const items: RouteInfo[] = [
       },
       {
         path: '/workout/exercise-library',
-        title: 'EXERCISE_LIBRARY',
+        title: 'SIDEBAR_EXERCISES',
         iconType: 'feather',
         icon: 'target',
         class: '',
@@ -222,7 +222,7 @@ export const items: RouteInfo[] = [
         path: '/nutrition/custom-foods',
         title: 'SIDEBAR_FOODS',
         iconType: 'feather',
-        icon: 'plus-circle',
+        icon: 'carrot',
         class: '',
         groupTitle: false,
         badge: '',
@@ -279,7 +279,7 @@ export const items: RouteInfo[] = [
       },
       {
         path: '/nutrition/custom-foods', title: 'SIDEBAR_FOODS',
-        iconType: 'feather', icon: 'plus-circle', class: '', groupTitle: false,
+        iconType: 'feather', icon: 'carrot', class: '', groupTitle: false,
         badge: '', badgeClass: '', submenu: [],
       },
     ],

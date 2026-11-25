@@ -2,26 +2,28 @@
 <div class="calendar-wrapper" [class.has-side-panel]="sidePanel">
   <div class="calendar-header">
     <button class="app-page-back" type="button" [attr.aria-label]="'BACK' | translate" (click)="goBack()"><span aria-hidden="true">←</span></button>
-    <div class="header-left">
-      <button type="button" class="nav-button" (click)="onPrev()">‹</button>
+    <!-- No client yet: the arrows, « Aujourd'hui » and Jour / Semaine / Mois do nothing, so they wait for one. -->
+    <div class="header-left" *ngIf="hasSelectedClient()">
+      <button type="button" class="nav-button" *ngIf="currentView !== 'files'" (click)="onPrev()">‹</button>
 
       <h1 class="header-title">
         <ng-container [ngSwitch]="currentView">
           <span *ngSwitchCase="'month'">{{ getMonthLabel() }}</span>
           <span *ngSwitchCase="'week'">{{ getWeekLabel() }}</span>
           <span *ngSwitchCase="'day'">{{ getDayLabel() }}</span>
+          <span *ngSwitchCase="'files'">{{ 'PROGRAM_FILES.CALENDAR_FILES_TITLE' | translate }}</span>
         </ng-container>
       </h1>
 
-      <button type="button" class="nav-button" (click)="onNext()">›</button>
+      <button type="button" class="nav-button" *ngIf="currentView !== 'files'" (click)="onNext()">›</button>
       <!-- Back to the period holding today, in one click (greyed when today is already on the screen). -->
-      <button type="button" class="today-button" [disabled]="showsToday" (click)="goToday()">
+      <button type="button" class="today-button" *ngIf="currentView !== 'files'" [disabled]="showsToday" (click)="goToday()">
         {{ 'TODAY' | translate }}
       </button>
     </div>
 
     <div class="header-right">
-      <div class="toggle-group">
+      <div class="toggle-group" *ngIf="hasSelectedClient()">
         <button
           type="button"
           class="toggle-button"
@@ -46,26 +48,92 @@
         >
           {{ 'MONTH_VIEW' | translate }}
         </button>
+        <!-- The PDF / Excel programs, apart from the calendar (audit PDF/Excel 2026-11-23, lot 3). -->
+        <button
+          type="button"
+          class="toggle-button toggle-button--files"
+          [class.toggle-button-active]="currentView === 'files'"
+          (click)="setView('files')"
+        >
+          <span class="material-icons" aria-hidden="true">description</span>{{ 'PROGRAM_FILES.TAB_FILES' | translate }}
+        </button>
       </div>
 
-      <select
-        *ngIf="!hideClientFilter"
-        class="client-select"
-        [(ngModel)]="selectedClient"
-        (ngModelChange)="onClientChange($event)"
-      >
-        <option value="">{{ 'SELECT_CLIENT' | translate }}</option>
-        <option *ngFor="let c of clients" [value]="c.id">
-          {{ c.firstName }} {{ c.lastName }}
-        </option>
-      </select>
+      <!-- The client: photo + name, ‹ › for the one before / after, a menu with a search (the plain list was long to scroll). -->
+      <div class="client-picker" *ngIf="!hideClientFilter && selectedClient" (click)="$event.stopPropagation()">
+        <button type="button" class="client-picker__step" *ngIf="clients.length > 1" (click)="stepClient(-1)"
+          [attr.aria-label]="'CALENDAR_PREVIOUS_CLIENT' | translate" [title]="'CALENDAR_PREVIOUS_CLIENT' | translate">‹</button>
+        <button type="button" class="client-picker__toggle" [class.is-open]="clientMenuOpen" (click)="toggleClientMenu($event)"
+          aria-haspopup="listbox" [attr.aria-expanded]="clientMenuOpen">
+          <ng-container *ngTemplateOutlet="pickerAvatar; context: { $implicit: selectedClientRecord, size: 'sm' }"></ng-container>
+          <span class="client-picker__name">{{ selectedClientRecord ? clientName(selectedClientRecord) : getSelectedClientName() }}</span>
+          <span class="client-picker__chevron" aria-hidden="true">▾</span>
+        </button>
+        <button type="button" class="client-picker__step" *ngIf="clients.length > 1" (click)="stepClient(1)"
+          [attr.aria-label]="'CALENDAR_NEXT_CLIENT' | translate" [title]="'CALENDAR_NEXT_CLIENT' | translate">›</button>
+        <!-- The client's profile and the chat, without leaving through the menu. -->
+        <button type="button" class="client-picker__action" (click)="openClientProfile()" [title]="'CALENDAR_OPEN_PROFILE' | translate" [attr.aria-label]="'CALENDAR_OPEN_PROFILE' | translate">
+          <span class="material-icons" aria-hidden="true">person_outline</span><span class="client-picker__action-text">{{ 'CALENDAR_PROFILE_SHORT' | translate }}</span>
+        </button>
+        <button type="button" class="client-picker__action" (click)="messageClient()" [title]="'CALENDAR_MESSAGE_CLIENT' | translate" [attr.aria-label]="'CALENDAR_MESSAGE_CLIENT' | translate">
+          <span class="material-icons" aria-hidden="true">chat_bubble_outline</span><span class="client-picker__action-text">{{ 'CALENDAR_MESSAGE_SHORT' | translate }}</span>
+        </button>
+
+        <div class="client-picker__menu" *ngIf="clientMenuOpen" role="listbox">
+          <input class="client-picker__search" type="search" [(ngModel)]="clientQuery" (keydown.enter)="chooseFirstFound()"
+            [placeholder]="'CALENDAR_SEARCH_CLIENT' | translate" [attr.aria-label]="'CALENDAR_SEARCH_CLIENT' | translate" />
+          <div class="client-picker__list">
+            <button type="button" class="client-picker__option" role="option" *ngFor="let c of filteredClients; trackBy: trackClient"
+              [class.is-current]="c.id === selectedClient" [attr.aria-selected]="c.id === selectedClient" (click)="chooseClient(c)">
+              <ng-container *ngTemplateOutlet="pickerAvatar; context: { $implicit: c, size: 'sm' }"></ng-container>
+              <span class="client-picker__option-text">
+                <span class="client-picker__option-name">{{ clientName(c) }}</span>
+                <span class="client-picker__option-email" *ngIf="c.email">{{ c.email }}</span>
+              </span>
+            </button>
+            <p class="client-picker__none" *ngIf="!filteredClients.length">{{ 'CALENDAR_NO_CLIENT_FOUND' | translate }}</p>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="select-client-state" *ngIf="!hasSelectedClient()">
-    <span class="material-icons">person</span>
-    <p>{{ 'SELECT_CLIENT_CALENDAR_HINT' | translate }}</p>
-  </div>
+  <!-- No client yet: the clients themselves, one click opens a calendar (the menu at the top right was easy to miss). -->
+  <section class="select-client-state" *ngIf="!hasSelectedClient()">
+    <h2 class="select-client-state__title">{{ 'CALENDAR_CHOOSE_CLIENT_TITLE' | translate }}</h2>
+    <p class="select-client-state__hint">{{ 'SELECT_CLIENT_CALENDAR_HINT' | translate }}</p>
+
+    <p class="select-client-state__note" *ngIf="!clientsLoaded">{{ 'LOADING' | translate }}</p>
+
+    <ng-container *ngIf="clientsLoaded">
+      <ng-container *ngIf="clients.length; else noClients">
+        <input class="select-client-state__search" type="search" *ngIf="clients.length > 1" [(ngModel)]="clientQuery"
+          (keydown.enter)="chooseFirstFound()" [placeholder]="'CALENDAR_SEARCH_CLIENT' | translate"
+          [attr.aria-label]="'CALENDAR_SEARCH_CLIENT' | translate" />
+        <div class="client-cards">
+          <button type="button" class="client-card" *ngFor="let c of filteredClients; trackBy: trackClient" (click)="chooseClient(c)">
+            <ng-container *ngTemplateOutlet="pickerAvatar; context: { $implicit: c, size: 'lg' }"></ng-container>
+            <span class="client-card__name">{{ clientName(c) }}</span>
+            <span class="client-card__email" *ngIf="c.email">{{ c.email }}</span>
+          </button>
+        </div>
+        <p class="select-client-state__note" *ngIf="!filteredClients.length">{{ 'CALENDAR_NO_CLIENT_FOUND' | translate }}</p>
+      </ng-container>
+      <ng-template #noClients>
+        <p class="select-client-state__note">{{ 'CALENDAR_NO_ACTIVE_CLIENT' | translate }}</p>
+        <a class="select-client-state__link" routerLink="/clients">{{ 'CALENDAR_GO_TO_CLIENTS' | translate }}</a>
+      </ng-template>
+    </ng-container>
+  </section>
+
+  <!-- A client's round photo, or their initials without one (the menu and the cards). -->
+  <ng-template #pickerAvatar let-client let-size="size">
+    <span class="picker-avatar" [ngClass]="'picker-avatar--' + size" aria-hidden="true">
+      <img *ngIf="client && clientPhotoOf(client) as photo; else pickerInitials" [src]="photo" alt="" loading="lazy"
+        (error)="onClientPhotoError(photo)" />
+      <ng-template #pickerInitials>{{ client ? clientInitialsOf(client) : '?' }}</ng-template>
+    </span>
+  </ng-template>
 
   <!-- ====== VUE MOIS ====== -->
   <app-section-loader *ngIf="hasSelectedClient() && !programsLoaded"></app-section-loader>
@@ -73,14 +141,14 @@
   <div class="calendar-reading" *ngIf="programsLoaded && periodLoading" role="progressbar" [attr.aria-label]="'LOADING' | translate"></div>
 
   <!-- What the coach does (C4): the detail of the days and drag in the week, copy a week. -->
-  <div class="week-tools" *ngIf="hasSelectedClient() && programsLoaded">
+  <div class="week-tools" *ngIf="hasSelectedClient() && programsLoaded && currentView !== 'files'">
     <!-- « Cartes : Détail | Résumé »: the same control as the editors' calendar (_calendar-cards.scss). -->
     <div class="wcal__density" role="group" *ngIf="currentView === 'week' || (currentView === 'month' && !narrow)"
          [attr.aria-label]="'CALENDAR_DETAIL' | translate">
-      <button type="button" class="wcal__densitybtn" [class.is-on]="weekDetailed" [attr.aria-pressed]="weekDetailed" (click)="setWeekDetail(true)">
+      <button type="button" class="wcal__densitybtn" [class.is-on]="cardsDetailed" [attr.aria-pressed]="cardsDetailed" (click)="setCardsDetail(true)">
         <span class="material-icons wcal__densityico" aria-hidden="true">view_agenda</span>{{ 'CALENDAR_DETAIL' | translate }}
       </button>
-      <button type="button" class="wcal__densitybtn" [class.is-on]="!weekDetailed" [attr.aria-pressed]="!weekDetailed" (click)="setWeekDetail(false)">
+      <button type="button" class="wcal__densitybtn" [class.is-on]="!cardsDetailed" [attr.aria-pressed]="!cardsDetailed" (click)="setCardsDetail(false)">
         <span class="material-icons wcal__densityico" aria-hidden="true">view_week</span>{{ ht('Summary', 'Résumé') }}
       </button>
     </div>
@@ -130,6 +198,11 @@
     The month as a follow-up map (lot C, C3): both types at once, each day one line per subject (workout, nutrition,
     tasks, check-ins) whose symbol says how it went, each week its follow-up rate. A click on a day opens it.
   -->
+  <!-- « Fichiers »: the client's PDF / Excel programs, never among the days of the calendar. -->
+  <section class="cal-files" *ngIf="hasSelectedClient() && currentView === 'files'">
+    <app-program-files-list [clientId]="selectedClient" [kinds]="['WORKOUT', 'NUTRITION']"></app-program-files-list>
+  </section>
+
   <div class="calendar-month month-follow" [class.is-narrow]="narrow" *ngIf="hasSelectedClient() && programsLoaded && currentView === 'month'">
     <div class="month-header-row">
       <div class="month-header-cell" *ngFor="let d of weekDays">
@@ -176,17 +249,19 @@
                 <div class="wr-card" role="button" tabindex="0" [ngClass]="'st-' + cell.status.tone"
                      (click)="$event.stopPropagation(); onCardClick('workout', day.dateString, cell.item)"
                      (keydown.enter)="$event.stopPropagation(); onCardClick('workout', day.dateString, cell.item)">
-                  <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: cell, icon: monthShow.length > 1 ? 'fitness_center' : null, detailed: weekDetailed }"></ng-container>
+                  <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: cell, icon: monthShow.length > 1 ? 'fitness_center' : null, detailed: monthDetailed }"></ng-container>
                 </div>
                 <ng-container *ngTemplateOutlet="cardKebab; context: { kind: 'workout', date: day.dateString, item: cell.item }"></ng-container>
+                <ng-container *ngTemplateOutlet="nudgeButton; context: { kind: 'workout', date: day.dateString, cell: cell }"></ng-container>
               </div>
               <div class="wr-cardwrap" *ngFor="let cell of plan.nutrition" [ngClass]="pickState(cell.item, 'nutrition') ? 'is-pick-' + pickState(cell.item, 'nutrition') : ''">
                 <div class="wr-card" role="button" tabindex="0" [ngClass]="'st-' + cell.status.tone"
                      (click)="$event.stopPropagation(); onCardClick('nutrition', day.dateString, cell.item)"
                      (keydown.enter)="$event.stopPropagation(); onCardClick('nutrition', day.dateString, cell.item)">
-                  <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: cell, icon: monthShow.length > 1 ? 'restaurant' : null, detailed: weekDetailed }"></ng-container>
+                  <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: cell, icon: monthShow.length > 1 ? 'restaurant' : null, detailed: monthDetailed }"></ng-container>
                 </div>
                 <ng-container *ngTemplateOutlet="cardKebab; context: { kind: 'nutrition', date: day.dateString, item: cell.item }"></ng-container>
+                <ng-container *ngTemplateOutlet="nudgeButton; context: { kind: 'nutrition', date: day.dateString, cell: cell }"></ng-container>
               </div>
               <span class="wr-chip" *ngIf="plan.tasks.length" [ngClass]="'st-' + plan.tasksTone" [attr.title]="tasksHint(plan.tasks)">
                 <span class="material-icons st-icon" aria-hidden="true">{{ statusIcon(plan.tasksTone) }}</span>{{ 'CALENDAR_TASKS_DONE' | translate: { done: plan.tasksDone, total: plan.tasks.length } }}
@@ -213,6 +288,11 @@
           <ng-container *ngIf="week.rate != null; else noRate">
             <strong class="month-rate__value">{{ week.rate }} %</strong>
             <span class="month-rate__bar" aria-hidden="true"><span [style.width.%]="week.rate"></span></span>
+            <!-- A recent week at 0 %: one click to write to the client, the message ready. -->
+            <button type="button" class="nudge-button nudge-button--week" *ngIf="canNudgeWeek(week)" (click)="$event.stopPropagation(); nudgeWeek()"
+              [title]="('CALENDAR_NUDGE' | translate) + ' : ' + ('CALENDAR_NUDGE_HINT' | translate)" [attr.aria-label]="'CALENDAR_NUDGE' | translate">
+              <span class="material-icons" aria-hidden="true">send</span>
+            </button>
           </ng-container>
           <ng-template #noRate><span class="month-rate__none">–</span></ng-template>
         </div>
@@ -318,6 +398,7 @@
           <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: cell, detailed: weekDetailed }"></ng-container>
         </button>
         <ng-container *ngTemplateOutlet="cardKebab; context: { kind: 'workout', date: day.dateString, item: cell.item }"></ng-container>
+        <ng-container *ngTemplateOutlet="nudgeButton; context: { kind: 'workout', date: day.dateString, cell: cell }"></ng-container>
         </div>
         <button
           type="button"
@@ -362,6 +443,7 @@
           <ng-container *ngTemplateOutlet="cardBody; context: { $implicit: cell, detailed: weekDetailed }"></ng-container>
         </button>
         <ng-container *ngTemplateOutlet="cardKebab; context: { kind: 'nutrition', date: day.dateString, item: cell.item }"></ng-container>
+        <ng-container *ngTemplateOutlet="nudgeButton; context: { kind: 'nutrition', date: day.dateString, cell: cell }"></ng-container>
         </div>
         <button
           type="button"
@@ -649,7 +731,7 @@
             <span class="dp-meal__name">{{ meal.name || ('CALENDAR_MEAL' | translate) }}<ng-container *ngIf="entry.meals[i]?.kcal"> · {{ entry.meals[i].kcal }} kcal</ng-container></span>
             <span class="dp-meal__foods" *ngIf="entry.meals[i]?.foods?.length">{{ mealFoods(entry.meals[i]) }}</span>
           </span>
-          <span class="dp-tag" [ngClass]="'st-' + mealTone(meal.state)"><span class="material-icons st-icon" aria-hidden="true">{{ statusIcon(mealTone(meal.state)) }}</span>{{ mealStateText(meal.state) }}</span>
+          <span class="dp-tag" [ngClass]="'st-' + mealTone(meal.state)"><span class="material-icons st-icon" aria-hidden="true">{{ statusIcon(mealTone(meal.state)) }}</span>{{ mealStateText(meal.state) }}<ng-container *ngIf="meal.part"> · {{ meal.part }}</ng-container></span>
           <span class="dp-note" *ngIf="meal.note">« {{ meal.note }} »</span>
         </li>
       </ul>
@@ -798,6 +880,14 @@
       </button>
     </div>
   </div>
+</ng-template>
+
+<!-- « Relancer » under a missed card of the last 7 days: the chat opens with a message ready to edit. -->
+<ng-template #nudgeButton let-kind="kind" let-date="date" let-cell="cell">
+  <button type="button" class="nudge-button" *ngIf="canNudge(cell, date)" (click)="$event.stopPropagation(); nudgeDay(kind, date, cell)"
+    [title]="'CALENDAR_NUDGE_HINT' | translate">
+    <span class="material-icons" aria-hidden="true">send</span>{{ 'CALENDAR_NUDGE' | translate }}
+  </button>
 </ng-template>
 
 <ng-template #cardBody let-cell let-detailed="detailed" let-icon="icon">
@@ -1035,3 +1125,5 @@
     </div>
   </div>
 </div>
+
+<app-program-file-viewer *ngIf="viewerFile" [plan]="viewerFile.plan" [kind]="viewerFile.kind" (closed)="viewerFile = null"></app-program-file-viewer>

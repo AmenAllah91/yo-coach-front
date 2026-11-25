@@ -1,3 +1,4 @@
+import { MacroChartComponent } from '@shared/components/macro-chart/macro-chart.component';
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -13,6 +14,7 @@ import {
   workoutActivityMode,
   workoutActivityStatusLabel,
 } from './client-activity';
+import { portionLabel, portionValue } from '../../shared/client-plan-utils';
 
 /**
  * What the client did on a workout or nutrition day, read-only for the coach (profile dashboard, coach dashboard).
@@ -21,7 +23,7 @@ import {
 @Component({
   selector: 'app-client-activity-detail',
   standalone: true,
-  imports: [CommonModule, TranslateModule],
+  imports: [CommonModule, TranslateModule, MacroChartComponent],
   templateUrl: './client-activity-detail.component.html',
   styleUrls: ['./client-activity.scss', './client-activity-detail.component.scss'],
 })
@@ -134,13 +136,27 @@ export class ClientActivityDetailComponent implements OnChanges {
     if (!log) return this.translate.instant('NUTRITION_MEAL_NOT_LOGGED');
     const value = String(log?.status || log?.completionMode || '').toUpperCase();
     if (value === 'SKIPPED' || log?.skipped) return this.translate.instant('NUTRITION_MEAL_SKIPPED');
-    if (value === 'MODIFIED' || log?.modified) return this.translate.instant('MODIFIED');
+    if (value === 'MODIFIED' || log?.modified) {
+      // « Modifié · ½ »: the part of the meal the client said he ate.
+      const part = portionLabel(this.nutritionMealPortion(log));
+      return this.translate.instant('MODIFIED') + (part ? ` · ${part}` : '');
+    }
     if (value === 'OFF_PLAN' || log?.offPlan) return this.translate.instant('NUTRITION_ACTIVITY_STATUS_OFF_PLAN');
     if (!value && !log?.asPlanned && !log?.logged) {
       const photo = (log?.photoPath && String(log.photoPath) !== 'null') || log?.photoUrl;
       return this.translate.instant(photo ? 'MEAL_PHOTO_SENT' : 'NUTRITION_MEAL_NOT_LOGGED');
     }
     return this.translate.instant('AS_PLANNED');
+  }
+
+  /** Part of a « modified » meal eaten (¼, ½, ¾, all); 1 for any other report and the older ones. */
+  nutritionMealPortion(log: any): number {
+    return this.nutritionMealState(log) === 'Modified' ? portionValue(log?.portion) : 1;
+  }
+
+  /** What the client ate of a meal: its planned value times the part eaten. */
+  nutritionMealValue(log: any, meal: any, key: 'calories' | 'protein' | 'carbs' | 'fat'): number {
+    return Math.round(Number(log?.[key] || meal?.[key] || 0) * this.nutritionMealPortion(log));
   }
 
   /* ---------- Workout ---------- */

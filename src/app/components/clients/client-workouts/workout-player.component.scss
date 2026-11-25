@@ -667,3 +667,19 @@
   .wp-ready__halo { animation: none; }
   .wp-ready__num, .wp-ready__title { animation: none; }
 }
+
+/* Note du coach pendant la série (audit workouts 2026-11-23, G7). */
+.wp-coach-note {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--yc-primary, #44b4df) 8%, transparent);
+  color: var(--yc-primary, #44b4df);
+  font-size: 14px;
+  line-height: 1.4;
+  white-space: pre-line;
+  i-feather { flex: none; width: 16px; height: 16px; color: currentColor; margin-top: 2px; }
+}

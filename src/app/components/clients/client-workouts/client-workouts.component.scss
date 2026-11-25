@@ -94,6 +94,23 @@
     height: 16px;
   }
 }
+// No network: discreet note, no coloured background (M16).
+.offline-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: light-dark(#5b6472, #a5abb4);
+
+  i-feather,
+  ::ng-deep svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+}
+
 .progress-strip {
   display: flex;
   align-items: center;
@@ -1361,6 +1378,58 @@
     text-align: center;
     font-style: italic;
     color: var(--yc-text-hint);
+  }
+
+  // Warm-up apart, superset / circuit titled (audit PDF/Excel 2026-11-23, lot 4).
+  .cw-pdf-note {
+    margin: 0;
+    padding: 8px 12px 0;
+    color: var(--yc-text-secondary);
+    font-size: 12px;
+    white-space: pre-line;
+  }
+
+  .cw-pdf-block {
+    padding-bottom: 6px;
+
+    &--group {
+      margin: 8px 10px;
+      border-left: 3px solid var(--yc-primary);
+      border-radius: 4px;
+      background: var(--yc-selected-tab-bg);
+    }
+
+    &--warmup {
+      margin: 8px 10px;
+      border-left: 3px solid #d97706;
+      border-radius: 4px;
+      background: light-dark(#fffbeb, #33291a);
+    }
+
+    &__title {
+      margin: 0;
+      padding: 7px 12px 0;
+      color: var(--yc-primary);
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    &--warmup &__title {
+      color: light-dark(#b45309, #f5b456);
+    }
+  }
+
+  .cw-pdf-ex-note {
+    margin: 2px 12px 0;
+    color: var(--yc-text-secondary);
+    font-size: 11.5px;
+    font-style: italic;
+  }
+
+  tr.cw-pdf-warm td {
+    color: light-dark(#b45309, #f5b456);
   }
 
   .cw-pdf-ex {

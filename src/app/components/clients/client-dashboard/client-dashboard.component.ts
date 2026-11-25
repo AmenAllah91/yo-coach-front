@@ -19,9 +19,26 @@ import { ClientTaskRowComponent } from '../shared/client-task-row.component';
 import { CoachProfileSheetComponent } from '../shared/coach-profile-sheet.component';
 import { NutritionMacrosSummaryComponent } from '../shared/nutrition-macros-summary.component';
 import { isHabit, isTaskDone, openClientTask } from '../shared/client-task-utils';
+import { fileProgramWeek, isFilePlan, programFileTypeOfPlan } from '@shared/models/program-file-check';
+import { isoDate } from '@shared/models/program-schedule';
+
+/** A file program covering today (audit PDF/Excel 2026-11-23, G3). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export interface TodayFile { plan: any; type: 'PDF' | 'EXCEL'; week: number; weeks: number; }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function todayFileOf(plans: any[], today: Date): TodayFile | null {
+  const day = isoDate(today);
+  for (const plan of plans || []) {
+    if (!isFilePlan(plan)) continue;
+    const week = fileProgramWeek(plan, day);
+    if (week) return { plan, type: programFileTypeOfPlan(plan), ...week };
+  }
+  return null;
+}
 import {
   allExercises, capitalizeFirst, clientVisibleMeals, consumedTotals, dateKey, estimatedWorkoutMinutes, findPlanDay,
-  initials, isMealReported, isRestDay, planDate, programWeek, targetTotals, titleCase, workoutDayTitle,
+  initials, instantDay, isMealReported, isRestDay, planDate, programWeek, targetTotals, titleCase, workoutDayTitle,
   workoutSetCount, workoutThumbnails,
 } from '../shared/client-plan-utils';
 
@@ -53,6 +70,8 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
 
   todayWorkoutItem: PlanDayItem | null = null;
   todayNutritionItem: PlanDayItem | null = null;
+  todayWorkoutFile: TodayFile | null = null;
+  todayNutritionFile: TodayFile | null = null;
   todayCheckIn: FormAssignment | null = null;
   /** Sent check-ins whose coach comment is not read yet, newest first (« Votre coach a répondu »). */
   unreadFeedback: FormAssignment[] = [];
@@ -139,9 +158,12 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       catchError(() => of(null)));
 
     const workout$ = this.workoutService.getWorkoutPlansByClient(this.clientId).pipe(
-      map(plans => findPlanDay(plans as any[], 'workoutDays', today)));
+      map(plans => ({ item: findPlanDay(plans as any[], 'workoutDays', today), file: todayFileOf(plans as any[], today) })));
     const nutrition$ = this.nutritionService.getNutritionPlanByClientId(this.clientId).pipe(
-      map(plans => findPlanDay(Array.isArray(plans) ? plans : [], 'mealDays', today)));
+      map(plans => {
+        const list = Array.isArray(plans) ? plans : [];
+        return { item: findPlanDay(list, 'mealDays', today), file: todayFileOf(list, today) };
+      }));
     const checkIn$ = this.assignments.pageMyAssignments(0, 20, 'assignedAt', 'DESC', undefined, true).pipe(map(page => this.checkInDueToday(page?.content || [])));
     const coach$ = this.chatService.getConversations(0, 10).pipe(
       map(page => {
@@ -156,8 +178,10 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
       .pipe(timeout(20_000)).subscribe({
       next: result => {
         if (request !== this.loadRequest) return;
-        this.todayWorkoutItem = result.workout;
-        this.todayNutritionItem = result.nutrition;
+        this.todayWorkoutItem = result.workout.item;
+        this.todayNutritionItem = result.nutrition.item;
+        this.todayWorkoutFile = result.workout.file;
+        this.todayNutritionFile = result.nutrition.file;
         this.todayCheckIn = result.checkIn;
         this.coach = result.coach ?? this.coachFromPlans();
         this.status = 'loaded';
@@ -197,7 +221,7 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   private checkInDueToday(items: FormAssignment[]): FormAssignment | null {
     const today = dateKey(new Date());
     return items.find(item => item.status !== 'SUBMITTED' && item.status !== 'CANCELED' && item.status !== 'REVIEWED'
-      && !!item.dueAt && dateKey(planDate(item.dueAt) || new Date(0)) === today) || null;
+      && !!item.dueAt && dateKey(instantDay(item.dueAt) || new Date(0)) === today) || null;
   }
 
   private coachFromPlans(): HomeCoach | null {
@@ -312,6 +336,22 @@ export class ClientDashboardComponent implements OnInit, OnDestroy {
   get nextMealName(): string {
     const next = this.meals.find(meal => !isMealReported(this.todayNutritionItem?.day, meal));
     return next ? capitalizeFirst(next.name) : '';
+  }
+
+  /** A file program of today: its page opens the file directly. */
+  openTodayFile(file: TodayFile, kind: 'workout' | 'nutrition'): void {
+    void this.router.navigate([kind === 'workout' ? '/clients/client-workouts' : '/clients/client-nutrition'], {
+      queryParams: { planId: file.plan?.id || null },
+    });
+  }
+
+  todayFileTitle(file: TodayFile): string {
+    if (this.fr) return file.type === 'EXCEL' ? 'Programme Excel de votre coach' : 'Programme PDF de votre coach';
+    return file.type === 'EXCEL' ? 'Excel program from your coach' : 'PDF program from your coach';
+  }
+
+  todayFileWeek(file: TodayFile): string {
+    return this.fr ? `Semaine ${file.week} sur ${file.weeks}` : `Week ${file.week} of ${file.weeks}`;
   }
 
   openNutrition(): void {

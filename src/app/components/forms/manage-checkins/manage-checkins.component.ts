@@ -166,12 +166,13 @@ export class ManageCheckinsComponent implements OnInit {
 
   /**
    * Each status is read on its own (one page of everything cut the oldest unreviewed check-ins once a coach had a
-   * few hundred): all the open ones, the latest reviewed ones.
+   * few hundred): all the open ones, the latest reviewed ones. Active clients only (2026-11-23): an archived client's
+   * check-ins stay in their profile, not here, so the lists match the menu badge and the dashboard.
    */
   loadAssignments(chooseTab = false): void {
     this.error = null;
     const page = (status: AssignmentStatus, size: number, sortBy: string, direction: 'ASC' | 'DESC') =>
-      this.assignmentsApi.pageOwnerAssignmentsByAssigneeIdStatuses(0, size, sortBy, direction, undefined, [status], undefined, true);
+      this.assignmentsApi.pageOwnerAssignmentsByAssigneeIdStatuses(0, size, sortBy, direction, undefined, [status], undefined, true, false, true);
 
     forkJoin([
       page('SUBMITTED', OPEN_LIMIT, 'submittedAt', 'ASC'),

@@ -9,7 +9,8 @@ export type DashboardAlertType =
   | 'NO_NUTRITION'
   | 'JOIN_REQUESTS'
   | 'NEW_LEADS'
-  | 'CHECK_INS_OVERDUE';
+  | 'CHECK_INS_OVERDUE'
+  | 'CHECK_INS_MISSED';
 
 /** The categories of the "To do" section, in display order (two columns). */
 export const TODO_ALERT_TYPES: DashboardAlertType[] = [
@@ -47,7 +48,11 @@ export interface DashboardSummary {
   today: string;
   activeClients: { count: number; limit: number | null; newLast30Days: number | null };
   clientsToWatch: { count: number; noProgram: number; expiredPrograms: number; inactive: number; overdueCheckIns: number };
-  checkIns: { toReview: number; overdue: number };
+  /**
+   * Same counts as the menu badge and the check-ins page (active clients only): overdue = late by 1 to 7 days,
+   * missed = late by more than 7 days (absent from an older server).
+   */
+  checkIns: { toReview: number; overdue: number; missed?: number };
   /** Distinct clients in at least one "To do" category. */
   todoClients: number;
   alerts: Partial<Record<DashboardAlertType, number>>;

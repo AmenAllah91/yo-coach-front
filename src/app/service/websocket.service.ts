@@ -24,16 +24,11 @@ export class WebsocketService {
   }
 
 
-  private async connect(): Promise<void> {
-    try {
-      const token = await this.authService.getToken();
-      this.connectSTOMP(token);
-    } catch (error) {
-      console.error('Error getting token:', error);
-    }
+  private connect(): void {
+    this.connectSTOMP();
   }
 
-  private connectSTOMP(token: string): void {
+  private connectSTOMP(): void {
 
     const socketFactory = () => new SockJS(this.WEBSOCKET_URL);
 
@@ -45,8 +40,15 @@ export class WebsocketService {
       maxReconnectDelay: 5 * 60 * 1000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
-      connectHeaders: {
-        Authorization: `Bearer ${token}`
+      // The notification service checks the token at each CONNECT (2026-11-23): take a fresh one at each
+      // (re)connection, the one of the first connection expires after a few minutes.
+      beforeConnect: async () => {
+        try {
+          const token = await this.authService.getToken();
+          if (this.stompClient) this.stompClient.connectHeaders = { Authorization: `Bearer ${token}` };
+        } catch (error) {
+          console.error('Error getting token:', error);
+        }
       }
     });
 

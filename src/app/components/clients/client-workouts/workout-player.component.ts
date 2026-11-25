@@ -362,6 +362,13 @@ export class WorkoutPlayerComponent implements OnInit, OnDestroy {
   get ringOffset(): number { return RING * (1 - Math.min(1, Math.max(0, this.left / this.total))); }
   readonly ringLength = RING;
 
+  /** Same note as the exercise page (client-workouts coachNote). */
+  coachNote(run: PlayerRun): string | null {
+    const exercise = run?.exercise;
+    const text = String(exercise?.coachNote ?? exercise?.notes ?? exercise?.exerciseRef?.coachNote ?? '').trim();
+    return text || null;
+  }
+
   name(run: PlayerRun): string { return capitalizeFirst(run.exercise?.name || run.exercise?.exerciseRef?.name || this.t('Exercise', 'Exercice')); }
   image(run: PlayerRun): string | null { return exerciseCardImage(run.exercise); }
 

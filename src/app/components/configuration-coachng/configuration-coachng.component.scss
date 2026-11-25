@@ -1215,6 +1215,11 @@ $lg: 768px;
 .notification-list { margin-top: .45rem; }
 .notification-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; min-height: 48px; padding: 0 1rem; border-bottom: 1px solid light-dark(#edf1f5, #32373c); font-size: .8125rem; }
 .notification-row:last-child { border-bottom: 0; }
+.notification-row__text { display: flex; flex-direction: column; gap: .2rem; padding: .7rem 0; min-width: 0; }
+.notification-row__text strong { font-size: .875rem; }
+.notification-row__text small { color: light-dark(#58708e, #a9afb7); font-size: .8rem; line-height: 1.4; }
+.notification-row__text small.notification-row__state--denied { color: light-dark(#b54708, #f5b86b); }
+.notification-master { margin-bottom: .9rem; }
 
 .preferences-heading {
   display: flex;

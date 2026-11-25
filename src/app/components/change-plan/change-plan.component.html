@@ -111,7 +111,8 @@
             : ('CHANGE_PLAN_CONFIRM' | translate) }}
       </button>
       <p *ngIf="paysNow(plan)" class="secure"><i-feather name="lock"></i-feather>{{ (savedCard ? 'CHANGE_PLAN_CHARGED_ON_CARD'
-          : paymentMethod === 'STRIPE' ? 'CHECKOUT_SECURE_STRIPE' : 'CHECKOUT_SECURE_FLOUCI') | translate: { card: savedCard } }}</p>
+          : paymentMethod === 'STRIPE' ? 'CHECKOUT_SECURE_STRIPE'
+          : paymentMethod === 'CLICTOPAY' ? 'CHECKOUT_SECURE_CLICTOPAY' : 'CHECKOUT_SECURE_FLOUCI') | translate: { card: savedCard } }}</p>
     </div>
 
     <p *ngIf="error" class="error" role="alert">{{ error | translate }}</p>

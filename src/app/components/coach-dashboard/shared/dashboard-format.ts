@@ -70,6 +70,7 @@ export const ALERT_ICONS: Record<DashboardAlertType, string> = {
   JOIN_REQUESTS: 'user-plus',
   NEW_LEADS: 'inbox',
   CHECK_INS_OVERDUE: 'alert-circle',
+  CHECK_INS_MISSED: 'x-circle',
 };
 
 /** Translation key and parameters of the sentence after the client's name. */

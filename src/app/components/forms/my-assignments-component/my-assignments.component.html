@@ -27,15 +27,15 @@
       </div>
 
       <ng-container *ngIf="!loading && !(error && !assignments.length)">
-        <!-- Still to send from an earlier week: they can still be sent. -->
+        <!-- Late check-ins stay on their day (like Workouts): one line jumps to the most recent one. -->
         <ng-container *ngIf="olderOverdue as late">
-          <ng-container *ngIf="late.length">
-            <p class="wk-label wk-label--late">{{ t('Overdue', 'En retard') }} <span class="wk-label__count">{{ late.length }}</span></p>
-            <p class="wk-late-note">{{ t('You can still submit these — late answers help your coach too.', 'Vous pouvez toujours les envoyer — des réponses tardives aident aussi votre coach.') }}</p>
-            <ng-container *ngFor="let item of late; trackBy: trackById">
-              <ng-container *ngTemplateOutlet="card; context: { $implicit: item, submitted: false }"></ng-container>
-            </ng-container>
-          </ng-container>
+          <button *ngIf="late.length" type="button" class="late-line" (click)="goToLatestLate(late)">
+            <i-feather name="alert-circle"></i-feather>
+            <span>{{ fr
+              ? late.length + (late.length > 1 ? ' check-ins en retard avant cette semaine' : ' check-in en retard avant cette semaine')
+              : late.length + (late.length > 1 ? ' late check-ins before this week' : ' late check-in before this week') }}</span>
+            <strong>{{ t('See the latest', 'Voir le dernier') }}</strong>
+          </button>
         </ng-container>
 
         <ng-container *ngIf="weekDays as week">
@@ -97,13 +97,43 @@
         </div>
       </header>
 
-      <ng-container *ngIf="historyByDay as byDay">
-        <app-history-timeline [firstDay]="historyFirstDay(byDay)" [startDay]="historyDay" [marks]="historyMarks(byDay)" [fr]="fr" [dayTemplate]="historyDayTpl"></app-history-timeline>
+      <ng-container *ngIf="history as h">
+        <!-- Summary: how many were sent, then the filters. -->
+        <div *ngIf="h.total" class="hist-summary">
+          <div class="hist-summary__stats">
+            <span><strong>{{ h.sent }}</strong> {{ fr ? (h.sent > 1 ? 'envoyés' : 'envoyé') : 'sent' }}</span>
+            <span class="hist-summary__sep">·</span>
+            <span><strong>{{ h.todo }}</strong> {{ fr ? (h.todo > 1 ? 'non envoyés' : 'non envoyé') : 'not sent' }}</span>
+            <span class="hist-summary__rate">{{ h.rate }} %</span>
+          </div>
+          <div class="hist-summary__bar" aria-hidden="true"><span [style.width.%]="h.rate"></span></div>
+          <div class="hist-filters" role="tablist">
+            <button type="button" role="tab" [class.is-active]="historyFilter === 'all'" [attr.aria-selected]="historyFilter === 'all'" (click)="setHistoryFilter('all')">
+              {{ t('All', 'Tous') }} <small>{{ h.total }}</small>
+            </button>
+            <button type="button" role="tab" [class.is-active]="historyFilter === 'sent'" [attr.aria-selected]="historyFilter === 'sent'" (click)="setHistoryFilter('sent')">
+              {{ t('Sent', 'Envoyés') }} <small>{{ h.sent }}</small>
+            </button>
+            <button type="button" role="tab" [class.is-active]="historyFilter === 'todo'" [attr.aria-selected]="historyFilter === 'todo'" (click)="setHistoryFilter('todo')">
+              {{ t('Not sent', 'Non envoyés') }} <small>{{ h.todo }}</small>
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="!h.total" class="empty">
+          <span class="yc-icon-tile" style="--tile-color: light-dark(#7455D9, #ac9eff); --tile-size: 64px"><i-feather name="clipboard-list"></i-feather></span>
+          <h3>{{ t('No check-in yet', 'Pas encore de check-in') }}</h3>
+          <p class="yc-subtitle">{{ t('Your check-ins will show here, day by day', 'Vos check-ins apparaîtront ici, jour par jour') }}</p>
+        </div>
+
+        <!-- Only the days with a check-in: a row for every empty day only made the list long. -->
+        <app-history-timeline *ngIf="h.total" [firstDay]="h.first" [startDay]="historyDay" [marks]="h.marks" [onlyDays]="h.days" [fr]="fr" [dayTemplate]="historyDayTpl"></app-history-timeline>
 
         <ng-template #historyDayTpl let-key="key">
-          <ng-container *ngFor="let item of byDay[key] || []; trackBy: trackById">
+          <ng-container *ngFor="let item of h.byDay[key] || []; trackBy: trackById">
             <ng-container *ngTemplateOutlet="card; context: { $implicit: item, submitted: isSubmitted(item), history: true }"></ng-container>
           </ng-container>
+          <p *ngIf="!(h.byDay[key] || []).length" class="hist-none">{{ t('No check-in this day', 'Aucun check-in ce jour-là') }}</p>
         </ng-template>
       </ng-container>
     </ng-container>
@@ -138,6 +168,10 @@
               {{ t('Part', 'Partie') }} {{ pageIndex2 + 1 }}/{{ shownPages.length }} · {{ overallPercent }} %
             </small>
             <small *ngIf="form && stage !== 'intro' && !hasParts">{{ formSubtitle }}</small>
+            <small *ngIf="form && stage === 'part' && !viewMode && draftState !== 'idle'" class="ck-top__saved" aria-live="polite">
+              <i-feather [name]="draftState === 'saved' ? 'check' : 'loader'"></i-feather>
+              {{ draftState === 'saved' ? t('Saved', 'Enregistré') : t('Saving…', 'Enregistrement…') }}
+            </small>
           </div>
           <button *ngIf="stage !== 'intro'" type="button" class="ck-top__close" (click)="closeForm()"
                   [title]="t('Your answers are kept', 'Vos réponses sont gardées')">
@@ -147,7 +181,7 @@
 
         <div *ngIf="form && stage !== 'intro'" class="ck-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"
              [attr.aria-valuenow]="overallPercent">
-          <span *ngFor="let segment of progressSegments" class="ck-progress__seg" [class.is-current]="segment.current"
+          <span *ngFor="let segment of progressSegments; trackBy: trackSegment" class="ck-progress__seg" [class.is-current]="segment.current"
                 [class.is-full]="segment.done >= 1" [title]="segment.title">
             <i [style.width.%]="segment.done * 100"></i>
           </span>
@@ -165,16 +199,32 @@
           <!-- Intro: who it is from, how long it takes, the parts -->
           <section *ngIf="stage === 'intro'" class="ck-intro">
             <div class="ck-intro__hero" aria-hidden="true">
-              <span class="yc-avatar ck-intro__avatar">{{ ownerInitials }}</span>
+              <img *ngIf="coachPhotoUrl && !coachPhotoFailed; else introInitials" class="ck-intro__avatar ck-intro__avatar--photo"
+                   [src]="coachPhotoUrl" alt="" (error)="coachPhotoFailed = true" />
+              <ng-template #introInitials><span class="yc-avatar ck-intro__avatar">{{ ownerInitials }}</span></ng-template>
               <span class="ck-intro__wave">👋</span>
             </div>
+            <p *ngIf="coachDisplayName" class="ck-intro__from">{{ t('Sent by', 'Envoyé par') }} <strong>{{ ownerName }}</strong></p>
             <h1 class="ck-intro__title">{{ title(selected) || 'Check-in' }}</h1>
-            <p *ngIf="description" class="ck-intro__text">{{ description }}</p>
+            <p class="ck-intro__text">{{ introText }}</p>
             <div class="ck-intro__chips">
-              <span *ngIf="hasParts" class="ck-chip"><i-feather name="layers"></i-feather>{{ shownPages.length }} {{ t('parts', 'parties') }}</span>
-              <span class="ck-chip"><i-feather name="help-circle"></i-feather>{{ shownQuestions.length }} questions</span>
+              <span *ngIf="hasParts" class="ck-chip"><i-feather name="layers"></i-feather>{{ partsLabel(shownPages.length) }}</span>
+              <span class="ck-chip"><i-feather name="help-circle"></i-feather>{{ questionsLabel(shownQuestions.length) }}</span>
               <span class="ck-chip"><i-feather name="clock"></i-feather>~{{ pageMinutes }} min</span>
               <span *ngIf="dueChip(selected) as due" class="yc-chip" [style.--chip-color]="due.color">{{ due.label }}</span>
+            </div>
+
+            <!-- No parts: the first questions, so the client knows what is asked. -->
+            <div *ngIf="!hasParts && previewQuestions.length" class="ck-preview">
+              <p class="ck-preview__title">{{ t('Preview of the questions', 'Aperçu des questions') }}</p>
+              <ol>
+                <li *ngFor="let question of previewQuestions; index as qi"><span class="ck-preview__num">{{ qi + 1 }}</span><span>{{ label(question) }}</span></li>
+              </ol>
+              <p *ngIf="shownQuestions.length > previewLimit" class="ck-preview__more">
+                {{ fr ? '+ ' + (shownQuestions.length - previewLimit) + ' autre' + (shownQuestions.length - previewLimit > 1 ? 's' : '')
+                     : '+ ' + (shownQuestions.length - previewLimit) + ' more' }}
+              </p>
+              <p class="ck-preview__note">{{ t('You answer on the next screen.', 'Vous répondez sur l’écran suivant.') }}</p>
             </div>
 
             <ol *ngIf="hasParts" class="ck-steps">
@@ -195,6 +245,7 @@
             <button *ngIf="resumePageId" type="button" class="yc-link ck-restart" (click)="start(false)">
               {{ t('Start from the beginning', 'Revoir depuis le début') }}
             </button>
+            <p class="ck-intro__safe"><i-feather name="save"></i-feather>{{ t('Your answers are saved as you go: you can stop and come back later.', 'Vos réponses sont gardées au fur et à mesure : vous pouvez vous arrêter et revenir plus tard.') }}</p>
           </section>
 
           <!-- One part per page (re-created on each page, so it slides in) -->
@@ -209,6 +260,9 @@
 
                 <div *ngFor="let question of pageQuestions(page); index as qi; trackBy: trackQuestion" class="ck-q"
                      [id]="'ck-q-' + question.id" [class.is-answered]="answered(question, idx(question))" [style.--qi]="qi">
+                  <span *ngIf="shownQuestions.length > 1" class="ck-q__number">
+                    {{ fr ? 'Question ' + questionNumber(question) + ' sur ' + shownQuestions.length : 'Question ' + questionNumber(question) + ' of ' + shownQuestions.length }}
+                  </span>
                   <p class="question__label">{{ label(question) }}<b *ngIf="isRequired(question)"> *</b></p>
                   <p *ngIf="helpText(question)" class="question__help">{{ helpText(question) }}</p>
                   <ng-container *ngTemplateOutlet="questionInput; context: { $implicit: question, i: idx(question) }"></ng-container>

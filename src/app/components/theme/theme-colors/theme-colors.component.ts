@@ -630,17 +630,17 @@ export class ThemeColorsComponent implements OnInit, AfterViewInit, OnDestroy {
       mobileLogoUrl: undefined,
       mobileLogoPath: undefined,
 
-      primary: '#39AEEF',
+      primary: '#0C86C8',
       secondary: '#070D12',
 
-      background: '#F5F6FA',
+      background: '#F4F6F9',
       surface: '#FFFFFF',
       card: '#FFFFFF',
       cardSurface: '#F8F8F8',
 
-      textPrimary: '#111827',
-      textSecondary: '#6B7280',
-      textHint: '#9CA3AF',
+      textPrimary: '#0F1B2D',
+      textSecondary: '#546175',
+      textHint: '#7D889B',
 
       success: '#22C55E',
       successLight: '#EAF8F0',
@@ -657,8 +657,8 @@ export class ThemeColorsComponent implements OnInit, AfterViewInit, OnDestroy {
 
       buttonText: '#FFFFFF',
 
-      selectedTabBg: '#EAF8FF',
-      activeBg: '#0D1B2A',
+      selectedTabBg: '#E8F3FA',
+      activeBg: '#0F1B2D',
 
       headerStart: '#071018',
       headerMid: '#0B151E',

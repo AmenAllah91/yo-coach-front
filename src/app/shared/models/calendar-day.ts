@@ -128,6 +128,15 @@ export interface MealReport {
   name: string;
   state: MealState;
   note: string;
+  /** Part of a « modified » meal eaten: « ¼ », « ½ », « ¾ »; '' for the whole meal (or no part given). */
+  part: string;
+}
+
+/** « ¼ », « ½ », « ¾ » for the part of a « modified » meal the client ate; '' for all of it or none given. */
+function mealPart(state: string, portion: unknown): string {
+  const n = portion === null || portion === undefined || portion === '' ? NaN : Number(portion);
+  if (state !== 'MODIFIED' || !Number.isFinite(n) || n <= 0 || n >= 1) return '';
+  return n <= 0.25 ? '¼' : n <= 0.5 ? '½' : '¾';
 }
 
 export interface NutritionReport {
@@ -171,6 +180,7 @@ export function nutritionReport(day: any): NutritionReport {
       name: String(meal?.name || '').trim(),
       state: (state === 'AS_PLANNED' || state === 'MODIFIED' || state === 'SKIPPED' ? state : '') as MealState,
       note: String(log?.note || '').trim(),
+      part: mealPart(state, log?.portion),
     };
   });
   return {

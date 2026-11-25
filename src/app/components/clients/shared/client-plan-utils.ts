@@ -21,6 +21,19 @@ export function planDate(value: any): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
 }
 
+/**
+ * Local day of an instant sent by the API (a check-in's dueAt / assignedAt): the CE stores the due day as midnight
+ * in Tunis, « 2026-11-23T23:00:00Z » for the 24th, so the day written in the text is not the day (planDate would give
+ * the 23rd). Read like the coach pages (new Date). A plain day (« 2026-11-24 ») stays that day.
+ */
+export function instantDay(value: any): Date | null {
+  const raw = value && typeof value === 'object' && '$date' in value ? value.$date : value;
+  if (raw == null || raw === '') return null;
+  if (typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.trim())) return planDate(raw);
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? null : new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+}
+
 export function capitalizeFirst(value: string | null | undefined): string {
   const text = (value ?? '').trim();
   return text ? text[0].toUpperCase() + text.slice(1) : text;
@@ -104,11 +117,27 @@ export function programWeek(start: any, date: Date): number {
   return diff < 0 ? 1 : Math.floor(diff / 7) + 1;
 }
 
+/** Session names the editors give by themselves: never shown as a title. */
+const DEFAULT_SESSION_NAMES = ['main session', 'séance principale', 'session', 'séance', 'workout', 'rest day', 'jour de repos'];
+
+/**
+ * The name the coach typed for the session (« Leg Day ») : the editors keep « Day N » as the day title and the
+ * name in the session (audit workouts 2026-11-23, G7 : the client used to read « Jour 3 » only).
+ */
+export function workoutSessionName(day: any): string {
+  if (day?.restDay || day?.isRestDay) return '';
+  const sessions = Array.isArray(day?.workoutSessions) ? day.workoutSessions : [];
+  const name = String(sessions[0]?.name ?? day?.session?.name ?? '').trim();
+  return name && !DEFAULT_SESSION_NAMES.includes(name.toLowerCase()) && !/^(day|jour)\s+\d+$/i.test(name) ? name : '';
+}
+
 /** WorkoutDay.displayTitle on mobile. */
 export function workoutDisplayTitle(day: any, fr = false): string {
   const title = String(day?.title ?? '').trim();
   const name = String(day?.name ?? '').trim();
-  if (title && !title.toLowerCase().startsWith('day ')) return title;
+  const session = workoutSessionName(day);
+  if (session) return session;
+  if (title && !/^(day|jour)\s+\d+$/i.test(title)) return title;
   if (name && !name.toLowerCase().startsWith('day ')) return name;
   if (day?.dayNumber != null && day.dayNumber !== '') return `${fr ? 'Jour' : 'Day'} ${day.dayNumber}`;
   return String(day?.dayOfWeek ?? '');
@@ -245,11 +274,36 @@ export function isMealEaten(day: any, meal: any): boolean {
   return status === 'AS_PLANNED' || status === 'MODIFIED';
 }
 
-/** Macros of the meals the client reported as eaten. */
+/** A stored part of a meal (0.25, 0.5, 0.75 or 1): 1 when missing or wrong (older reports). */
+export function portionValue(value: unknown): number {
+  const n = value === null || value === undefined || value === '' ? NaN : Number(value);
+  return Number.isFinite(n) && n > 0 && n <= 1 ? n : 1;
+}
+
+/** Part of a « modified » meal the client ate (¼, ½, ¾ or all); 1 for any other report. */
+export function mealPortion(day: any, meal: any): number {
+  if (mealReportStatus(day, meal) !== 'MODIFIED') return 1;
+  const log = (day?.clientMealLogs || []).find((item: any) => String(item?.mealId) === String(meal?.id ?? meal?._id));
+  return portionValue(log?.portion);
+}
+
+/** « ¼ », « ½ », « ¾ »; '' for the whole meal. */
+export function portionLabel(portion: number): string {
+  if (portion <= 0.25) return '¼';
+  if (portion <= 0.5) return '½';
+  if (portion < 1) return '¾';
+  return '';
+}
+
+/** Macros of the meals the client reported as eaten (a « modified » meal counts for the part eaten). */
 export function consumedTotals(day: any): NutritionTotals {
   return clientVisibleMeals(day).filter(meal => isMealEaten(day, meal)).reduce((total: NutritionTotals, meal: any) => {
     const m = mealMacros(meal);
-    return { calories: total.calories + m.calories, protein: total.protein + m.protein, carbs: total.carbs + m.carbs, fat: total.fat + m.fat };
+    const part = mealPortion(day, meal);
+    return {
+      calories: total.calories + Math.round(m.calories * part), protein: total.protein + Math.round(m.protein * part),
+      carbs: total.carbs + Math.round(m.carbs * part), fat: total.fat + Math.round(m.fat * part),
+    };
   }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
 }
 

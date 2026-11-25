@@ -117,43 +117,6 @@
   color: #ffffff;
 }
 
-/* ========= SELECT CLIENT ========= */
-
-.select-wrapper {
-  position: relative;
-  display: inline-block;
-}
-
-.client-select {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  border-radius: 999px;
-  border: 2px solid light-dark(#e5e7eb, #34393f);
-  background-color: light-dark(#ffffff, #1d2125);
-  padding: 6px 32px 6px 14px;
-  font-size: 13px;
-  font-weight: 500;
-  color: light-dark(#111827, #e8ecf6);
-  cursor: pointer;
-  outline: none;
-}
-
-.client-select:focus {
-  border-color: #44b4df;
-  box-shadow: 0 0 0 1px rgba(68, 180, 223, 0.4);
-}
-
-.select-arrow {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 11px;
-  color: light-dark(#6b7280, #a7abb4);
-  pointer-events: none;
-}
-
 /* ========= VUE MOIS ========= */
 
 .calendar-month {
@@ -1218,28 +1181,13 @@
   font-weight: 700;
 }
 
-.client-select {
-  min-width: 136px;
-  border: 1px solid light-dark(#dbe2ea, #353a41);
-  border-radius: 6px;
-  padding: 9px 36px 9px 14px;
-  background-image:
-    linear-gradient(45deg, transparent 50%, #64748b 50%),
-    linear-gradient(135deg, #64748b 50%, transparent 50%);
-  background-position:
-    calc(100% - 17px) 50%,
-    calc(100% - 12px) 50%;
-  background-size: 5px 5px;
-  background-repeat: no-repeat;
-}
-
 .select-client-state {
   min-height: 420px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 12px;
+  gap: 10px;
+  padding: 32px 20px;
   border: 1px solid light-dark(#dbe2ea, #353a41);
   border-radius: 6px;
   background: light-dark(#ffffff, #1d2125);
@@ -1247,22 +1195,340 @@
   text-align: center;
 }
 
-.select-client-state .material-icons {
-  width: 42px;
-  height: 42px;
-  border-radius: 999px;
+.select-client-state__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: light-dark(#0f172a, #ebf0fa);
+}
+
+.select-client-state__hint,
+.select-client-state__note {
+  margin: 0;
+  font-size: 14px;
+}
+
+.select-client-state__note {
+  margin-top: 12px;
+}
+
+.select-client-state__search,
+.client-picker__search {
+  width: 100%;
+  max-width: 360px;
+  margin-top: 8px;
+  padding: 9px 12px;
+  border: 1px solid light-dark(#dbe2ea, #353a41);
+  border-radius: 6px;
+  background: light-dark(#ffffff, #15181c);
+  color: light-dark(#0f172a, #e8ecf6);
+  font-size: 14px;
+  outline: none;
+
+  &:focus {
+    border-color: #41afd8;
+    box-shadow: 0 0 0 2px rgba(65, 175, 216, 0.2);
+  }
+}
+
+.select-client-state__link {
+  font-size: 14px;
+  font-weight: 700;
+  color: light-dark(#0f6f93, #6abce3);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+/* The clients as cards: one click opens their calendar. */
+.client-cards {
+  width: 100%;
+  max-width: 980px;
+  margin-top: 14px;
+  display: grid;
+  /* auto-fit: the empty columns fold, so 1 card found by the search stays in the middle. */
+  grid-template-columns: repeat(auto-fit, 170px);
+  justify-content: center;
+  gap: 12px;
+}
+
+.client-card {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 10px;
+  border: 1px solid light-dark(#dbe2ea, #353a41);
+  border-radius: 8px;
+  background: light-dark(#ffffff, #1d2125);
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    border-color: #41afd8;
+    background: light-dark(#f2fafd, #1b2a30);
+    transform: translateY(-1px);
+    outline: none;
+  }
+}
+
+.client-card__name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 700;
+  color: light-dark(#0f172a, #ebf0fa);
+}
+
+.client-card__email {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: light-dark(#64748b, #a5abb4);
+}
+
+/* A client's round photo, or their initials. */
+.picker-avatar {
+  flex: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  border-radius: 999px;
   background: light-dark(#e7f6fc, #19333c);
-  color: light-dark(#27a7d4, #3ab4e2);
-  font-size: 24px;
+  color: light-dark(#0f6f93, #6abce3);
+  font-weight: 800;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 }
 
-.select-client-state p {
-  margin: 0;
+.picker-avatar--sm {
+  width: 26px;
+  height: 26px;
+  font-size: 11px;
+}
+
+.picker-avatar--lg {
+  width: 52px;
+  height: 52px;
+  font-size: 17px;
+}
+
+/* The client at the top right: ‹ photo + name ▾ ›, and its menu with a search. */
+.client-picker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.client-picker__step {
+  width: 28px;
+  height: 38px;
+  border: 1px solid light-dark(#dbe2ea, #353a41);
+  border-radius: 6px;
+  background: light-dark(#ffffff, #1d2125);
+  color: light-dark(#4b5563, #bfc5cd);
+  font-size: 18px;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #41afd8;
+    color: light-dark(#0f6f93, #6abce3);
+  }
+}
+
+.client-picker__action {
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+  border: 1px solid light-dark(#dbe2ea, #353a41);
+  border-radius: 6px;
+  background: light-dark(#ffffff, #1d2125);
+  color: light-dark(#0f6f93, #6abce3);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+
+  .material-icons {
+    font-size: 17px;
+  }
+
+  &:hover {
+    border-color: #41afd8;
+    background: light-dark(#e8f6fb, #1b333a);
+  }
+}
+
+/* Below 1600 px the two buttons keep their icon only (the text shows on hover): the header stays on one line. */
+@media (max-width: 1599px) {
+  .client-picker__action {
+    padding: 0 9px;
+  }
+
+  .client-picker__action-text {
+    display: none;
+  }
+}
+
+/* A little space between the client and their two buttons. */
+.client-picker__step + .client-picker__action,
+.client-picker__toggle + .client-picker__action {
+  margin-left: 4px;
+}
+
+.client-picker__toggle {
+  min-width: 160px;
+  max-width: 260px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px 0 6px;
+  border: 1px solid light-dark(#dbe2ea, #353a41);
+  border-radius: 6px;
+  background: light-dark(#ffffff, #1d2125);
+  color: light-dark(#0f172a, #e8ecf6);
   font-size: 14px;
   font-weight: 600;
+  cursor: pointer;
+
+  &:hover,
+  &.is-open {
+    border-color: #41afd8;
+  }
+}
+
+.client-picker__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.client-picker__chevron {
+  font-size: 12px;
+  color: light-dark(#64748b, #a5abb4);
+}
+
+.client-picker__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  padding: 8px;
+  border: 1px solid light-dark(#dbe2ea, #353a41);
+  border-radius: 8px;
+  background: light-dark(#ffffff, #1d2125);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
+
+  .client-picker__search {
+    max-width: none;
+    margin: 0 0 6px;
+  }
+}
+
+.client-picker__list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.client-picker__option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: light-dark(#f1f5f9, #262b31);
+    outline: none;
+  }
+
+  &.is-current {
+    background: light-dark(#e7f6fc, #19333c);
+  }
+}
+
+.client-picker__option-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.client-picker__option-name,
+.client-picker__option-email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.client-picker__option-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: light-dark(#0f172a, #ebf0fa);
+}
+
+.client-picker__option-email {
+  font-size: 12px;
+  color: light-dark(#64748b, #a5abb4);
+}
+
+.client-picker__none {
+  margin: 8px;
+  font-size: 13px;
+  color: light-dark(#64748b, #a5abb4);
+}
+
+@media (max-width: 640px) {
+  .client-picker {
+    width: 100%;
+  }
+
+  .client-picker__toggle {
+    flex: 1;
+    max-width: none;
+  }
+
+  .client-picker__action-text {
+    display: none;
+  }
+
+  .client-picker__menu {
+    left: 0;
+    right: auto;
+    width: 100%;
+  }
+
+  .client-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .calendar-month {
@@ -3074,7 +3340,8 @@
 
 /* The detail: wider days (the week scrolls sideways on a small screen), one line per exercise or meal. */
 .week-rows.is-detailed .wr-grid {
-  min-width: 1340px;
+  /* 7 days of at least 133 px: the whole week fits next to the menu on a 1366-1440 px laptop (1340 hid Sunday). */
+  min-width: 1060px;
 }
 
 .wr-line {
@@ -3620,3 +3887,21 @@
     font-weight: 600;
   }
 }
+
+// « Fichiers » (audit PDF/Excel 2026-11-23, lot 3).
+.cal-files {
+  max-width: 920px;
+  margin: 8px auto 24px;
+  padding: 0 4px;
+}
+
+.toggle-button--files {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  .material-icons {
+    font-size: 16px;
+  }
+}
+

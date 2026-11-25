@@ -1,10 +1,11 @@
+import { MacroChartComponent } from '@shared/components/macro-chart/macro-chart.component';
 import { CopyDaysModalComponent } from '@shared/program-copy/copy-days-modal.component';
 import { ClientProgramDatesComponent } from '@shared/components/client-program-dates/client-program-dates.component';
 import { CopiedDayBannerComponent } from '@shared/program-copy/copied-day-banner.component';
 import { ProgramDayClipboardService } from '@shared/program-copy/program-day-clipboard.service';
 import { nutritionCopyController } from '../nutrition-day-copy';
-import { NutritionDraftState } from '../nutrition-draft-state';
-import { AfterViewChecked, Component, DoCheck, ElementRef, HostListener, OnInit, ViewChild, inject } from '@angular/core';
+import { NutritionDraftState, nutritionMealHasContent } from '../nutrition-draft-state';
+import { AfterViewChecked, Component, DoCheck, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { ActiveDayRail } from '@shared/program-calendar/active-day-rail';
 import { ProgramStructureRailComponent } from '@shared/program-structure-rail/program-structure-rail.component';
 import { nutritionRailWeeks } from '../nutrition-rail';
@@ -29,15 +30,18 @@ import { NutritionCalendar } from '../nutrition-calendar';
 import { ProgramCalendarComponent } from '@shared/program-calendar/program-calendar.component';
 import { DayWindowFootComponent, DayWindowHeadComponent, ViewSwitchComponent } from '@shared/program-calendar/day-window-bars.component';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { ScaleCaloriesDialogComponent } from '../scale-calories/scale-calories-dialog.component';
+import { DayMacroSplitComponent } from '../day-macro-split/day-macro-split.component';
+import { MacroGrams, nutritionDayLocked } from '../nutrition-scale';
 
 @Component({
   selector: 'app-create-macro-plan',
   standalone: true,
-  imports: [ProgramStructureRailComponent, ProgramCalendarComponent, DayWindowHeadComponent, DayWindowFootComponent, ViewSwitchComponent, CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule, EmptyDaysModalComponent, LockedProgramBannerComponent, ProgramOverflowComponent, CopyDaysModalComponent, CopiedDayBannerComponent, ClientProgramDatesComponent],
+  imports: [MacroChartComponent, ProgramStructureRailComponent, ProgramCalendarComponent, DayWindowHeadComponent, DayWindowFootComponent, ViewSwitchComponent, CommonModule, FormsModule, FeatherModule, DragDropModule, TranslateModule, EmptyDaysModalComponent, LockedProgramBannerComponent, ProgramOverflowComponent, CopyDaysModalComponent, CopiedDayBannerComponent, ClientProgramDatesComponent, ScaleCaloriesDialogComponent, DayMacroSplitComponent],
   templateUrl: './create-macro-plan.component.html',
-  styleUrls: ['./create-macro-plan.component.scss', '../_nutrition-builder-template.scss', '../../program-library/_workout-builder-layout.scss', '../../program-library/_plan-edit-dialog.scss', '../_nutrition-rail-parity.scss', '../_nutrition-day-parity.scss', '../../program-library/_builder-rail-readable.scss', '../../../shared/program-calendar/_program-calendar-editor.scss', '../../program-library/_builder-rail-active.scss'],
+  styleUrls: ['./create-macro-plan.component.scss', '../_nutrition-rename-modal.scss', '../_nutrition-builder-template.scss', '../../program-library/_workout-builder-layout.scss', '../../program-library/_plan-edit-dialog.scss', '../_nutrition-rail-parity.scss', '../_nutrition-day-parity.scss', '../../program-library/_builder-rail-readable.scss', '../../../shared/program-calendar/_program-calendar-editor.scss', '../../program-library/_builder-rail-active.scss'],
 })
-export class CreateMacroPlanComponent implements OnInit, DoCheck, AfterViewChecked, LeavesUnsavedChanges {
+export class CreateMacroPlanComponent implements OnInit, OnDestroy, DoCheck, AfterViewChecked, LeavesUnsavedChanges {
   /** Phones: the week/day structure opens over the page (same as the workout builder). */
   mobileStructureOpen = false;
   /** Used by the toolbar "Save" (through the empty-days check of the draft state) and to retry after it. */
@@ -99,6 +103,11 @@ export class CreateMacroPlanComponent implements OnInit, DoCheck, AfterViewCheck
     this.cal.calendar = calendar;
   }
 
+  /** « Continuer » created the plan: left with nothing but its name, it is deleted again (nutrition-draft-state.ts). */
+  ngOnDestroy(): void {
+    this.draft.discardIfEmptyNew(this.clientMode.active);
+  }
+
   ngDoCheck(): void {
     this.cal.check();
   }
@@ -150,15 +159,29 @@ export class CreateMacroPlanComponent implements OnInit, DoCheck, AfterViewCheck
     return /^Meal \d+$/.test(meal.name || '') ? this.translate.instant('MEAL_NUMBER', { number: index + 1 }) : meal.name;
   }
 
+  /** The same rename window as the full plan editor (crayon, field, « Mettre à jour »). */
+  renamingMeal: Meal | null = null;
+  mealNameDraft = '';
+
   promptMealRename(meal: Meal): void {
-    this.renameMeal(meal, prompt(this.translate.instant('MEAL_NAME'), meal.name) || meal.name);
+    this.renamingMeal = meal;
+    this.mealNameDraft = meal.name;
+  }
+
+  closeRenameMealModal(): void {
+    this.renamingMeal = null;
+    this.mealNameDraft = '';
+  }
+
+  confirmRenameMeal(): void {
+    if (!this.renamingMeal || !this.mealNameDraft.trim()) return;
+    this.renameMeal(this.renamingMeal, this.mealNameDraft.trim());
+    this.closeRenameMealModal();
   }
 
 
   get canCreateTemplate(): boolean {
     const roles = this.getCurrentRoles();
-
-    console.log('[ADMIN CHECK CURRENT ROLES]', roles);
 
     return roles.some((role) =>
       role === 'ROLE_ADMIN' ||
@@ -633,12 +656,24 @@ export class CreateMacroPlanComponent implements OnInit, DoCheck, AfterViewCheck
     this.updateDayTotals(this.selectedDay);
   }
 
-  removeMeal(meal: Meal) {
-    if (!this.selectedDay) return;
-    this.selectedDay.meals = this.selectedDay.meals.filter(
+  async removeMeal(meal: Meal) {
+    const day = this.selectedDay;
+    if (!day) return;
+    // A meal with macros: asked first; an empty one goes at once.
+    if (nutritionMealHasContent(meal)) {
+      const confirmed = await this.confirmDialog.ask({
+        title: 'DELETE_MEAL_ASK_TITLE',
+        text: 'DELETE_MEAL_ASK_TEXT',
+        params: { name: this.displayMealName(meal, Math.max(day.meals.indexOf(meal), 0)) },
+        confirm: 'DELETE',
+        icon: 'trash-2',
+      });
+      if (!confirmed || !day.meals.includes(meal)) return;
+    }
+    day.meals = day.meals.filter(
       (m) => m.id !== meal.id
     );
-    this.updateDayTotals(this.selectedDay);
+    this.updateDayTotals(day);
   }
 
   renameMeal(meal: Meal, name: string) {
@@ -664,6 +699,34 @@ export class CreateMacroPlanComponent implements OnInit, DoCheck, AfterViewCheck
     );
 
     day.dayTargets = totals;
+  }
+
+  /** « Adapter les calories » window (nutrition-scale.ts). */
+  scaleOpen = false;
+
+  /** P/C/F scaled to the gram (kcal from them, as updateMealCalories): the day totals follow. */
+  afterScale(days: MealDay[]): void {
+    days.forEach((day) => this.updateDayTotals(day));
+    this.scaleOpen = false;
+  }
+
+  /** The open day can no longer change: a finished plan, or a client's past or followed day. */
+  get selectedDayLocked(): boolean {
+    return this.draft.readOnly || (!!this.selectedDay && nutritionDayLocked(this.clientMode.active, this.selectedDay));
+  }
+
+  /** « Répartir sur les N repas »: the day's P/C/F split over its meals (nutrition-scale.ts splitDayMacros). */
+  applyDaySplit(parts: MacroGrams[]): void {
+    const day = this.selectedDay;
+    if (!day || this.selectedDayLocked) return;
+    (day.meals || []).forEach((meal, index) => {
+      const part = parts[index];
+      if (!part) return;
+      meal.mealTargets = { ...(meal.mealTargets || { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 }),
+        proteinG: part.proteinG, carbsG: part.carbsG, fatG: part.fatG };
+      this.updateMealCalories(meal);
+    });
+    this.updateDayTotals(day);
   }
 
   /* ===================================================

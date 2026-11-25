@@ -28,15 +28,6 @@
           [(ngModel)]="searchTerm"
           (input)="onSearch()">
       </div>
-      <select
-        *ngIf="!showInvited && !showRequests"
-        [(ngModel)]="sortOrder"
-        (ngModelChange)="onSortChange()"
-        [attr.aria-label]="'CLIENT_SORT_LABEL' | translate">
-        <option value="name">{{ 'CLIENT_SORT_NAME' | translate }}</option>
-        <option value="name_desc">{{ 'CLIENT_SORT_NAME_DESC' | translate }}</option>
-        <option value="recent">{{ 'CLIENT_SORT_RECENT' | translate }}</option>
-      </select>
     </div>
 
     <div class="status-tabs">
@@ -115,7 +106,7 @@
             </ng-template>
           </div>
           <div class="col-actions invitation-actions">
-            <button type="button" class="action-btn" (click)="resendInvitation(invitation)"
+            <button type="button" class="action-btn" *ngIf="canResend(invitation)" (click)="resendInvitation(invitation)"
                     [disabled]="busyInvitationId === invitation.id" [title]="'RESEND_INVITATION' | translate">
               <i-feather name="send"></i-feather>
             </button>
@@ -252,6 +243,8 @@
             <span class="status-badge" [class]="getClientStatus(client).toLowerCase()">
               {{ getClientStatusLabel(client) }}
             </span>
+            <!-- 2026-11-23: a former client cannot be reactivated by this coach (only removed from the list) -->
+            <span class="former-client-note" *ngIf="client.formerClient">{{ formerClientLabel(client) | translate }}</span>
           </div>
 
           <div class="col-actions">
@@ -267,7 +260,7 @@
                 </button>
 
                 <button
-                  *ngIf="getClientStatus(client) === 'ARCHIVED'"
+                  *ngIf="canReactivate(client)"
                   class="dropdown-item success"
                   (click)="openStatusModal(client, 'ACTIVE', $event)">
                   <i-feather name="rotate-ccw"></i-feather>

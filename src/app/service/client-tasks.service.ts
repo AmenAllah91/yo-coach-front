@@ -76,12 +76,13 @@ export class ClientTasksService {
   private readonly url = `${environment.baseApiUrl}/api/client-tasks`;
   constructor(private http: HttpClient) {}
 
-  calendar(clientId: string, from: string, to: string, skipLoader = false): Observable<TaskCalendarResponse> {
+  /** `skipToast`: the caller says itself when the tasks cannot be read (no second, generic message). */
+  calendar(clientId: string, from: string, to: string, skipLoader = false, skipToast = false): Observable<TaskCalendarResponse> {
     const params = new HttpParams().set('clientId', clientId).set('from', from).set('to', to);
-    return this.http.get<TaskCalendarResponse>(`${this.url}/calendar`, {
-      params,
-      headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
-    });
+    const headers: Record<string, string> = {};
+    if (skipLoader) headers['X-Skip-Loader'] = 'true';
+    if (skipToast) headers['X-Skip-Toast'] = 'true';
+    return this.http.get<TaskCalendarResponse>(`${this.url}/calendar`, { params, headers });
   }
   createTask(value: ClientTaskPayload) { return this.http.post<ClientTaskPayload>(this.url, value, { headers: { 'X-Skip-Loader': 'true' } }); }
   updateTask(id: string, value: ClientTaskPayload) { return this.http.put<ClientTaskPayload>(`${this.url}/${id}`, value, { headers: { 'X-Skip-Loader': 'true' } }); }

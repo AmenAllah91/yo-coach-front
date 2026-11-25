@@ -57,6 +57,24 @@
 .month-cell .wr-kebab .material-icons { font-size: 14px; }
 .month-cell .wr-card { cursor: pointer; }
 
+/* A rest day in the month: one grey line with the moon, no frame and no « Jour de repos » under it (the workouts stand
+   out; most of a month is often rest). */
+.month-cell .wr-card.st-rest { padding: 1px 4px; border-color: transparent; background: transparent; box-shadow: none; }
+.month-cell .wr-card.st-rest:hover { transform: none; box-shadow: none; border-color: light-dark(#e5e7eb, #34393f); }
+.month-cell .wr-card.st-rest .wr-card__title { color: light-dark(#94a3b8, #8c919a); font-weight: 500; }
+.month-cell .wr-card.st-rest .wr-card__meta,
+.month-cell .wr-card.st-rest .wr-card__status { display: none; }
+
+/* « Relancer » under a missed card (and under a week at 0 %): a small button that opens the chat, message ready. */
+.nudge-button { align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; margin-top: 3px; padding: 2px 8px;
+  border: 1px solid light-dark(#f3c3c3, #5a2c2c); border-radius: 999px; background: light-dark(#fff5f5, #2a1b1b);
+  color: light-dark(#b42318, #f19999); font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+.nudge-button .material-icons { font-size: 13px; }
+.nudge-button:hover { border-color: light-dark(#e58b8b, #8a3b3b); background: light-dark(#ffe9e9, #3a2020); }
+/* In the narrow « Suivi » column: the icon only (its name on hover). */
+.nudge-button--week { align-self: center; margin-top: 6px; padding: 3px 7px; }
+.nudge-button--week .material-icons { font-size: 14px; }
+
 /* The day panel: the ⋮ next to « Ouvrir dans l'éditeur », always shown, the size of its buttons. */
 .dp-kebab { position: relative; display: inline-flex; }
 .dp-kebab .wr-menu { position: relative; top: auto; right: auto; }

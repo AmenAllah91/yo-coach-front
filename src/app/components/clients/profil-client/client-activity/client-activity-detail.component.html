@@ -53,10 +53,8 @@
         <section *ngIf="activity.totals.calories || activity.totals.protein || activity.totals.carbs || activity.totals.fat">
           <!-- The plan's targets for the day (not what the client ate). -->
           <small>{{ 'DAY_TARGETS' | translate }}</small>
-          <div><span><small>{{ 'CALORIES' | translate }}</small><strong>{{ activity.totals.calories | number:'1.0-0' }} <em>kcal</em></strong></span>
-            <span><small>{{ 'PROTEIN' | translate }}</small><strong>{{ activity.totals.protein | number:'1.0-0' }} <em>g</em></strong></span>
-            <span><small>{{ 'CARBS' | translate }}</small><strong>{{ activity.totals.carbs | number:'1.0-0' }} <em>g</em></strong></span>
-            <span><small>{{ 'FAT' | translate }}</small><strong>{{ activity.totals.fat | number:'1.0-0' }} <em>g</em></strong></span></div>
+          <app-macro-chart class="activity-detail-chart" [calories]="activity.totals.calories" [protein]="activity.totals.protein"
+                           [carbs]="activity.totals.carbs" [fat]="activity.totals.fat"></app-macro-chart>
         </section>
       </div>
 
@@ -76,10 +74,10 @@
                 <b>{{ mealIndex + 1 }}</b><strong>{{ meal.name || (('MEAL' | translate) + ' ' + (mealIndex + 1)) }}</strong>
                 <em [attr.data-state]="nutritionMealState(mealLog)">{{ nutritionMealStateLabel(mealLog) }}</em>
                 <ng-container *ngIf="nutritionMealState(mealLog) !== 'Skipped'">
-                  <span>{{ mealLog.calories || meal.calories || 0 }} kcal</span>
-                  <span>{{ mealLog.protein || meal.protein || 0 }} g {{ 'PROTEIN' | translate }}</span>
-                  <span>{{ mealLog.carbs || meal.carbs || 0 }} g {{ 'CARBS' | translate }}</span>
-                  <span>{{ mealLog.fat || meal.fat || 0 }} g {{ 'FAT' | translate }}</span>
+                  <span>{{ nutritionMealValue(mealLog, meal, 'calories') }} kcal</span>
+                  <span>{{ nutritionMealValue(mealLog, meal, 'protein') }} g {{ 'PROTEIN' | translate }}</span>
+                  <span>{{ nutritionMealValue(mealLog, meal, 'carbs') }} g {{ 'CARBS' | translate }}</span>
+                  <span>{{ nutritionMealValue(mealLog, meal, 'fat') }} g {{ 'FAT' | translate }}</span>
                 </ng-container>
               </header>
               <div class="nutrition-meal__content">

@@ -8,10 +8,17 @@
       <p>{{ (publicTemplates ? (isAdmin ? 'PUBLIC_TEMPLATES_SUBTITLE_ADMIN' : 'PUBLIC_TEMPLATES_SUBTITLE') : 'PROGRAM_LIBRARY_SUBTITLE') | translate }}</p>
     </div>
     <!-- Public templates: only the admin creates them; a coach copies them. -->
-    <button class="primary-btn" appWriteAction *ngIf="!readOnlyTemplates" (click)="createProgram()">
-      <i-feather name="plus"></i-feather>
-      {{ (publicTemplates ? 'CREATE_PUBLIC_TEMPLATE' : 'CREATE_PROGRAM') | translate }}
+    <!-- On the « Fichiers » tab the main button imports a PDF / Excel at once. -->
+    <button class="primary-btn" appWriteAction *ngIf="!readOnlyTemplates && programTypeFilter === 'FILES' && workoutFileEnabled; else createButton" (click)="openImportFileWorkout()">
+      <i-feather name="upload"></i-feather>
+      {{ 'PROGRAM_FILES.IMPORT_PDF_EXCEL' | translate }}
     </button>
+    <ng-template #createButton>
+      <button class="primary-btn" appWriteAction *ngIf="!readOnlyTemplates" (click)="createProgram()">
+        <i-feather name="plus"></i-feather>
+        {{ (publicTemplates ? 'CREATE_PUBLIC_TEMPLATE' : 'CREATE_PROGRAM') | translate }}
+      </button>
+    </ng-template>
   </div>
 
   <div class="content">
@@ -34,18 +41,14 @@
       </div>
 
       <div class="type-filters" *ngIf="activeTab !== 'templates' && workoutFileEnabled">
-        <button class="type-filter" [class.active]="programTypeFilter === 'ALL'" (click)="setProgramTypeFilter('ALL')">{{ 'ALL' | translate }}</button>
+<!-- « Programmes » | « Fichiers » (audit PDF/Excel 2026-11-23, lot 3): never mixed in one list. -->
         <button class="type-filter" [class.active]="programTypeFilter === 'APP'" (click)="setProgramTypeFilter('APP')">
           <i-feather name="grid"></i-feather>
-          {{ 'APP_PROGRAMS' | translate }}
+          {{ 'PROGRAM_FILES.TAB_PROGRAMS' | translate }}
         </button>
-        <button class="type-filter type-filter--pdf" [class.active]="programTypeFilter === 'PDF'" (click)="setProgramTypeFilter('PDF')">
+        <button class="type-filter type-filter--pdf" [class.active]="programTypeFilter === 'FILES'" (click)="setProgramTypeFilter('FILES')">
           <i-feather name="file-text"></i-feather>
-          PDF
-        </button>
-        <button class="type-filter type-filter--excel" [class.active]="programTypeFilter === 'EXCEL'" (click)="setProgramTypeFilter('EXCEL')">
-          <i-feather name="file-text"></i-feather>
-          Excel
+          {{ 'PROGRAM_FILES.TAB_FILES' | translate }}
         </button>
       </div>
     </div>
@@ -79,13 +82,13 @@
           </div>
 
           <div class="col-type" data-label="Type" *ngIf="workoutFileEnabled">
-            <span class="type-badge" [ngClass]="{
+            <span class="type-badge" [title]="getProgramTypeLabel(program)" [ngClass]="{
               'type-badge--app': getProgramTypeKey(program) === 'APP',
               'type-badge--pdf': getProgramTypeKey(program) === 'PDF',
               'type-badge--excel': getProgramTypeKey(program) === 'EXCEL'
             }">
               <i-feather [name]="getProgramIconName(program)"></i-feather>
-              {{ getProgramTypeLabel(program) }}
+              <span class="type-badge__text">{{ getProgramTypeLabel(program) }}</span>
             </span>
           </div>
 
@@ -125,6 +128,16 @@
                   <button class="dropdown-item" (click)="downloadProgramFile(program)">
                     <i-feather name="download"></i-feather>
                     {{ 'DOWNLOAD_FILE' | translate }}
+                  </button>
+
+                  <button class="dropdown-item" type="button" (click)="renameLibraryFile(program)">
+                    <i-feather name="edit-2"></i-feather>
+                    {{ 'PROGRAM_FILES.RENAME' | translate }}
+                  </button>
+
+                  <button class="dropdown-item" type="button" [disabled]="libraryReplaceSaving" (click)="replaceLibraryFile(program)">
+                    <i-feather name="refresh-cw"></i-feather>
+                    {{ 'PROGRAM_FILES.REPLACE' | translate }}
                   </button>
 
                   <button class="dropdown-item delete" (click)="deleteProgram(program)">
@@ -177,13 +190,20 @@
 
       <div class="no-programs" *ngIf="filteredPrograms.length === 0 && !isLoading">
         <app-empty-state
-          *ngIf="!publicTemplates && !searchTerm && programTypeFilter === 'ALL'"
+          *ngIf="!publicTemplates && !searchTerm && programTypeFilter !== 'FILES'"
           icon="folder"
           title="EMPTY_PROGRAMS_TITLE"
           text="EMPTY_PROGRAMS_TEXT"
           actionLabel="CREATE_PROGRAM"
           (action)="createProgram()"></app-empty-state>
-        <p *ngIf="searchTerm || (!publicTemplates && programTypeFilter !== 'ALL')">{{ 'NO_PROGRAMS_FOUND' | translate }}</p>
+        <app-empty-state
+          *ngIf="!publicTemplates && !searchTerm && programTypeFilter === 'FILES'"
+          icon="file-text"
+          title="PROGRAM_FILES.LIBRARY_EMPTY_TITLE"
+          text="PROGRAM_FILES.LIBRARY_EMPTY_TEXT"
+          actionLabel="PROGRAM_FILES.IMPORT_PDF_EXCEL"
+          (action)="openImportFileWorkout()"></app-empty-state>
+        <p *ngIf="searchTerm">{{ 'NO_PROGRAMS_FOUND' | translate }}</p>
         <p *ngIf="publicTemplates && !searchTerm">{{ (isAdmin ? 'PUBLIC_TEMPLATES_EMPTY_ADMIN' : 'PUBLIC_TEMPLATES_EMPTY') | translate }}</p>
       </div>
     </div>
@@ -298,7 +318,7 @@
       </div>
       <div class="import-workout-content">
         <label class="upload-zone" (drop)="onImportDrop($event)" (dragover)="onImportDragOver($event)">
-          <input type="file" accept=".pdf,.xls,.xlsx" (change)="onImportFileSelected($event)" hidden />
+          <input type="file" accept=".pdf,.xlsx" (change)="onImportFileSelected($event)" hidden />
           <div class="upload-icon"><i-feather name="upload-cloud"></i-feather></div>
           <strong>{{ importFile ? importFile.name : ('DROP_OR_BROWSE_FILE' | translate) }}</strong>
           <span>{{ 'WORKOUT_FILE_REQUIREMENTS' | translate }}</span>
@@ -325,35 +345,21 @@
         <button class="btn-cancel" (click)="closeImportFileWorkout()">{{ 'CANCEL' | translate }}</button>
         <button class="save-template-btn" [disabled]="!importFile || !importProgramName.trim() || importSaving" (click)="saveImportedFileWorkout()">
           <i-feather name="save"></i-feather>
-          {{ (importSaving ? 'SAVING' : (assignImportedProgram ? 'SAVE_AND_ASSIGN' : 'SAVE_PROGRAM')) | translate }}
+          <ng-container *ngIf="importSaving; else importLabel">{{ 'PROGRAM_FILES.UPLOADING' | translate: { percent: uploadPercent } }}</ng-container>
+          <ng-template #importLabel>{{ (assignImportedProgram ? 'SAVE_AND_ASSIGN' : 'SAVE_PROGRAM') | translate }}</ng-template>
         </button>
       </div>
     </div>
   </div>
 
-  <div class="file-preview-overlay" *ngIf="showFilePreviewModal" (click)="closeFilePreviewModal()">
-    <div class="file-preview-modal" (click)="$event.stopPropagation()">
-      <div class="file-preview-header">
-        <div>
-          <h3>{{ previewProgram?.name }}</h3>
-          <p>{{ getProgramResourceLabel(previewProgram!) }} <span *ngIf="previewProgram?.fileSizeBytes">· {{ formatFileSize(previewProgram?.fileSizeBytes) }}</span></p>
-        </div>
-        <div class="file-preview-actions">
-          <button class="btn-cancel" (click)="closeFilePreviewModal()">{{ 'CLOSE' | translate }}</button>
-          <button class="save-template-btn" (click)="downloadProgramFile(previewProgram!)">{{ 'OPEN_DOWNLOAD' | translate }}</button>
-        </div>
-      </div>
-      <div class="file-preview-body">
-        <iframe *ngIf="previewProgram?.resourceType === 'PDF'" [src]="workoutService.getWorkoutFileUrl(previewProgram)" [attr.title]="'FILE_PREVIEW' | translate"></iframe>
-        <div class="excel-placeholder" *ngIf="previewProgram?.resourceType !== 'PDF'">
-          <i-feather name="file-text"></i-feather>
-          <h4>{{ previewProgram?.originalFileName || previewProgram?.name }}</h4>
-          <p>{{ 'EXCEL_PREVIEW_BROWSER_UNAVAILABLE' | translate }}</p>
-        </div>
-      </div>
-    </div>
-  </div>
+  <app-program-file-viewer *ngIf="previewProgram" [plan]="previewProgram" kind="workout" (closed)="closeFilePreviewModal()"></app-program-file-viewer>
 </div>
 
 
 <app-workout-ai-dialog [language]="aiLanguage" (drafted)="openWorkoutAiDraft($event)"></app-workout-ai-dialog>
+
+<!-- « Remplacer le fichier » of a library file (audit PDF/Excel 2026-11-23, lot 3). -->
+<input id="library-workout-replace-input" type="file" accept=".pdf,.xlsx" hidden (change)="onLibraryReplaceSelected($event)" />
+<div class="library-upload-progress" *ngIf="libraryReplaceSaving" role="status">
+  {{ 'PROGRAM_FILES.UPLOADING' | translate: { percent: libraryReplacePercent } }}
+</div>

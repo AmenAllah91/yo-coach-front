@@ -23,6 +23,12 @@
       <i-feather name="edit-2" class="np-ico"></i-feather>
       <span class="np-toolbar__editlabel">{{ 'PLAN_EDIT_BUTTON' | translate }}</span>
     </button>
+    <!-- « Adapter les calories » : un seul facteur pour tous les jours modifiables, rien n'est enregistré tout seul. -->
+    <button type="button" class="np-toolbar__edit" *ngIf="!draft.readOnly" (click)="scaleOpen = true"
+            [title]="'NUTRITION_SCALE.HINT' | translate" [attr.aria-label]="'NUTRITION_SCALE.BUTTON' | translate">
+      <i-feather name="sliders" class="np-ico"></i-feather>
+      <span class="np-toolbar__editlabel">{{ 'NUTRITION_SCALE.BUTTON' | translate }}</span>
+    </button>
     <button type="button" class="np-toolbar__weeks" (click)="mobileStructureOpen = !mobileStructureOpen" [attr.aria-expanded]="mobileStructureOpen" [attr.aria-label]="'PROGRAM_STRUCTURE' | translate">
       <i-feather name="list" class="np-ico"></i-feather>
       <span>{{ 'PROGRAM_STRUCTURE' | translate }}</span>
@@ -32,7 +38,7 @@
         <ng-container *ngIf="draft.saving">{{ 'SAVING' | translate }}</ng-container>
         <ng-container *ngIf="!draft.saving && draft.error">{{ draft.error }}</ng-container>
         <!-- Un changement pas encore enregistré : on le dit tant que le coach n'a pas cliqué sur Enregistrer. -->
-        <ng-container *ngIf="!draft.saving && !draft.error && cal.unsaved"><span class="np-unsaved-dot" aria-hidden="true"></span><span class="np-unsaved-long">{{ cal.ht('Unsaved changes', 'Modifications non enregistrées') }}</span><span class="np-unsaved-short">{{ cal.ht('Not saved', 'Non enregistré') }}</span></ng-container>
+        <ng-container *ngIf="!draft.saving && !draft.error && cal.unsaved"><span class="np-unsaved-dot" aria-hidden="true"></span><span class="np-unsaved-long">{{ 'UNSAVED_CHANGES' | translate }}</span><span class="np-unsaved-short">{{ 'NUTRITION_CALENDAR.NOT_SAVED' | translate }}</span></ng-container>
         <ng-container *ngIf="!draft.saving && !draft.error && !cal.unsaved && draft.savedAt"><svg class="np-toolbar__ok" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg><span class="np-toolbar__savedlabel">{{ 'WORKOUT_SAVED' | translate }}</span> {{ draft.savedAt | date:'HH:mm' }}</ng-container>
       </span>
       <button type="button" class="np-toolbar__savebtn" [class.has-changes]="cal.unsaved && !draft.saving" [class.is-busy]="draft.saving" [attr.aria-busy]="draft.saving" (click)="draft.saveDraft(days, savePlanFn)" [disabled]="draft.saving" [attr.aria-label]="'SAVE' | translate">
@@ -57,7 +63,7 @@
       [readOnly]="draft.readOnly"
       [canAddWeek]="!(cal.weekCount >= cal.maxWeeks && !(days.length % 7))"
       [canCopyDay]="copy.canCopyDay"
-      [addWeekLabel]="cal.ht('Add a week', 'Ajouter une semaine')"
+      [addWeekLabel]="'NUTRITION_CALENDAR.ADD_WEEK' | translate"
       (daySelect)="selectDay($event)"
       (weekToggle)="draft.toggleWeek($event.key)"
       (toggleAll)="draft.toggleAllWeeks(nutritionWeeks.length)"
@@ -71,6 +77,8 @@
 
     <!-- ===== Main ===== -->
 <main class="np-main">
+      <!-- Library plan: clients who got it have their own copy, changes here do not reach them. -->
+      <p class="np-copies-note" *ngIf="!clientMode.active && draft.currentPlanId" role="note"><span aria-hidden="true">ℹ</span> {{ 'LIBRARY_COPIES_NUTRITION' | translate }}</p>
       <!-- A finished or stopped client plan (A9): read-only, « Dupliquer » to reuse it. -->
       <app-locked-program-banner *ngIf="draft.readOnly" class="np-locked-banner" [stoppedAt]="draft.stoppedAt" [busy]="clientMode.duplicating" (duplicate)="duplicateLocked()"></app-locked-program-banner>
       <!-- A longer client plan that reaches the next one (P9): banner now, « Décaler » / « Retirer » at the save. -->
@@ -202,17 +210,17 @@
         (detailedChange)="cal.setDetailed($event)"
       ></app-program-calendar>
 
-      <button type="button" class="pc-backdrop" *ngIf="cal.editing || cal.embedded" tabindex="-1" [attr.aria-label]="cal.ht('Close', 'Fermer')"
+      <button type="button" class="pc-backdrop" *ngIf="cal.editing || cal.embedded" tabindex="-1" [attr.aria-label]="'CLOSE' | translate"
               (click)="cal.win.open ? cal.win.requestClose() : cal.closeEmbedded()"></button>
       <!-- Ouvert par-dessus la fiche du client : la fenêtre du jour seule ; pendant la lecture du programme, son cadre. -->
       <div class="pc-embed-loading" *ngIf="cal.embedded && !cal.win.open" role="status" aria-live="polite">
         <ng-container *ngIf="!false; else embedError">
           <span class="pc-embed-loading__spin" aria-hidden="true"></span>
-          <span>{{ cal.ht('Opening the day…', 'Ouverture du jour…') }}</span>
+          <span>{{ 'NUTRITION_CALENDAR.OPENING_DAY' | translate }}</span>
         </ng-container>
         <ng-template #embedError>
-          <span>{{ cal.ht('This day could not be opened.', "Ce jour n'a pas pu être ouvert.") }}</span>
-          <button type="button" class="pc-embed-loading__close" (click)="cal.closeEmbedded()">{{ cal.ht('Close', 'Fermer') }}</button>
+          <span>{{ 'NUTRITION_CALENDAR.DAY_OPEN_FAILED' | translate }}</span>
+          <button type="button" class="pc-embed-loading__close" (click)="cal.closeEmbedded()">{{ 'CLOSE' | translate }}</button>
         </ng-template>
       </div>
 
@@ -312,36 +320,10 @@
       </span>
             </div>
 
-            <div class="np-day-total__grid">
-              <div class="np-day-total__item">
-                <div class="np-day-total__value">
-                  {{ selectedDay.dayTargets?.calories || 0 }}
-                </div>
-                <div class="np-day-total__label">{{ 'CALORIES' | translate }}</div>
-                <div class="np-day-total__unit">kcal</div>
-              </div>
-
-              <div class="np-day-total__item">
-                <div class="np-day-total__value">
-                  {{ selectedDay.dayTargets?.proteinG || 0 }}<span class="np-inline-unit">g</span>
-                </div>
-                <div class="np-day-total__label">{{ 'PROTEIN' | translate }}</div>
-              </div>
-
-              <div class="np-day-total__item">
-                <div class="np-day-total__value">
-                  {{ selectedDay.dayTargets?.carbsG || 0 }}<span class="np-inline-unit">g</span>
-                </div>
-                <div class="np-day-total__label">{{ 'CARBS' | translate }}</div>
-              </div>
-
-              <div class="np-day-total__item">
-                <div class="np-day-total__value">
-                  {{ selectedDay.dayTargets?.fatG || 0 }}<span class="np-inline-unit">g</span>
-                </div>
-                <div class="np-day-total__label">{{ 'FAT' | translate }}</div>
-              </div>
-            </div>
+            <!-- Donut like MyFitnessPal: calories in the middle, each macro's share around it. -->
+            <app-macro-chart class="np-day-total__chart"
+                             [calories]="selectedDay.dayTargets?.calories" [protein]="selectedDay.dayTargets?.proteinG"
+                             [carbs]="selectedDay.dayTargets?.carbsG" [fat]="selectedDay.dayTargets?.fatG"></app-macro-chart>
           </div>
 
           <div class="np-sep"></div>
@@ -353,13 +335,17 @@
           <p class="wk-restbox__text">{{ 'CHEAT_MEAL_DESCRIPTION' | translate }}</p>
             <!-- Le jour libre redevient un jour avec des repas d'un clic (avant : seulement le bouton du haut). -->
             <button type="button" class="np-rest-turn" *ngIf="!draft.readOnly" (click)="toggleCheatMeal()">
-              <i-feather name="coffee" class="np-rest-turn__ico"></i-feather>{{ cal.ht('Put meals back', 'Remettre des repas') }}
+              <i-feather name="coffee" class="np-rest-turn__ico"></i-feather>{{ 'NUTRITION_CALENDAR.PUT_MEALS_BACK' | translate }}
             </button>
         </div>
 
         <ng-container *ngIf="!selectedDay?.cheatMeal">
         <!-- Meals Title -->
         <div class="np-subtle">{{ 'MEALS_TITLE' | translate }}</div>
+
+        <!-- « Total du jour » : P/G/L du jour répartis sur ses repas (jour ouvert seulement, puis « Copier le jour »). -->
+        <app-day-macro-split *ngIf="selectedDay && !draft.readOnly && selectedDay.meals?.length" [day]="selectedDay"
+                             [locked]="selectedDayLocked" (splitDay)="applyDaySplit($event)"></app-day-macro-split>
 
         <!-- ===== Meals Loop ===== -->
         <ng-container *ngIf="selectedDay">
@@ -384,17 +370,19 @@
                 <div class="np-meal-title-row">
                   <!-- Macros left at 0: kept in the plan, not shown to the client (backlog-programmes.md R3). -->
                   <h4 class="np-h6 np-brand">{{ displayMealName(meal, mealIndex) }}</h4><small class="np-meal-status" [class.is-hidden]="draft.mealHidden(meal)" [class.is-warning]="draft.mealToFix(meal)">{{ draft.mealStatus(meal) }}</small>
-                  <button class="np-mini" (click)="promptMealRename(meal)">
+                  <button class="np-mini" type="button" (click)="promptMealRename(meal)" [attr.aria-label]="'RENAME_MEAL' | translate">
                     <i-feather name="edit-2" class="np-ico"></i-feather>
                   </button>
                 </div>
               </div>
 
               <div class="np-meal__right">
+                <app-macro-chart class="np-meal-chart" [compact]="true" [calories]="meal.mealTargets.calories"
+                                 [protein]="meal.mealTargets.proteinG" [carbs]="meal.mealTargets.carbsG" [fat]="meal.mealTargets.fatG"></app-macro-chart>
                 <div class="np-badges">
                   <div class="np-badge">
                     <div class="np-badge__label">{{ 'CALORIES' | translate }}</div>
-                    <div class="np-badge__val">{{ meal.mealTargets.calories }} Kcal</div>
+                    <div class="np-badge__val">{{ 'CLIENT_PROGRAMS.KCAL' | translate: { count: meal.mealTargets.calories } }}</div>
                   </div>
 
                   <div class="np-badge">
@@ -413,7 +401,7 @@
                   </div>
                 </div>
 
-                <button class="np-iconbtn" (click)="removeMeal(meal)">
+                <button class="np-iconbtn" type="button" (click)="removeMeal(meal)" [attr.aria-label]="'DELETE_MEAL' | translate">
                   <i-feather name="trash-2" class="np-ico"></i-feather>
                 </button>
               </div>
@@ -429,6 +417,7 @@
                   <input
                     class="np-input np-input--unit"
                     type="number"
+                    min="0"
                     [(ngModel)]="meal.mealTargets.proteinG"
                     (input)="updateMealCalories(meal)"
                     data-unit="g"
@@ -440,6 +429,7 @@
                   <input
                     class="np-input np-input--unit"
                     type="number"
+                    min="0"
                     [(ngModel)]="meal.mealTargets.carbsG"
                     (input)="updateMealCalories(meal)"
                     data-unit="g"
@@ -451,6 +441,7 @@
                   <input
                     class="np-input np-input--unit"
                     type="number"
+                    min="0"
                     [(ngModel)]="meal.mealTargets.fatG"
                     (input)="updateMealCalories(meal)"
                     data-unit="g"
@@ -472,6 +463,28 @@
           </article>
           </div>
         </ng-container>
+
+        <!-- Rename a meal: the same window as the full plan editor (_nutrition-rename-modal.scss). -->
+        <div class="np-rename-modal" *ngIf="renamingMeal" role="dialog" aria-modal="true" aria-labelledby="editMacroMealNameTitle">
+          <button type="button" class="np-rename-modal__backdrop" [attr.aria-label]="'CLOSE_EDIT_MEAL_NAME_DIALOG' | translate" (click)="closeRenameMealModal()"></button>
+          <form class="np-rename-modal__panel" (ngSubmit)="confirmRenameMeal()">
+            <header class="np-rename-modal__header">
+              <div>
+                <h2 id="editMacroMealNameTitle">{{ 'EDIT_MEAL_NAME' | translate }}</h2>
+                <p>{{ 'EDIT_MEAL_NAME_SUBTITLE' | translate }}</p>
+              </div>
+              <button type="button" class="np-rename-modal__close" [attr.aria-label]="'CLOSE' | translate" (click)="closeRenameMealModal()"><i-feather name="x"></i-feather></button>
+            </header>
+            <div class="np-rename-modal__body">
+              <label for="newMacroMealName">{{ 'NEW_MEAL_NAME' | translate }}</label>
+              <input id="newMacroMealName" name="newMacroMealName" type="text" maxlength="100" required autofocus [(ngModel)]="mealNameDraft" />
+            </div>
+            <footer class="np-rename-modal__footer">
+              <button type="button" class="np-rename-modal__cancel" (click)="closeRenameMealModal()">{{ 'CANCEL' | translate }}</button>
+              <button type="submit" class="np-rename-modal__update" [disabled]="!mealNameDraft.trim()">{{ 'UPDATE' | translate }}</button>
+            </footer>
+          </form>
+        </div>
 
         <!-- Add Meal -->
         <div class="np-addmeal">
@@ -616,3 +629,11 @@
   (fill)="selectDay(draft.emptyDayToFill($event) || selectedDay!)"
   (close)="draft.closeEmptyDays()"
 ></app-empty-days-modal>
+<app-scale-calories-dialog
+  *ngIf="scaleOpen"
+  [days]="days"
+  mode="MEAL_MACROS"
+  [clientPlan]="clientMode.active"
+  (closed)="scaleOpen = false"
+  (scaled)="afterScale($event)"
+></app-scale-calories-dialog>

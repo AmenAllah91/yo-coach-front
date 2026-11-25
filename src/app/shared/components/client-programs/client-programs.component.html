@@ -13,6 +13,20 @@
     </div>
   </header>
 
+  <!-- « Programmes » | « Fichiers » (audit PDF/Excel 2026-11-23, lot 3): the files never sit among the programs. -->
+  <div class="cp-tabs" role="tablist" *ngIf="!loading && overview">
+    <button type="button" role="tab" [class.is-active]="section === 'PROGRAMS'" [attr.aria-selected]="section === 'PROGRAMS'"
+            (click)="section = 'PROGRAMS'">{{ 'PROGRAM_FILES.TAB_PROGRAMS' | translate }}</button>
+    <button type="button" role="tab" [class.is-active]="section === 'FILES'" [attr.aria-selected]="section === 'FILES'"
+            (click)="section = 'FILES'">
+      <i-feather name="file-text" class="cp-ico"></i-feather>{{ 'PROGRAM_FILES.TAB_FILES' | translate }}
+      <span class="cp-tabs-count" *ngIf="files.length">{{ files.length }}</span>
+    </button>
+  </div>
+
+  <app-program-files-list *ngIf="!loading && overview && section === 'FILES'" [rows]="files" [kinds]="[kind]" [writable]="writable"
+    [actions]="['import', 'preview', 'rename', 'replace', 'dates', 'remove']" (action)="onFileAction($event)"></app-program-files-list>
+
   <!-- Loading (first visit only: the last read is shown at once afterwards) -->
   <div class="cp-skeleton" *ngIf="loading" aria-busy="true">
     <div class="cp-skel cp-skel--card"></div>
@@ -25,7 +39,12 @@
     <button type="button" class="cp-link" (click)="reload()">{{ 'CLIENT_PROGRAMS.RETRY' | translate }}</button>
   </div>
 
-  <ng-container *ngIf="!loading && overview as o">
+  <ng-container *ngIf="!loading && section === 'PROGRAMS' && overview as o">
+    <p class="cp-filenote" *ngIf="currentFile" role="status">
+      <i-feather name="file-text" class="cp-ico"></i-feather>
+      <span>{{ 'PROGRAM_FILES.CURRENT_IS_FILE' | translate: { name: currentFile.name } }}</span>
+      <button type="button" class="cp-link" (click)="section = 'FILES'">{{ 'PROGRAM_FILES.TAB_FILES' | translate }}</button>
+    </p>
     <!-- What needs the coach (P2): one line each -->
     <div class="cp-alerts" *ngIf="alerts.length && writable" role="status">
       <div class="cp-alert" *ngFor="let view of alerts">

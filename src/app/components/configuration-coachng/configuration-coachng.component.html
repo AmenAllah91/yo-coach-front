@@ -175,13 +175,32 @@
         <button class="btn btn--save-dark" type="button" [disabled]="saving || !hasConfigChanges" (click)="onSave()">{{ (saving ? 'SAVING' : 'SAVE_CHANGES') | translate }}</button>
       </div>
     </div>
-    <div class="browser-notification-card">
-      <div class="notification-icon">♧</div>
-      <h2>{{ 'ENABLE_NOTIFICATIONS' | translate }}</h2>
-      <p>{{ 'ENABLE_NOTIFICATIONS_DESCRIPTION' | translate }}</p>
-      <button class="btn" [class.btn--accent]="!browserNotificationsEnabled" [class.btn--outline]="browserNotificationsEnabled" type="button" (click)="enableBrowserNotifications()">
-        {{ (browserNotificationsEnabled ? 'DISABLE_NOTIFICATIONS' : 'ENABLE_NOTIFICATIONS') | translate }}
-      </button>
+    <!-- Master switch (2026-11-23): it cuts every notification (phone, bell, message badges), not only this browser. -->
+    <div class="settings-card notification-list notification-master">
+      <div class="notification-row">
+        <div class="notification-row__text">
+          <strong id="notif-all-title">{{ 'NOTIF_ALL_TITLE' | translate }}</strong>
+          <small>{{ 'NOTIF_ALL_HINT' | translate }}</small>
+        </div>
+        <button class="toggle" type="button" role="switch" aria-labelledby="notif-all-title"
+                [attr.aria-checked]="browserNotificationsEnabled" [class.toggle--on]="browserNotificationsEnabled"
+                (click)="enableBrowserNotifications()">
+          <span class="toggle__thumb" [class.toggle__thumb--on]="browserNotificationsEnabled"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- This browser's own permission: the pop-up alerts shown by the header (window.Notification). -->
+    <div class="settings-card notification-list" *ngIf="browserPermission !== 'unsupported'">
+      <div class="notification-row">
+        <div class="notification-row__text">
+          <strong>{{ 'NOTIF_BROWSER_TITLE' | translate }}</strong>
+          <small [class.notification-row__state--denied]="browserPermission === 'denied'">{{ browserPermissionText | translate }}</small>
+        </div>
+        <button class="btn btn--outline" type="button" *ngIf="browserPermission === 'default'" (click)="askBrowserPermission()">
+          {{ 'NOTIF_BROWSER_ALLOW' | translate }}
+        </button>
+      </div>
     </div>
 
     <div class="email-notifications-section">

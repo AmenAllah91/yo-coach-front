@@ -1,15 +1,16 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
+import { MacroChartComponent } from '@shared/components/macro-chart/macro-chart.component';
 
 /**
- * Total nutrition of a meal or a recipe: calories first, then each macro with its share of the calories
- * (protein and carbs 4 kcal/g, fat 9 kcal/g) and a split bar, so the coach reads the balance at a glance.
+ * Total nutrition of a meal or a recipe as a donut (calories in the middle, each macro's share of the calories:
+ * protein and carbs 4 kcal/g, fat 9 kcal/g), so the coach reads the balance at a glance.
  */
 @Component({
   selector: 'app-meal-totals',
   standalone: true,
-  imports: [CommonModule, TranslateModule],
+  imports: [CommonModule, TranslateModule, MacroChartComponent],
   templateUrl: './meal-totals.component.html',
   styleUrls: ['./meal-totals.component.scss'],
 })

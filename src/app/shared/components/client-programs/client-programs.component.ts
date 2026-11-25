@@ -32,7 +32,7 @@ import {
 
 export type ClientProgramActionType =
   | 'assign' | 'edit' | 'view' | 'dates' | 'remove' | 'duplicate' | 'open' | 'download' | 'replace' | 'calendar'
-  | 'shift' | 'message';
+  | 'shift' | 'message' | 'import' | 'rename' | 'preview';
 
 /** What the coach asked for; the tab that hosts the page does it (it has the windows and the plans). */
 export interface ClientProgramAction {
@@ -70,10 +70,11 @@ interface AlertView {
  * The client's « Programmes » tab (backlog-programmes.md P1-P8), for workout and nutrition: what needs the coach,
  * where the client is (the week day by day), what comes next, then the upcoming and finished programs.
  */
+import { ProgramFileAction, ProgramFileRow, ProgramFilesListComponent, fileRows } from '@shared/components/program-files-list/program-files-list.component';
 @Component({
   selector: 'app-client-programs',
   standalone: true,
-  imports: [CommonModule, TranslateModule, FeatherModule, ClientActivityDetailComponent, ProgramCalendarComponent],
+  imports: [CommonModule, TranslateModule, FeatherModule, ClientActivityDetailComponent, ProgramCalendarComponent, ProgramFilesListComponent],
   templateUrl: './client-programs.component.html',
   styleUrls: ['./client-programs.component.scss'],
 })
@@ -83,6 +84,16 @@ export class ClientProgramsComponent implements OnInit, OnChanges {
   @Input() clientName = '';
   @Input() canWrite = true;
   @Output() action = new EventEmitter<ClientProgramAction>();
+
+  /**
+   * « Programmes » | « Fichiers » (audit PDF/Excel 2026-11-23, lot 3, the coach's choice): the PDF / Excel programs
+   * are listed apart, never among the programs built in the app.
+   */
+  section: 'PROGRAMS' | 'FILES' = 'PROGRAMS';
+  files: ProgramFileRow[] = [];
+  /** The file the client follows right now (the « Programmes » side says so in one line). */
+  currentFile: OverviewItem | null = null;
+  private sectionPicked = false;
 
   overview: ProgramOverview | null = null;
   loading = true;
@@ -234,6 +245,23 @@ export class ClientProgramsComponent implements OnInit, OnChanges {
     }
     const weeks = overview.current?.allWeeks?.length || 0;
     if (this.shownWeek && this.shownWeek > weeks) this.shownWeek = null;
+    // The files go to their own tab: the programs' side only keeps the programs built in the app.
+    const finishedFiles = (overview.finished || []).filter(item => item.file).length;
+    this.files = fileRows(overview, this.kind);
+    this.currentFile = overview.current?.program.file ? overview.current.program : null;
+    overview = {
+      ...overview,
+      current: overview.current?.program.file ? null : overview.current,
+      next: overview.next?.program.file ? null : overview.next,
+      upcoming: (overview.upcoming || []).filter(item => !item.file),
+      finished: (overview.finished || []).filter(item => !item.file),
+      finishedCount: Math.max(0, (overview.finishedCount || 0) - finishedFiles),
+    };
+    if (!this.sectionPicked) {
+      this.sectionPicked = true;
+      const programs = !!overview.current || !!overview.next || overview.upcoming.length > 0 || overview.finishedCount > 0;
+      if (!programs && this.files.length) this.section = 'FILES';
+    }
     this.overview = overview;
     this.finished = overview.finished || [];
     this.loading = false;
@@ -282,11 +310,24 @@ export class ClientProgramsComponent implements OnInit, OnChanges {
     this.loadingMore = true;
     this.schedule.overview(this.kind, this.clientId, this.finished.length).subscribe({
       next: overview => {
-        this.finished = [...this.finished, ...(overview.finished || [])];
+        const more = overview.finished || [];
+        this.finished = [...this.finished, ...more.filter(item => !item.file)];
+        const known = new Set(this.files.map(row => row.item.id));
+        this.files = [...this.files, ...more.filter(item => item.file && !known.has(item.id)).map(item => ({ item, kind: this.kind }))];
         this.loadingMore = false;
       },
       error: () => (this.loadingMore = false),
     });
+  }
+
+  /** An action of the « Fichiers » list: the tab that hosts the page does it, as for the programs. */
+  onFileAction(event: ProgramFileAction): void {
+    const item = event.row?.item;
+    switch (event.type) {
+      case 'import': this.emit({ type: 'import' }); return;
+      case 'preview': this.emit({ type: 'preview', item, programId: item?.id }); return;
+      default: if (item) this.emit({ type: event.type, item, programId: item.id });
+    }
   }
 
   /* ---------------- what the page shows ---------------- */

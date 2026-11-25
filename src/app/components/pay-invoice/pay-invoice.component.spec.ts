@@ -29,6 +29,17 @@ describe('PayInvoiceComponent (SUB-36, payment audit CE-M6)', () => {
     expect(c.savedCard).toContain('4242');
   });
 
+  it('ClicToPay: the method of YoSales is kept and no saved card is offered', () => {
+    const billing = billingWith([{ ...invoice, currency: 'TND' }]);
+    const c = create('90', billing, { paymentGateway: 'clictopay', autoCharge: true, card: { brand: 'visa', last4: '4242' } });
+
+    c.ngOnInit();
+
+    expect(c.method).toBe('CLICTOPAY');
+    expect(c.savedCard).toBe('');
+    expect(billing.initiateInvoicePayment).not.toHaveBeenCalled();
+  });
+
   it('the payment starts on the click, with the method of the subscription', () => {
     const billing = billingWith([invoice]);
     billing.initiateInvoicePayment.and.returnValue(of({ redirectUrl: 'https://pay.example/90' }));

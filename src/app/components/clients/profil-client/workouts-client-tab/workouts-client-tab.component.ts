@@ -17,17 +17,20 @@ import { ChangeDatesModalComponent } from '@shared/components/change-dates-modal
 import { ProgramShiftModalComponent } from '@shared/components/program-shift-modal/program-shift-modal.component';
 import { ProgramScheduleService } from 'app/service/program-schedule.service';
 import { ToastService } from 'app/service/toast.service';
-import { OverviewItem, canChangeDates, isPlanLocked, todayIso } from '@shared/models/program-schedule';
+import { OverviewItem, addDaysIso, canChangeDates, isHasActivityError, isPlanLocked, todayIso } from '@shared/models/program-schedule';
+import { PROGRAM_FILE_ACCEPT, programFileKind, programFileOpenErrorKey, programFileProblem, programFileSaveName, programFileUploadErrorKey } from '@shared/models/program-file-check';
+import { ProgramFileViewerComponent } from '@shared/components/program-file-viewer/program-file-viewer.component';
 import { ClientProgramAction, ClientProgramsComponent } from '@shared/components/client-programs/client-programs.component';
 import { RemoveProgramConfirmComponent } from '@shared/components/remove-program-confirm/remove-program-confirm.component';
 
 type ProgramStatusFilter = 'ALL' | 'UPCOMING' | 'COMPLETED' | 'OVERLAP';
 type ProgramSortMode = 'RECOMMENDED' | 'START_ASC' | 'START_DESC' | 'END_ASC' | 'END_DESC';
 
+import { isFilePlan } from '@shared/models/program-file-check';
 @Component({
   selector: 'app-workouts-client-tab',
   standalone: true,
-  imports: [WriteActionDirective, CommonModule, FormsModule, TranslateModule, ProgramDaysBadgeComponent, SectionLoaderComponent, ClientPlanEmptyComponent, ChangeDatesModalComponent, ProgramShiftModalComponent, ClientProgramsComponent, RemoveProgramConfirmComponent],
+  imports: [WriteActionDirective, CommonModule, FormsModule, TranslateModule, ProgramDaysBadgeComponent, SectionLoaderComponent, ClientPlanEmptyComponent, ChangeDatesModalComponent, ProgramShiftModalComponent, ClientProgramsComponent, RemoveProgramConfirmComponent, ProgramFileViewerComponent],
   templateUrl: './workouts-client-tab.component.html',
   styleUrl: './workouts-client-tab.component.scss',
 })
@@ -42,6 +45,10 @@ export class WorkoutsClientTabComponent implements OnInit {
   /** « Envoyer un message » from a day shown in the tab: the profile opens its chat. */
   /** « Envoyer un message », with a text ready in the chat when there is one (a missed workout). */
   @Output() message = new EventEmitter<string | null>();
+  /** « Voir comme mon client » on a file: the profile opens the client's view on its « Fichiers » tab. */
+  @Output() previewAsClient = new EventEmitter<void>();
+  /** « Importer un fichier » (the nutrition tab has no window of its own: the profile opens it). */
+  @Output() importFile = new EventEmitter<void>();
   @ViewChild(ClientProgramsComponent) programs?: ClientProgramsComponent;
   /** « Progression par exercice » : lue seulement quand le coach l'ouvre. */
 
@@ -83,6 +90,11 @@ export class WorkoutsClientTabComponent implements OnInit {
   dateSaving = false;
   dateError: string | null = null;
   workoutFileEnabled = true;
+  readonly programFileAccept = PROGRAM_FILE_ACCEPT;
+  /** Upload progress of the file being sent (0-100, audit PDF/Excel 2026-11-23, lot 3). */
+  uploadPercent = 0;
+  /** The file shown in the shared viewer. */
+  viewerPlan: WorkoutPlan | null = null;
 
   workoutPage = 0;
   workoutSize = 5;
@@ -94,7 +106,6 @@ export class WorkoutsClientTabComponent implements OnInit {
   constructor(public workoutService: WorkoutService, private router: Router, private coachSettingsService: CoachSettingsService, private translate: TranslateService,
               public programSchedule: ProgramScheduleService, private toast: ToastService) {}
 
-  private previewText(key: string): string { return this.escapeHtml(this.translate.instant(key)); }
 
   ngOnInit(): void {
     // The client profile refreshes the coach settings when it opens: the programs load right away with them,
@@ -118,6 +129,15 @@ export class WorkoutsClientTabComponent implements OnInit {
     switch (action.type) {
       case 'message':
         this.message.emit(action.draft || null);
+        return;
+      case 'import':
+        this.openUploadFileModal();
+        return;
+      case 'preview':
+        this.previewAsClient.emit();
+        return;
+      case 'rename':
+        if (action.item) this.renameFile(action.item.id, action.item.name);
         return;
       case 'assign':
         this.assignNew.emit(action.date || null);
@@ -179,18 +199,22 @@ export class WorkoutsClientTabComponent implements OnInit {
         this.toast.show({ type: 'success', title: this.translate.instant('CLIENT_PROGRAMS.REMOVED') });
         this.programs?.reload();
       },
-      error: () => {
+      error: (error) => {
         this.removing = false;
+        // The client already trained in it: the server keeps it (its history), and says so.
+        if (isHasActivityError(error)) {
+          this.removeTarget = null;
+          this.toast.show({ type: 'warning', title: this.translate.instant('CLIENT_PROGRAMS.REMOVE_HAS_ACTIVITY'), duration: 10000 });
+          return;
+        }
         this.toast.show({ type: 'error', title: this.translate.instant('CLIENT_PROGRAMS.REMOVE_FAILED') });
       },
     });
   }
 
   private applyWorkoutFileSetting(): void {
+    // The option only stops new imports: the files already given to the client stay listed (audit PDF/Excel, G1).
     this.workoutFileEnabled = this.coachSettingsService.shouldUseWorkoutFiles();
-    if (!this.workoutFileEnabled && this.activeTab === 'FILES') {
-      this.activeTab = 'ALL';
-    }
   }
 
   isFileWorkoutProgram(program: WorkoutPlan): boolean {
@@ -241,10 +265,6 @@ export class WorkoutsClientTabComponent implements OnInit {
   }
 
   get displayedPrograms(): WorkoutPlan[] {
-    if (!this.workoutFileEnabled) {
-      return this.appPrograms;
-    }
-
     if (this.activeTab === 'APP') return this.appPrograms;
     if (this.activeTab === 'FILES') return this.uploadedFiles;
 
@@ -264,7 +284,7 @@ export class WorkoutsClientTabComponent implements OnInit {
   get hasNoProgram(): boolean {
     return !this.hasActivePrograms() && this.allOtherPrograms.length === 0
       // Without the files option the tab always shows the app programs: that is the full list too.
-      && this.allProgramsFilter === 'ALL' && (this.activeTab === 'ALL' || !this.workoutFileEnabled) && this.workoutPage === 0;
+      && this.allProgramsFilter === 'ALL' && this.activeTab === 'ALL' && this.workoutPage === 0;
   }
 
   hasActivePrograms(): boolean {
@@ -278,10 +298,6 @@ export class WorkoutsClientTabComponent implements OnInit {
   }
 
   setActiveTab(tab: 'ALL' | 'APP' | 'FILES') {
-    if (!this.workoutFileEnabled && tab === 'FILES') {
-      tab = 'APP';
-    }
-
     if (this.activeTab === tab) {
       return;
     }
@@ -336,9 +352,10 @@ export class WorkoutsClientTabComponent implements OnInit {
     this.uploadFileKind = null;
     this.uploadProgramName = '';
     this.uploadProgramDescription = '';
-    const today = new Date().toISOString().slice(0, 10);
+    // Local date (toISOString gave yesterday between midnight and 1 am in Tunis) and 4 weeks, not 1 day.
+    const today = todayIso();
     this.uploadStartDate = today;
-    this.uploadEndDate = today;
+    this.uploadEndDate = addDaysIso(today, 27);
     this.uploadError = null;
     this.showUploadFileModal = true;
   }
@@ -348,22 +365,14 @@ export class WorkoutsClientTabComponent implements OnInit {
     const file = input.files?.[0];
     if (!file) return;
 
-    const lowerName = file.name.toLowerCase();
-    const isPdf = lowerName.endsWith('.pdf') || file.type === 'application/pdf';
-    const isExcel = lowerName.endsWith('.xls') || lowerName.endsWith('.xlsx') ||
-      file.type.includes('spreadsheet') || file.type.includes('excel');
-
-    if (!isPdf && !isExcel) {
-      this.uploadError = 'Only PDF, XLS, and XLSX files are allowed.';
+    const problem = programFileProblem(file);
+    if (problem) {
+      this.uploadError = this.translate.instant(problem);
+      input.value = '';
       return;
     }
 
-    if (file.size > 25 * 1024 * 1024) {
-      this.uploadError = 'File is too large. Maximum size is 25 MB.';
-      return;
-    }
-
-    this.uploadFileKind = isPdf ? 'pdf' : 'excel';
+    this.uploadFileKind = programFileKind(file);
     this.selectedUploadFile = file;
     this.uploadProgramName = file.name.replace(/\.[^/.]+$/, '');
     this.uploadProgramDescription = '';
@@ -384,17 +393,23 @@ export class WorkoutsClientTabComponent implements OnInit {
 
   createAndAssignUploadedFile() {
     if (!this.selectedUploadFile) {
-      this.uploadError = 'Please choose a file.';
+      this.uploadError = this.translate.instant('PROGRAM_FILES.CHOOSE_FILE');
       return;
     }
 
     if (!this.uploadProgramName.trim()) {
-      this.uploadError = 'Please enter a program name.';
+      this.uploadError = this.translate.instant('PROGRAM_FILES.ENTER_NAME');
+      return;
+    }
+
+    if (!this.uploadStartDate || !this.uploadEndDate || this.uploadEndDate < this.uploadStartDate) {
+      this.uploadError = this.translate.instant('PROGRAM_FILES.ERROR_DATES');
       return;
     }
 
     this.uploadSaving = true;
     this.uploadError = null;
+    this.uploadPercent = 0;
 
     this.workoutService
       .createAndAssignFileWorkoutOnly(
@@ -403,7 +418,8 @@ export class WorkoutsClientTabComponent implements OnInit {
         this.uploadProgramDescription.trim(),
         this.clientId,
         this.uploadStartDate,
-        this.uploadEndDate
+        this.uploadEndDate,
+        percent => (this.uploadPercent = percent)
       )
       .subscribe({
         next: () => {
@@ -414,9 +430,8 @@ export class WorkoutsClientTabComponent implements OnInit {
           this.getWorkOutPlanByCoachAndClient(this.coachId, this.clientId);
         },
         error: (error) => {
-          console.error('Error creating assigned workout file:', error);
           this.uploadSaving = false;
-          this.uploadError = 'Could not upload and assign this file.';
+          this.uploadError = this.translate.instant(programFileUploadErrorKey(error));
         },
       });
   }
@@ -628,15 +643,7 @@ export class WorkoutsClientTabComponent implements OnInit {
 
 
   isFileWorkout(program: WorkoutPlan): boolean {
-    const mode = String(program?.workoutPlanMode || '').toUpperCase();
-    const type = String(program?.resourceType || '').toUpperCase();
-    return (
-      mode === 'FILE' ||
-      !!program?.fileName ||
-      !!program?.originalFileName ||
-      !!program?.fileUrl ||
-      ['PDF', 'XLS', 'XLSX', 'EXCEL'].includes(type)
-    );
+    return isFilePlan(program);
   }
 
   getFileKind(program: WorkoutPlan): 'pdf' | 'excel' | 'file' {
@@ -711,225 +718,23 @@ export class WorkoutsClientTabComponent implements OnInit {
     this.isAssignMenuOpen = false;
   }
 
+  /** « Renommer » a file program (audit PDF/Excel 2026-11-23, lot 3). */
+  private renameFile(id: string, current: string): void {
+    const name = window.prompt(this.translate.instant('PROGRAM_FILES.RENAME_PROMPT'), current || '')?.trim();
+    if (!name || name === current) return;
+    this.workoutService.updateWorkoutFileDetails(id, name).subscribe({
+      next: () => {
+        this.toast.success(this.translate.instant('PROGRAM_FILES.RENAMED'));
+        this.programs?.reload();
+      },
+      error: (error: unknown) => this.toast.error(this.translate.instant(programFileUploadErrorKey(error))),
+    });
+  }
+
+  /** The shared viewer (audit PDF/Excel 2026-11-23, lot 2): before, a pop-up with its own copy of a PDF / Excel reader. */
   previewFile(program: WorkoutPlan) {
     this.openedActionsId = null;
-    const popup = window.open('', '_blank');
-
-    if (!popup) {
-      console.error('Preview popup was blocked by the browser.');
-      return;
-    }
-
-    const fileName = program.originalFileName || program.fileName || program.name || 'workout-file';
-
-    popup.document.open();
-    popup.document.write(`
-      <!doctype html>
-      <html>
-        <head>
-          <title>${this.escapeHtml(fileName)}</title>
-          <style>
-            html, body { margin: 0; height: 100%; font-family: Arial, sans-serif; background: #f8fafc; color: #111827; }
-            .message { max-width: 680px; margin: 80px auto; padding: 28px; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 10px 25px rgba(15,23,42,.08); }
-            .message h2 { margin: 0 0 12px; font-size: 22px; }
-            .message p { margin: 0; color: #64748b; line-height: 1.6; }
-            iframe { width: 100%; height: 100%; border: 0; background: #fff; }
-          </style>
-        </head>
-        <body><div class="message"><h2>${this.previewText('LOADING_PREVIEW')}</h2><p>${this.previewText('PLEASE_WAIT')}</p></div></body>
-      </html>
-    `);
-    popup.document.close();
-
-    this.workoutService.getWorkoutFileBlob(program).subscribe({
-      next: (blob) => {
-        const contentType = this.getPreviewContentType(program, blob);
-        const fileBlob = blob.type === contentType ? blob : new Blob([blob], { type: contentType });
-        const blobUrl = window.URL.createObjectURL(fileBlob);
-
-        if (contentType === 'application/pdf') {
-          popup.document.open();
-          popup.document.write(`
-            <!doctype html>
-            <html>
-              <head>
-                <title>${this.escapeHtml(fileName)}</title>
-                <style>html, body { margin: 0; height: 100%; } iframe { width: 100%; height: 100%; border: 0; }</style>
-              </head>
-              <body>
-                <iframe src="${blobUrl}" title="${this.escapeHtml(fileName)}"></iframe>
-              </body>
-            </html>
-          `);
-          popup.document.close();
-        } else {
-          popup.document.open();
-          popup.document.write(this.buildExcelPreviewHtml(blobUrl, fileName));
-          popup.document.close();
-        }
-      },
-      error: (error) => {
-        console.error('Error previewing workout file:', error);
-        popup.document.open();
-        popup.document.write(`
-          <!doctype html>
-          <html>
-            <head><title>${this.previewText('PREVIEW_ERROR')}</title></head>
-            <body style="font-family: Arial, sans-serif; padding: 40px;">
-              <h2>${this.previewText('COULD_NOT_PREVIEW_FILE')}</h2>
-              <p>${this.previewText('PLEASE_TRY_AGAIN_LATER')}</p>
-            </body>
-          </html>
-        `);
-        popup.document.close();
-      },
-    });
-  }
-
-
-  private buildExcelPreviewHtml(blobUrl: string, fileName: string): string {
-    const safeTitle = this.escapeHtml(fileName);
-    const safeBlobUrl = this.escapeHtml(blobUrl);
-
-    return `
-      <!doctype html>
-      <html>
-        <head>
-          <title>${safeTitle}</title>
-          <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-          <style>
-            * { box-sizing: border-box; }
-            body { margin: 0; font-family: Arial, sans-serif; background: #f8fafc; color: #111827; }
-            .topbar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 22px; background: #ffffff; border-bottom: 1px solid #e5e7eb; box-shadow: 0 2px 10px rgba(15,23,42,.05); }
-            .title { min-width: 0; }
-            h1 { margin: 0; font-size: 20px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-            .subtitle { margin-top: 4px; color: #64748b; font-size: 13px; }
-            .tabs { display: flex; gap: 8px; flex-wrap: wrap; padding: 14px 22px; background: #fff; border-bottom: 1px solid #e5e7eb; }
-            .tab { border: 1px solid #d1d5db; background: #fff; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-weight: 600; color: #334155; }
-            .tab.active { background: #0f172a; color: #fff; border-color: #0f172a; }
-            .content { padding: 20px 22px; }
-            .sheet-wrap { overflow: auto; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 10px 25px rgba(15,23,42,.06); max-height: calc(100vh - 145px); }
-            table { border-collapse: collapse; min-width: 100%; font-size: 13px; }
-            td, th { border: 1px solid #e5e7eb; padding: 8px 10px; min-width: 90px; max-width: 360px; vertical-align: top; white-space: pre-wrap; overflow-wrap: anywhere; }
-            th { background: #f1f5f9; position: sticky; top: 0; z-index: 1; font-weight: 700; }
-            .row-number { background: #f8fafc; color: #64748b; text-align: right; min-width: 54px; width: 54px; position: sticky; left: 0; z-index: 2; }
-            th.row-number { z-index: 3; }
-            .message { max-width: 760px; margin: 80px auto; padding: 28px; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 10px 25px rgba(15,23,42,.08); }
-            .message h2 { margin: 0 0 12px; font-size: 22px; }
-            .message p { margin: 0; color: #64748b; line-height: 1.6; }
-          </style>
-        </head>
-        <body>
-          <div class="message" id="loading"><h2>${this.previewText('OPENING_EXCEL_PREVIEW')}</h2><p>${this.previewText('PLEASE_WAIT')}</p></div>
-          <div id="app" style="display:none;">
-            <div class="topbar">
-              <div class="title">
-                <h1>${safeTitle}</h1>
-                <div class="subtitle">${this.previewText('EXCEL_PREVIEW_NO_DOWNLOAD')}</div>
-              </div>
-            </div>
-            <div class="tabs" id="tabs"></div>
-            <div class="content"><div class="sheet-wrap" id="sheet"></div></div>
-          </div>
-
-          <script>
-            const fileUrl = '${safeBlobUrl}';
-            const escapeText = (value) => String(value ?? '').replace(/[&<>'"]/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
-            const columnName = (index) => {
-              let name = '';
-              let n = index + 1;
-              while (n > 0) {
-                const rem = (n - 1) % 26;
-                name = String.fromCharCode(65 + rem) + name;
-                n = Math.floor((n - 1) / 26);
-              }
-              return name;
-            };
-
-            function renderSheet(workbook, sheetName) {
-              const worksheet = workbook.Sheets[sheetName];
-              const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false, defval: '' });
-              const maxCols = Math.max(1, ...rows.map(row => row.length));
-              let html = '<table><thead><tr><th class="row-number"></th>';
-              for (let c = 0; c < maxCols; c++) html += '<th>' + columnName(c) + '</th>';
-              html += '</tr></thead><tbody>';
-              rows.forEach((row, r) => {
-                html += '<tr><th class="row-number">' + (r + 1) + '</th>';
-                for (let c = 0; c < maxCols; c++) html += '<td>' + escapeText(row[c]) + '</td>';
-                html += '</tr>';
-              });
-              if (!rows.length) html += '<tr><th class="row-number">1</th><td>${this.previewText('EMPTY_SHEET')}</td></tr>';
-              html += '</tbody></table>';
-              document.getElementById('sheet').innerHTML = html;
-
-              document.querySelectorAll('.tab').forEach(btn => btn.classList.toggle('active', btn.dataset.sheet === sheetName));
-            }
-
-            async function init() {
-              try {
-                if (!window.XLSX) throw new Error('${this.previewText('EXCEL_PREVIEW_LIBRARY_ERROR')}');
-                const response = await fetch(fileUrl);
-                if (!response.ok) throw new Error('${this.previewText('COULD_NOT_LOAD_EXCEL_FILE')}');
-                const buffer = await response.arrayBuffer();
-                const workbook = XLSX.read(buffer, { type: 'array' });
-                const sheetNames = workbook.SheetNames || [];
-                if (!sheetNames.length) throw new Error('${this.previewText('EXCEL_FILE_HAS_NO_SHEETS')}');
-
-                const tabs = document.getElementById('tabs');
-                sheetNames.forEach((sheetName) => {
-                  const btn = document.createElement('button');
-                  btn.className = 'tab';
-                  btn.type = 'button';
-                  btn.dataset.sheet = sheetName;
-                  btn.textContent = sheetName;
-                  btn.onclick = () => renderSheet(workbook, sheetName);
-                  tabs.appendChild(btn);
-                });
-
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('app').style.display = 'block';
-                renderSheet(workbook, sheetNames[0]);
-              } catch (error) {
-                document.body.innerHTML = '<div class="message"><h2>${this.previewText('COULD_NOT_OPEN_EXCEL_PREVIEW')}</h2><p>' + escapeText(error.message || error) + '</p></div>';
-              }
-            }
-            init();
-          </script>
-        </body>
-      </html>
-    `;
-  }
-
-  private getPreviewContentType(program: WorkoutPlan, blob: Blob): string {
-    const declaredType = String(blob.type || program.fileContentType || program.resourceType || '').toLowerCase();
-    const fileName = String(program.originalFileName || program.fileName || program.name || '').toLowerCase();
-
-    if (declaredType.includes('pdf') || fileName.endsWith('.pdf')) {
-      return 'application/pdf';
-    }
-
-    if (declaredType.includes('sheet') || declaredType.includes('excel') || fileName.endsWith('.xlsx')) {
-      return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-    }
-
-    if (fileName.endsWith('.xls')) {
-      return 'application/vnd.ms-excel';
-    }
-
-    return blob.type || program.fileContentType || 'application/octet-stream';
-  }
-
-  private escapeHtml(value: string): string {
-    return value.replace(/[&<>'"]/g, (char) => {
-      const entities: Record<string, string> = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        "'": '&#39;',
-        '"': '&quot;',
-      };
-      return entities[char];
-    });
+    this.viewerPlan = program;
   }
 
   downloadFile(program: WorkoutPlan) {
@@ -940,19 +745,20 @@ export class WorkoutsClientTabComponent implements OnInit {
         const blobUrl = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = blobUrl;
-        link.download = program.originalFileName || program.fileName || `${program.name || 'workout-file'}`;
+        link.download = programFileSaveName(program);
         document.body.appendChild(link);
         link.click();
         link.remove();
         setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60000);
       },
-      error: (error) => console.error('Error downloading workout file:', error),
+      error: (error) => this.toast.error(this.translate.instant(programFileOpenErrorKey(error))),
     });
   }
 
   replaceFile(program: WorkoutPlan) {
-    if (this.isLocked(program)) return;
+    if (this.isLocked(program) || this.replaceSaving) return;
     this.openedActionsId = null;
+    if (!window.confirm(this.translate.instant('PROGRAM_FILES.REPLACE_CONFIRM'))) return;
     this.replaceTargetProgram = program;
     this.replaceError = null;
 
@@ -969,21 +775,9 @@ export class WorkoutsClientTabComponent implements OnInit {
 
     if (!file || !this.replaceTargetProgram?.id) return;
 
-    const lowerName = file.name.toLowerCase();
-    const isPdf = lowerName.endsWith('.pdf') || file.type === 'application/pdf';
-    const isExcel =
-      lowerName.endsWith('.xls') ||
-      lowerName.endsWith('.xlsx') ||
-      file.type.includes('spreadsheet') ||
-      file.type.includes('excel');
-
-    if (!isPdf && !isExcel) {
-      this.replaceError = 'Only PDF, XLS, and XLSX files are allowed.';
-      return;
-    }
-
-    if (file.size > 25 * 1024 * 1024) {
-      this.replaceError = 'File is too large. Maximum size is 25 MB.';
+    const problem = programFileProblem(file);
+    if (problem) {
+      this.replaceError = this.translate.instant(problem);
       return;
     }
 
@@ -994,12 +788,12 @@ export class WorkoutsClientTabComponent implements OnInit {
       next: () => {
         this.replaceSaving = false;
         this.replaceTargetProgram = null;
+        this.toast.success(this.translate.instant('PROGRAM_FILES.REPLACE_DONE'));
         this.getWorkOutPlanByCoachAndClient(this.coachId, this.clientId);
       },
       error: (error) => {
-        console.error('Error replacing workout file:', error);
         this.replaceSaving = false;
-        this.replaceError = 'Could not replace this file.';
+        this.replaceError = this.translate.instant(programFileUploadErrorKey(error));
       },
     });
   }

@@ -58,7 +58,15 @@
         </button>
       </section>
       <ng-template #restDay>
-        <section class="yc-card rest-card">
+        <button *ngIf="todayWorkoutFile as file" type="button" class="yc-card today-file" (click)="openTodayFile(file, 'workout')">
+          <span class="yc-icon-tile" style="--tile-size: 40px"><i-feather name="file-text"></i-feather></span>
+          <span class="today-file__copy">
+            <strong>{{ todayFileTitle(file) }}</strong>
+            <span>{{ todayFileWeek(file) }}<ng-container *ngIf="file.plan?.name"> · {{ file.plan.name }}</ng-container></span>
+          </span>
+          <span class="today-file__open">{{ fr ? 'Ouvrir' : 'Open' }}</span>
+        </button>
+        <section *ngIf="!todayWorkoutFile" class="yc-card rest-card">
           <span class="rest-card__tile"><i-feather name="moon"></i-feather></span>
           <div>
             <h3 class="yc-card-title">{{ fr ? 'Jour de repos' : 'Rest day' }}</h3>
@@ -88,7 +96,15 @@
         </div>
       </button>
       <ng-template #noNutrition>
-        <section class="yc-card no-nutrition-card">
+        <button *ngIf="todayNutritionFile as file" type="button" class="yc-card today-file" (click)="openTodayFile(file, 'nutrition')">
+          <span class="yc-icon-tile" style="--tile-size: 40px"><i-feather name="file-text"></i-feather></span>
+          <span class="today-file__copy">
+            <strong>{{ todayFileTitle(file) }}</strong>
+            <span>{{ todayFileWeek(file) }}<ng-container *ngIf="file.plan?.name"> · {{ file.plan.name }}</ng-container></span>
+          </span>
+          <span class="today-file__open">{{ fr ? 'Ouvrir' : 'Open' }}</span>
+        </button>
+        <section *ngIf="!todayNutritionFile" class="yc-card no-nutrition-card">
           <span class="yc-icon-tile" style="--tile-color: #1E9E63; --tile-size: 46px"><i-feather name="utensils"></i-feather></span>
           <div>
             <h3 class="yc-card-title">{{ fr ? 'Pas de plan nutrition' : 'No nutrition plan today' }}</h3>

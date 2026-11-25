@@ -3,11 +3,11 @@
 
   <div class="afm__panel">
     <header class="afm__head">
-      <button type="button" class="afm__back" *ngIf="step === 'detail'" [attr.aria-label]="'BACK' | translate" (click)="backToList()">
+      <button type="button" class="afm__back" *ngIf="step !== 'list'" [attr.aria-label]="'BACK' | translate" [disabled]="quickSaving" (click)="backToList()">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
       </button>
       <div class="afm__titles">
-        <h3 id="afm-title">{{ 'ADD_FOOD' | translate }}</h3>
+        <h3 id="afm-title">{{ (step === 'create' ? 'AFM_CREATE.TITLE' : 'ADD_FOOD') | translate }}</h3>
         <p class="afm__target" *ngIf="targetName">{{ 'AFM_FOR_MEAL' | translate:{ meal: targetName } }}</p>
       </div>
       <button type="button" class="afm__close" [attr.aria-label]="'CLOSE' | translate" (click)="close()">
@@ -24,6 +24,18 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
         <input type="text" [placeholder]="'SEARCH_FOODS' | translate" #searchInput [(ngModel)]="search" (input)="onSearch()" />
       </label>
+
+      <!-- « Fréquents » : les aliments que le coach met le plus souvent, tant que la recherche est vide. -->
+      <ng-container *ngIf="showFrequent">
+        <div class="afm__section">{{ 'AFM_FREQUENT' | translate }}</div>
+        <div class="afm__frequent">
+          <button type="button" class="afm__chip" *ngFor="let food of frequent" [disabled]="isExcluded(food)" (click)="choose(food)"
+                  [title]="food.name">
+            <span class="afm__chip-name">{{ food.name }}</span>
+            <span class="afm__chip-ok" *ngIf="!isExcluded(food) && wasAdded(food)" aria-hidden="true">✓</span>
+          </button>
+        </div>
+      </ng-container>
 
       <div class="afm__section">{{ 'RESULTS' | translate }}</div>
 
@@ -56,6 +68,10 @@
       </div>
       <div class="afm__state" *ngIf="!loading && !foods.length">{{ 'NO_FOODS_FOUND' | translate }}</div>
       <p class="afm__more" *ngIf="truncated && foods.length" role="status">{{ 'AFM_MORE_RESULTS' | translate:{ count: foods.length } }}</p>
+      <!-- Aliment introuvable (ou pas le bon) : il se crée ici, sans quitter la fenêtre. -->
+      <button type="button" class="afm__create-row" *ngIf="canCreate" (click)="openCreate()">
+        <span aria-hidden="true">+</span>{{ 'AFM_CREATE.ROW' | translate:{ name: search.trim() } }}
+      </button>
 
       <nav class="afm__pager" *ngIf="totalPages > 1" [attr.aria-label]="'PAGE' | translate">
         <button type="button" [attr.aria-label]="'PREVIOUS' | translate" [disabled]="page === 0" (click)="changePage(page - 1)">‹</button>
@@ -112,6 +128,46 @@
       </div>
     </div>
 
+    <form class="afm__body afm__quick" *ngIf="step === 'create'" id="afm-quick" (ngSubmit)="saveQuick()" novalidate>
+      <label class="afm__field">
+        <span>{{ 'AFM_CREATE.NAME' | translate }}</span>
+        <input #quickName type="text" name="quickName" maxlength="100" [(ngModel)]="quick.name" [disabled]="quickSaving" />
+      </label>
+      <label class="afm__field">
+        <span>{{ 'AFM_CREATE.BASE' | translate }}</span>
+        <select name="quickBase" [(ngModel)]="quick.base" [disabled]="quickSaving">
+          <option *ngFor="let base of quickBases" [ngValue]="base">{{ ('AFM_CREATE.BASE_' + base.toUpperCase()) | translate }}</option>
+        </select>
+      </label>
+      <div class="afm__grid afm__grid--four">
+        <label class="afm__field">
+          <span>{{ 'CALORIES' | translate }} (kcal)</span>
+          <input type="number" name="quickKcal" min="0" step="any" inputmode="decimal" [(ngModel)]="quick.calories"
+                 [placeholder]="quickCaloriesHint" [disabled]="quickSaving" />
+        </label>
+        <label class="afm__field">
+          <span>{{ 'PROTEIN' | translate }} (g)</span>
+          <input type="number" name="quickProtein" min="0" step="any" inputmode="decimal" [(ngModel)]="quick.protein" [disabled]="quickSaving" />
+        </label>
+        <label class="afm__field">
+          <span>{{ 'CARBS' | translate }} (g)</span>
+          <input type="number" name="quickCarbs" min="0" step="any" inputmode="decimal" [(ngModel)]="quick.carbs" [disabled]="quickSaving" />
+        </label>
+        <label class="afm__field">
+          <span>{{ 'FAT' | translate }} (g)</span>
+          <input type="number" name="quickFat" min="0" step="any" inputmode="decimal" [(ngModel)]="quick.fat" [disabled]="quickSaving" />
+        </label>
+      </div>
+      <p class="afm__amount">{{ 'AFM_CREATE.KCAL_HINT' | translate }}</p>
+      <p class="afm__error" *ngIf="quickTried && quickError" role="alert">{{ quickError | translate }}</p>
+    </form>
+
+    <footer class="afm__foot afm__foot--two" *ngIf="step === 'create'">
+      <button type="button" class="afm__btn afm__btn--ghost" [disabled]="quickSaving" (click)="backToList()">{{ 'CANCEL' | translate }}</button>
+      <button type="submit" form="afm-quick" class="afm__btn afm__btn--primary" [disabled]="quickSaving">
+        {{ (quickSaving ? 'SAVING' : 'SAVE') | translate }}
+      </button>
+    </footer>
     <footer class="afm__foot" *ngIf="step === 'list' && !addedCount">
       <button type="button" class="afm__btn afm__btn--ghost afm__btn--full" (click)="close()">{{ 'CANCEL' | translate }}</button>
     </footer>

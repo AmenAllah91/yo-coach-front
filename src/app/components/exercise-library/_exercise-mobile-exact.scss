@@ -30,21 +30,21 @@
     max-width: 235px;
     margin: 6px 0 0;
     color: light-dark(#64748b, #a5abb4);
-    font-size: 9px;
-    line-height: 12px;
+    font-size: 12px;
+    line-height: 16px;
   }
 
   .mobile-library-actions { display: grid; gap: 9px; margin-bottom: 10px; }
   .mobile-custom-btn,
   .mobile-select-btn {
     width: 100%;
-    height: 27px;
+    height: 40px;
     border-radius: 4px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 5px;
-    font-size: 9px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
   }
@@ -97,7 +97,7 @@
   }
   .right-panel .no-selection .play-icon i-feather { width: 16px; height: 16px; }
   .right-panel .no-selection h3 { margin: 0 0 5px; font-size: 10px; line-height: 14px; }
-  .right-panel .no-selection p { margin: 0; color: light-dark(#64748b, #a5abb4); font-size: 9px; line-height: 13px; }
+  .right-panel .no-selection p { margin: 0; color: light-dark(#64748b, #a5abb4); font-size: 12px; line-height: 16px; }
 
   .mobile-exercise-picker {
     position: fixed;
@@ -166,8 +166,8 @@
   .mobile-exercise-option__thumb i-feather { width: 14px; height: 14px; color: light-dark(#475569, #bfc5ce); }
   .mobile-exercise-option__copy { min-width: 0; display: flex; flex-direction: column; }
   .mobile-exercise-option__copy strong { overflow: hidden; font-size: 11px; line-height: 14px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
-  .mobile-exercise-option__copy small { color: light-dark(#64748b, #a5abb4); font-size: 9px; line-height: 12px; }
-  .mobile-exercise-picker__empty { padding: 24px 8px; color: light-dark(#64748b, #a5abb4); font-size: 9px; text-align: center; }
+  .mobile-exercise-option__copy small { color: light-dark(#64748b, #a5abb4); font-size: 12px; line-height: 16px; }
+  .mobile-exercise-picker__empty { padding: 24px 8px; color: light-dark(#64748b, #a5abb4); font-size: 12px; text-align: center; }
 
   .modal-overlay.show { display: flex; padding: 12px; align-items: center; justify-content: center; }
   .modal-overlay .modal-content:not(.delete) {

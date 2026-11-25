@@ -1,10 +1,11 @@
+import { MacroChartComponent } from '@shared/components/macro-chart/macro-chart.component';
 import { CopyDaysModalComponent } from '@shared/program-copy/copy-days-modal.component';
 import { ClientProgramDatesComponent } from '@shared/components/client-program-dates/client-program-dates.component';
 import { CopiedDayBannerComponent } from '@shared/program-copy/copied-day-banner.component';
 import { ProgramDayClipboardService } from '@shared/program-copy/program-day-clipboard.service';
 import { nutritionCopyController } from '../nutrition-day-copy';
-import { NutritionDraftState } from '../nutrition-draft-state';
-import { AfterViewChecked, Component, DoCheck, ElementRef, HostListener, OnInit, ViewChild, inject } from '@angular/core';
+import { NutritionDraftState, nutritionMealHasContent } from '../nutrition-draft-state';
+import { AfterViewChecked, Component, DoCheck, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { ActiveDayRail } from '@shared/program-calendar/active-day-rail';
 import { ProgramStructureRailComponent } from '@shared/program-structure-rail/program-structure-rail.component';
 import { nutritionRailWeeks } from '../nutrition-rail';
@@ -24,6 +25,7 @@ import { NutritionService } from 'app/service/nutrition.service';
 import { ToastService } from 'app/service/toast.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { MealsService } from 'app/service/meals.service';
+import { finalize } from 'rxjs/operators';
 import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 import { Food, FoodRef, Meal, MealDay, MealPlan } from '@shared/models/MealPlan';
 import { NutritionAiDraft } from 'app/service/nutrition-ai.service';
@@ -44,15 +46,16 @@ import {
   setLinePortions,
   setLineServing,
 } from '../food-servings/plan-food-serving';
+import { ScaleCaloriesDialogComponent } from '../scale-calories/scale-calories-dialog.component';
 
 @Component({
   selector: 'app-create-full-plan',
   standalone: true,
-  imports: [ProgramStructureRailComponent, ProgramCalendarComponent, DayWindowHeadComponent, DayWindowFootComponent, ViewSwitchComponent, CommonModule, FormsModule, FeatherModule, DragDropModule, MealTemplatePickerComponent, MealTimeFieldComponent, TranslateModule, ServingUnitPipe, EmptyDaysModalComponent, AddFoodModalComponent, LockedProgramBannerComponent, ProgramOverflowComponent, CopyDaysModalComponent, CopiedDayBannerComponent, ClientProgramDatesComponent],
+  imports: [MacroChartComponent, ProgramStructureRailComponent, ProgramCalendarComponent, DayWindowHeadComponent, DayWindowFootComponent, ViewSwitchComponent, CommonModule, FormsModule, FeatherModule, DragDropModule, MealTemplatePickerComponent, MealTimeFieldComponent, TranslateModule, ServingUnitPipe, EmptyDaysModalComponent, AddFoodModalComponent, LockedProgramBannerComponent, ProgramOverflowComponent, CopyDaysModalComponent, CopiedDayBannerComponent, ClientProgramDatesComponent, ScaleCaloriesDialogComponent],
   templateUrl: './create-full-plan.component.html',
   styleUrls: ['./create-full-plan.component.scss', '../_nutrition-builder-template.scss', '../../program-library/_workout-builder-layout.scss', '../../program-library/_plan-edit-dialog.scss', '../_nutrition-rail-parity.scss', '../_nutrition-day-parity.scss', '../_nutrition-foods.scss', '../../program-library/_builder-rail-readable.scss', '../../../shared/program-calendar/_program-calendar-editor.scss', '../../program-library/_builder-rail-active.scss'],
 })
-export class CreateFullPlanComponent implements OnInit, DoCheck, AfterViewChecked, LeavesUnsavedChanges {
+export class CreateFullPlanComponent implements OnInit, OnDestroy, DoCheck, AfterViewChecked, LeavesUnsavedChanges {
   /** Phones: the week/day structure opens over the page (same as the workout builder). */
   mobileStructureOpen = false;
   /** Used by the toolbar "Save" (through the empty-days check of the draft state) and to retry after it. */
@@ -124,6 +127,11 @@ export class CreateFullPlanComponent implements OnInit, DoCheck, AfterViewChecke
   readonly cal = new NutritionCalendar(this, this.hostEl, this.translate, this.confirmDialog, this.toastService);
   @ViewChild(ProgramCalendarComponent) set calendarRef(calendar: ProgramCalendarComponent | undefined) {
     this.cal.calendar = calendar;
+  }
+
+  /** « Continuer » created the plan: left with nothing but its name, it is deleted again (nutrition-draft-state.ts). */
+  ngOnDestroy(): void {
+    this.draft.discardIfEmptyNew(this.clientMode.active);
   }
 
   ngDoCheck(): void {
@@ -728,12 +736,24 @@ export class CreateFullPlanComponent implements OnInit, DoCheck, AfterViewChecke
     this.recalcDayTargets(this.selectedDay);
   }
 
-  removeMeal(meal: Meal) {
-    if (!this.selectedDay) return;
-    this.selectedDay.meals = this.selectedDay.meals.filter(
+  async removeMeal(meal: Meal) {
+    const day = this.selectedDay;
+    if (!day) return;
+    // A meal with foods or macros: asked first; an empty one goes at once.
+    if (nutritionMealHasContent(meal)) {
+      const confirmed = await this.confirmDialog.ask({
+        title: 'DELETE_MEAL_ASK_TITLE',
+        text: 'DELETE_MEAL_ASK_TEXT',
+        params: { name: this.displayMealName(meal, Math.max(day.meals.indexOf(meal), 0)) },
+        confirm: 'DELETE',
+        icon: 'trash-2',
+      });
+      if (!confirmed || !day.meals.includes(meal)) return;
+    }
+    day.meals = day.meals.filter(
       (m) => m.id !== meal.id
     );
-    this.recalcDayTargets(this.selectedDay);
+    this.recalcDayTargets(day);
   }
 
   renameMeal(meal: Meal, newName: string) {
@@ -875,9 +895,18 @@ export class CreateFullPlanComponent implements OnInit, DoCheck, AfterViewChecke
       .join(', ');
   }
 
+  /** Meals being saved to the library: a second click while the first save runs is ignored (one template, not two). */
+  private readonly savingTemplateMealIds = new Set<string>();
+
   saveMealAsTemplate(meal: Meal) {
+    const key = String(meal.id ?? '');
+    if (this.savingTemplateMealIds.has(key)) return;
+    // The meal can come from the calendar's day window, not only from the selected day.
+    const day = this.days.find((d) => (d.meals || []).includes(meal));
+    const index = Math.max(0, (day?.meals || []).indexOf(meal));
     const payload = {
-      name: meal.name,
+      // « New Meal » / « Meal 1 » are placeholders: the template gets the translated name the coach sees.
+      name: this.displayMealName(meal, index) || this.translate.instant('MEAL_NUMBER', { number: index + 1 }),
       mealType: meal.mealType,
       servings: meal.servings || 1,
       totalTimeMinutes: meal.totalTimeMinutes,
@@ -886,9 +915,13 @@ export class CreateFullPlanComponent implements OnInit, DoCheck, AfterViewChecke
       foods: meal.foods || [],
     };
 
-    this.mealsService.saveTemplate(payload).subscribe(() => {
-      alert(this.translate.instant('TEMPLATE_SAVED'));
-    });
+    this.savingTemplateMealIds.add(key);
+    this.mealsService.saveTemplate(payload)
+      .pipe(finalize(() => this.savingTemplateMealIds.delete(key)))
+      .subscribe({
+        next: () => this.toastService.success(this.translate.instant('TEMPLATE_SAVED')),
+        error: () => this.toastService.error(this.translate.instant('MEAL_TEMPLATE_SAVE_ERROR')),
+      });
   }
 
   duplicateMealInDay(meal: Meal) {
@@ -1110,6 +1143,15 @@ export class CreateFullPlanComponent implements OnInit, DoCheck, AfterViewChecke
 
   recalcAllDays() {
     this.days.forEach((day) => this.recalcDayTargets(day));
+  }
+
+  /** « Adapter les calories » window (nutrition-scale.ts). */
+  scaleOpen = false;
+
+  /** The quantities changed: each meal and day total is recomputed as after a quantity typed by the coach. */
+  afterScale(days: MealDay[]): void {
+    days.forEach((day) => this.recalcDayTargets(day));
+    this.scaleOpen = false;
   }
 
   /* ============================================

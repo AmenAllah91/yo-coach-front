@@ -40,4 +40,10 @@ export const sidebarIcons = {
     '<path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path>'),
   ArrowLeftRight: icon('arrow-left-right',
     '<path d="M8 3 4 7l4 4"></path><path d="M4 7h16"></path><path d="m16 21 4-4-4-4"></path><path d="M20 17H4"></path>'),
+  // « Foods » entry (2026-11-23): a carrot reads as "food" at a glance; the old plus-circle read as "add".
+  Carrot: icon('carrot',
+    '<path d="M2.27 21.7s9.87-3.5 12.73-6.36a4.5 4.5 0 0 0-6.36-6.37C5.77 11.84 2.27 21.7 2.27 21.7z"></path>' +
+    '<path d="M8.64 14l-2.05-2.04"></path><path d="M15.34 15l-2.46-2.46"></path>' +
+    '<path d="M22 9s-1.33-2-3.5-2C16.86 7 15 9 15 9s1.33 2 3.5 2S22 9 22 9z"></path>' +
+    '<path d="M15 2s-2 1.33-2 3.5S15 9 15 9s2-1.84 2-3.5C17 3.33 15 2 15 2z"></path>'),
 };

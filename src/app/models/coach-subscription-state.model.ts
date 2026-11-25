@@ -57,11 +57,11 @@ export interface CoachSubscriptionState {
   currency?: string | null;
   /** SUB-60: TND for 1 USD, reference rate set by the administrator (null = no dollar amount). */
   usdRateTnd?: number | null;
-  /** SUB-62: how the subscription is paid (FLOUCI, STRIPE). */
+  /** SUB-62: how the subscription is paid (FLOUCI, CLICTOPAY, STRIPE). */
   paymentGateway?: string | null;
   /** Payment audit D11: currency of the next payment (before the first one: from the country, decided by YoSales). */
   checkoutCurrency?: string | null;
-  /** Payment audit D11: payment method of the next payment (FLOUCI, STRIPE). */
+  /** Payment audit D11: payment method of the next payment (FLOUCI, CLICTOPAY, STRIPE). */
   checkoutPaymentGateway?: string | null;
   /** SUB-62: card saved at Stripe ("Visa •••• 4242, 12/28"); null when none. */
   card?: SavedCardView | null;

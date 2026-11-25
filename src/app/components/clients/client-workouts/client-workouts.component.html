@@ -13,16 +13,9 @@
         </button>
       </header>
 
-      <button *ngIf="filePrograms.length" type="button" class="yc-card files-entry" (click)="openFiles()">
-        <span class="yc-icon-tile" style="--tile-size: 38px"><i-feather name="file-text"></i-feather></span>
-        <span class="files-entry__copy">
-          <strong>{{ t('Program files', 'Fichiers du programme') }}</strong>
-          <span>{{ filesSummary }}</span>
-        </span>
-        <i-feather class="chevron" name="chevron-right"></i-feather>
-      </button>
+      <ng-container *ngTemplateOutlet="planTabs"></ng-container>
 
-      <app-week-strip [weekStart]="weekStart" [selected]="selectedDate" [marks]="weekMarks" [fr]="fr"
+      <app-week-strip *ngIf="loading || error || plans.length" [weekStart]="weekStart" [selected]="selectedDate" [marks]="weekMarks" [fr]="fr"
                       (shift)="shiftWeek($event)" (pick)="selectDate($event)" (today)="goToday()"></app-week-strip>
 
       <div *ngIf="loading" class="yc-loading"><span class="yc-spinner"></span></div>
@@ -32,8 +25,20 @@
         <ng-container *ngIf="weekRows as rows">
           <div *ngIf="weekIsEmpty(rows) && !preparingNextWeek" class="list-empty">
             <span class="yc-icon-tile" style="--tile-size: 64px"><i-feather name="dumbbell"></i-feather></span>
-            <h3>{{ t('No workouts found', 'Aucun entraînement trouvé') }}</h3>
-            <p class="yc-subtitle">{{ t('No workout this week', 'Aucun entraînement cette semaine') }}</p>
+            <ng-container *ngIf="plans.length; else nothingShared">
+              <h3>{{ t('Nothing planned this week', 'Rien de prévu cette semaine') }}</h3>
+              <p class="yc-subtitle">{{ t('No workout this week', 'Aucun entraînement cette semaine') }}</p>
+              <ng-container *ngIf="filePrograms.length">
+                <p class="yc-subtitle">{{ filesSentLine }}</p>
+                <button type="button" class="yc-btn yc-btn--brand list-empty__files" (click)="openFiles()">
+                  <i-feather name="file-text"></i-feather>{{ t('See the files', 'Voir les fichiers') }}
+                </button>
+              </ng-container>
+            </ng-container>
+            <ng-template #nothingShared>
+              <h3>{{ t('Your coach has not shared anything yet', 'Votre coach n’a encore rien partagé') }}</h3>
+              <p class="yc-subtitle">{{ t('Your program will show here once your coach has prepared it.', 'Votre programme apparaîtra ici dès que votre coach l’aura préparé.') }}</p>
+            </ng-template>
           </div>
 
           <ng-container *ngIf="!weekIsEmpty(rows)">
@@ -176,17 +181,17 @@
 
     <!-- ===================== PROGRAM FILES ===================== -->
     <ng-container *ngIf="view === 'files'">
-      <header class="yc-page-header">
-        <button type="button" class="yc-back" [attr.aria-label]="t('Back', 'Retour')" (click)="view = 'list'"><i-feather name="arrow-left"></i-feather></button>
-        <div class="yc-page-header__copy">
-          <h1 class="yc-page-header__title">{{ t('Program files', 'Fichiers du programme') }}</h1>
-          <p class="yc-page-header__subtitle">{{ t('PDF and Excel shared by your coach', 'PDF et Excel partagés par votre coach') }}</p>
+      <header class="yc-root-header">
+        <div class="yc-root-header__copy">
+          <h1 class="yc-display">{{ t('Workouts', 'Entraînements') }}</h1>
+          <p class="yc-root-subtitle">{{ t('PDF and Excel shared by your coach', 'PDF et Excel partagés par votre coach') }}</p>
         </div>
       </header>
+      <ng-container *ngTemplateOutlet="planTabs"></ng-container>
 
       <p *ngIf="!filePrograms.length" class="yc-subtitle center-text">{{ t('No file program assigned', 'Aucun programme fichier assigné') }}</p>
 
-      <ng-container *ngFor="let section of [{ title: t('Current Program', 'Programme actuel'), files: currentFiles }, { title: t('History', 'Historique'), files: historyFiles }]">
+      <ng-container *ngFor="let section of [{ title: t('Current Program', 'Programme actuel'), files: currentFiles }, { title: t('Upcoming', 'À venir'), files: upcomingFiles }, { title: t('History', 'Historique'), files: historyFiles }]">
         <ng-container *ngIf="section.files.length">
           <div class="yc-section-label yc-overline files-section">{{ section.title }} <b>{{ section.files.length }}</b></div>
           <article *ngFor="let file of section.files" class="yc-card file-card" (click)="openFile(file)">
@@ -201,6 +206,16 @@
               </div>
             </div>
             <div *ngIf="file.plan.startDate || file.plan.endDate" class="file-card__dates">{{ fileDates(file) }}</div>
+            <div *ngIf="file.isCurrent && fileWeek(file) as week" class="file-card__progress" (click)="$event.stopPropagation()">
+              <span class="file-card__week">{{ t('Week', 'Semaine') }} {{ week.week }} {{ t('of', 'sur') }} {{ week.weeks }}</span>
+              <span class="file-card__count">{{ fileDoneCount(file) }} {{ fileDoneCount(file) > 1 ? t('days done', 'jours faits') : t('day done', 'jour fait') }}</span>
+              <button *ngIf="!isFileDoneToday(file)" type="button" class="yc-btn yc-btn--brand file-card__done" [disabled]="fileDoneBusy === file.plan.id"
+                      (click)="toggleFileDone(file)"><i-feather name="check"></i-feather>{{ t('I did my workout today', 'J’ai fait ma séance aujourd’hui') }}</button>
+              <span *ngIf="isFileDoneToday(file)" class="file-card__done-ok">
+                <i-feather name="check-circle"></i-feather>{{ t('Done today', 'Fait aujourd’hui') }}
+                <button type="button" class="file-card__undo" [disabled]="fileDoneBusy === file.plan.id" (click)="toggleFileDone(file)">{{ t('Undo', 'Annuler') }}</button>
+              </span>
+            </div>
             <div class="file-card__actions">
               <button type="button" class="yc-btn yc-btn--secondary" (click)="$event.stopPropagation(); openFile(file)"><i-feather name="eye"></i-feather>{{ t('Open', 'Ouvrir') }}</button>
               <button type="button" class="yc-btn yc-btn--brand" (click)="$event.stopPropagation(); downloadFile(file)"><i-feather name="download"></i-feather>{{ t('Download', 'Télécharger') }}</button>
@@ -221,33 +236,7 @@
         <button type="button" class="yc-icon-btn" [attr.aria-label]="t('Download', 'Télécharger')" (click)="downloadFile(file)"><i-feather name="download"></i-feather></button>
       </header>
 
-      <div *ngIf="fileLoading" class="yc-loading"><span class="yc-spinner"></span></div>
-      <p *ngIf="!fileLoading && fileError" class="yc-subtitle center-text">{{ fileError }}</p>
-
-      <section *ngIf="!fileLoading && !fileError && file.type === 'PDF'" class="yc-card yc-card--flush viewer">
-        <div class="viewer__canvas"><canvas #pdfCanvas></canvas></div>
-        <div class="viewer__bar">
-          <button type="button" class="yc-icon-btn" [disabled]="pdfCurrentPage <= 1" (click)="pdfPage(-1)"><i-feather name="chevron-left"></i-feather></button>
-          <span class="yc-caption">{{ pdfCurrentPage }} / {{ pdfTotalPages || '—' }}</span>
-          <button type="button" class="yc-icon-btn" [disabled]="pdfTotalPages > 0 && pdfCurrentPage >= pdfTotalPages" (click)="pdfPage(1)"><i-feather name="chevron-right"></i-feather></button>
-          <span class="viewer__spacer"></span>
-          <button type="button" class="yc-icon-btn" (click)="pdfZoomBy(-10)"><i-feather name="zoom-out"></i-feather></button>
-          <span class="yc-caption">{{ pdfZoom }}%</span>
-          <button type="button" class="yc-icon-btn" (click)="pdfZoomBy(10)"><i-feather name="zoom-in"></i-feather></button>
-        </div>
-      </section>
-
-      <section *ngIf="!fileLoading && !fileError && file.type === 'EXCEL'" class="yc-card yc-card--flush viewer">
-        <div *ngIf="excelSheets.length > 1" class="sheet-tabs">
-          <button *ngFor="let sheet of excelSheets" type="button" [class.active]="sheet === excelSheet" (click)="showExcelSheet(sheet)">{{ sheet }}</button>
-        </div>
-        <div class="excel-wrap">
-          <table class="excel-table">
-            <thead><tr><th></th><th *ngFor="let header of excelHeaders">{{ header }}</th></tr></thead>
-            <tbody><tr *ngFor="let row of excelRows; let r = index"><th>{{ r + 1 }}</th><td *ngFor="let cell of row">{{ cell }}</td></tr></tbody>
-          </table>
-        </div>
-      </section>
+      <app-program-file-viewer mode="embedded" [plan]="file.plan" kind="workout" [client]="true"></app-program-file-viewer>
     </ng-container>
 
     <!-- ===================== DAY (mobile WorkoutDetailScreen) ===================== -->
@@ -261,7 +250,7 @@
           </div>
           <p>{{ dayHeaderSubtitle }}</p>
         </div>
-        <button type="button" class="pdf-btn" [disabled]="saving" (click)="showPdfPreview = true"><i-feather name="file-text"></i-feather>PDF</button>
+        <button type="button" class="pdf-btn" [disabled]="saving" (click)="openPdfPreview()"><i-feather name="file-text"></i-feather>PDF</button>
       </header>
 
       <div class="progress-strip">
@@ -273,6 +262,17 @@
           </div>
           <div class="yc-progress progress-strip__bar"><span [style.width.%]="progress * 100"></span></div>
         </div>
+      </div>
+
+      <!-- No network: the sets are kept in this browser and sent when it comes back (audit 2026-11-23, M16). -->
+      <p *ngIf="offlineSaved" class="offline-note" role="status">
+        <i-feather name="wifi-off"></i-feather>{{ t('Saved on this device, sent as soon as the network is back', 'Enregistré sur cet appareil, envoi dès le retour du réseau') }}
+      </p>
+
+      <!-- The coach's text for this day (or rest day): written in the editor, never shown before (audit 2026-11-23, G7). -->
+      <div *ngIf="dayCoachText as note" class="coach-note coach-note--day">
+        <i-feather name="message-square"></i-feather>
+        <p><strong>{{ t('Coach: ', 'Coach : ') }}</strong>{{ note }}</p>
       </div>
 
       <div *ngIf="showLogCompletedNotice" class="banner banner--info">
@@ -686,7 +686,7 @@
           <section class="cw-pdf-cover">
             <div class="cw-pdf-brand">{{ t('Training program', 'Programme d’entraînement') }}</div>
             <h1>{{ capitalize(item.plan?.name) }}</h1>
-            <p *ngIf="item.plan?.description">{{ item.plan.description }}</p>
+            <p *ngIf="item.plan?.details || item.plan?.description">{{ item.plan?.details || item.plan?.description }}</p>
             <div class="cw-pdf-meta">
               <div><small>Client</small><strong>{{ pdfClientName }}</strong></div>
               <div><small>Coach</small><strong>{{ pdfCoachName }}</strong></div>
@@ -694,20 +694,45 @@
               <div><small>{{ t('End date', 'Date de fin') }}</small><strong>{{ formatLongDate(planEnd()) }}</strong></div>
             </div>
           </section>
-          <section *ngFor="let entry of pdfDays" class="cw-pdf-day" [class.rest]="!pdfExercises(entry.day).length">
-            <h2>{{ formatLongDate(entry.date) }} · {{ capitalize(entry.day?.title || entry.day?.name || '') }}</h2>
-            <p *ngIf="!pdfExercises(entry.day).length" class="cw-pdf-rest">{{ t('Rest Day', 'Jour de repos') }}</p>
-            <ng-container *ngFor="let exercise of pdfExercises(entry.day); let i = index">
-              <div class="cw-pdf-ex"><b>{{ pdfLabels(entry.day)[i] }}</b>{{ capitalize(exercise.name) }}</div>
-              <table *ngIf="exercise.sets?.length">
-                <thead><tr><th>{{ t('Set', 'Série') }}</th><th>{{ exercise.type === 'CARDIO' ? t('Duration', 'Durée') : t('Reps', 'Répétitions') }}</th><th *ngIf="showExerciseWeight && exercise.type !== 'CARDIO'">{{ weightUnit }}</th><th>{{ t('Rest', 'Repos') }}</th></tr></thead>
-                <tbody><tr *ngFor="let set of exercise.sets; let s = index">
-                  <td>{{ s + 1 }}</td><td>{{ exercise.measure === 'TIME' ? (set.durationSec != null ? set.durationSec + ' s' : '—') : exercise.type === 'CARDIO' ? ((set.duration ?? exercise.duration) != null ? (set.duration ?? exercise.duration) + ' min' : '—') : (set.reps ?? '—') }}</td>
-                  <td *ngIf="showExerciseWeight && exercise.type !== 'CARDIO'">{{ set.weight > 0 ? displayWeight(set.weight) : '—' }}</td><td>{{ formatRest(set.restMin, set.restSec) || '—' }}</td>
-                </tr></tbody>
-              </table>
-            </ng-container>
+          <!-- One block per day (audit PDF/Excel 2026-11-23, lot 4): warm-up apart, superset / circuit titled. -->
+          <section *ngFor="let day of pdfPlanDays" class="cw-pdf-day" [class.rest]="day.state !== 'WORKOUT'">
+            <h2>{{ formatLongDate(day.date) }}<ng-container *ngIf="day.title"> · {{ capitalize(day.title) }}</ng-container></h2>
+            <p *ngIf="day.note" class="cw-pdf-note">{{ day.note }}</p>
+            <p *ngIf="day.state === 'REST'" class="cw-pdf-rest">{{ t('Rest day', 'Jour de repos') }}</p>
+            <p *ngIf="day.state === 'EMPTY'" class="cw-pdf-rest">{{ t('Workout to come', 'Séance à venir') }}</p>
+
+            <div *ngIf="day.warmup.length" class="cw-pdf-block cw-pdf-block--warmup">
+              <p class="cw-pdf-block__title">{{ t('Warm-up', 'Échauffement') }}</p>
+              <ng-container *ngFor="let exercise of day.warmup">
+                <ng-container *ngTemplateOutlet="pdfExercise; context: { $implicit: exercise }"></ng-container>
+              </ng-container>
+            </div>
+
+            <div *ngFor="let block of day.blocks" class="cw-pdf-block" [class.cw-pdf-block--group]="block.kind !== 'SINGLE'">
+              <p *ngIf="block.title" class="cw-pdf-block__title">{{ block.title }}</p>
+              <ng-container *ngFor="let exercise of block.exercises">
+                <ng-container *ngTemplateOutlet="pdfExercise; context: { $implicit: exercise }"></ng-container>
+              </ng-container>
+            </div>
           </section>
+
+          <ng-template #pdfExercise let-exercise>
+            <div class="cw-pdf-ex"><b *ngIf="exercise.label">{{ exercise.label }}</b>{{ capitalize(exercise.name) }}</div>
+            <p *ngIf="exercise.note" class="cw-pdf-ex-note">{{ exercise.note }}</p>
+            <table *ngIf="exercise.rows.length">
+              <thead><tr>
+                <th>{{ t('Set', 'Série') }}</th>
+                <th>{{ exercise.measure === 'REPS' ? t('Reps', 'Répétitions') : t('Duration', 'Durée') }}</th>
+                <th *ngIf="showExerciseWeight && exercise.measure === 'REPS'">{{ weightUnit }}</th>
+                <th>{{ t('Rest', 'Repos') }}</th>
+              </tr></thead>
+              <tbody><tr *ngFor="let row of exercise.rows" [class.cw-pdf-warm]="row.warmup">
+                <td>{{ row.label }}</td><td>{{ row.value }}</td>
+                <td *ngIf="showExerciseWeight && exercise.measure === 'REPS'">{{ row.weight || '—' }}</td>
+                <td>{{ row.rest || '—' }}</td>
+              </tr></tbody>
+            </table>
+          </ng-template>
         </article>
       </div>
       <div class="yc-sheet__footer"><button type="button" class="yc-btn yc-btn--brand" (click)="downloadPdf()"><i-feather name="download"></i-feather>{{ t('Download PDF', 'Télécharger le PDF') }}</button></div>
@@ -725,3 +750,16 @@
 
   <app-completion-celebration *ngIf="celebration" [view]="celebration" (done)="closeCelebration()"></app-completion-celebration>
 </div>
+
+<!-- « Programme » | « Fichiers » (audit PDF/Excel 2026-11-23, lot 3): the coach's PDF / Excel never sit among the days
+     built in the app. -->
+<ng-template #planTabs>
+  <div *ngIf="showPlanTabs" class="plan-tabs" role="tablist">
+    <button type="button" role="tab" [attr.aria-selected]="view === 'list'" [class.active]="view === 'list'" (click)="view = 'list'">
+      {{ t('Program', 'Programme') }}
+    </button>
+    <button type="button" role="tab" [attr.aria-selected]="view === 'files'" [class.active]="view === 'files'" (click)="openFiles()">
+      {{ t('Files', 'Fichiers') }}<span *ngIf="currentFiles.length" class="plan-tabs__count">{{ currentFiles.length }}</span>
+    </button>
+  </div>
+</ng-template>

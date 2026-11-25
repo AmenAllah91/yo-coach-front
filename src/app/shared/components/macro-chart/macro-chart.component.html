@@ -1,0 +1,66 @@
+<!-- Split: donut cut by each macro's share of the calories. -->
+<div *ngIf="mode === 'split'" class="mc mc--split" [class.mc--compact]="compact" role="img" [attr.aria-label]="ariaLabel">
+  <div class="mc__donut">
+    <svg viewBox="0 0 120 120" aria-hidden="true">
+      <circle class="mc__track" cx="60" cy="60" [attr.r]="rBig"></circle>
+      <g transform="rotate(-90 60 60)">
+        <circle *ngFor="let s of segments; trackBy: trackByKey"
+                class="mc__seg" [ngClass]="'mc--' + s.key"
+                cx="60" cy="60" [attr.r]="rBig"
+                [style.stroke-dasharray]="s.dash" [style.stroke-dashoffset]="s.offset"></circle>
+      </g>
+    </svg>
+    <div class="mc__center">
+      <strong>{{ fmt(kcal) }}</strong>
+      <small>kcal</small>
+    </div>
+  </div>
+
+  <ul *ngIf="legend && !compact" class="mc__legend">
+    <li *ngFor="let row of rows; trackBy: trackByKey" [ngClass]="'mc--' + row.key">
+      <i class="mc__dot"></i>
+      <span class="mc__name">{{ row.label | translate }}</span>
+      <strong class="mc__grams">{{ fmt(row.grams, 1) }}<em>g</em></strong>
+      <span class="mc__pct">{{ row.share }} %</span>
+    </li>
+  </ul>
+</div>
+
+<!-- Progress: eaten against the goal (big calories ring + one small ring per macro). -->
+<div *ngIf="mode === 'progress'" class="mc mc--progress" role="img" [attr.aria-label]="ariaLabel">
+  <div class="mc__donut mc__donut--big">
+    <svg viewBox="0 0 120 120" aria-hidden="true">
+      <circle class="mc__track" cx="60" cy="60" [attr.r]="rBig"></circle>
+      <circle class="mc__seg mc--kcal" [class.mc--over]="goalKcal > 0 && kcalLeft < 0"
+              cx="60" cy="60" [attr.r]="rBig" transform="rotate(-90 60 60)"
+              [style.stroke-dasharray]="kcalDash"></circle>
+    </svg>
+    <div class="mc__center">
+      <strong>{{ fmt(kcal) }}</strong>
+      <small *ngIf="goalKcal > 0">/ {{ fmt(goalKcal) }} kcal</small>
+      <small *ngIf="!goalKcal">kcal</small>
+      <span *ngIf="goalKcal > 0" class="mc__left" [class.is-over]="kcalLeft < 0">
+        <ng-container *ngIf="kcalLeft >= 0">{{ 'MACRO_CHART.LEFT' | translate:{ value: fmt(kcalLeft) } }}</ng-container>
+        <ng-container *ngIf="kcalLeft < 0">{{ 'MACRO_CHART.OVER' | translate:{ value: fmt(kcalOver) } }}</ng-container>
+      </span>
+    </div>
+  </div>
+
+  <ul class="mc__rings">
+    <li *ngFor="let row of rows; trackBy: trackByKey" [ngClass]="'mc--' + row.key">
+      <div class="mc__ring">
+        <svg viewBox="0 0 56 56" aria-hidden="true">
+          <circle class="mc__track mc__track--small" cx="28" cy="28" [attr.r]="rSmall"></circle>
+          <circle class="mc__seg mc__seg--small" cx="28" cy="28" [attr.r]="rSmall" transform="rotate(-90 28 28)"
+                  [style.stroke-dasharray]="row.dash"></circle>
+        </svg>
+        <span>{{ row.goal > 0 ? fmt(row.ratio * 100) + '%' : '' }}</span>
+      </div>
+      <span class="mc__name">{{ row.label | translate }}</span>
+      <strong class="mc__grams">
+        {{ fmt(row.grams) }}<ng-container *ngIf="row.goal > 0"> / {{ fmt(row.goal) }}</ng-container><em>g</em>
+      </strong>
+      <small *ngIf="row.over > 0" class="mc__overtext">+{{ fmt(row.over) }} g</small>
+    </li>
+  </ul>
+</div>

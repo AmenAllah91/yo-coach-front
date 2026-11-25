@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, concat, finalize, map, of, shareReplay, tap } from 'rxjs';
+import { Observable, catchError, concat, finalize, map, of, shareReplay, tap } from 'rxjs';
+import { withUploadProgress } from '@shared/models/program-file-check';
 import { environment } from '../../environments/environment';
 import { FoodServing, MealPlan } from '@shared/models/MealPlan';
 import { Page } from 'app/models/Page.model';
@@ -241,10 +242,44 @@ export class NutritionService {
     this.pickerFoods.forEach((entry) => {
       entry.foods = entry.foods.map((item) => (item.id === food?.id ? { ...item, ...food } : item));
     });
+    if (this.frequentFoods) this.frequentFoods = this.frequentFoods.map((item) => (item.id === food?.id ? { ...item, ...food } : item));
   }
 
-  createFood(food: Food): Observable<Food> {
-    return this.http.post<Food>(`${environment.baseApiUrl}/api/food-ref`, this.toFoodApi(food)).pipe(map(result => this.fromFoodApi(result)));
+  /** « Fréquents » of the Add Food modal: the coach's most used foods, kept for the session (cleared by a new food). */
+  private frequentFoods: any[] | null = null;
+  private frequentRequest: Observable<any[]> | null = null;
+
+  /** Same shape as the picker results (localizeFood); an error or an unknown route gives an empty list, quietly. */
+  loadFrequentFoods(limit = FREQUENT_FOODS_LIMIT): Observable<any[]> {
+    if (this.frequentFoods) return of(this.frequentFoods);
+    if (this.frequentRequest) return this.frequentRequest;
+    const params = new HttpParams().set('limit', limit);
+    const request = this.http
+      .get<any[]>(`${this.foodRefUrl}/frequent`, { params, headers: { 'X-Skip-Loader': 'true', 'X-Skip-Toast': 'true' } })
+      .pipe(
+        map((response) => (Array.isArray(response) ? response : []).filter(Boolean).map((food: any) => localizeFood(food)).slice(0, limit)),
+        tap((foods) => (this.frequentFoods = foods)),
+        catchError(() => of([] as any[])),
+        finalize(() => {
+          if (this.frequentRequest === request) this.frequentRequest = null;
+        }),
+        shareReplay({ bufferSize: 1, refCount: false }),
+      );
+    this.frequentRequest = request;
+    return request;
+  }
+
+  /** quiet: the caller shows its own error (Add Food modal), no loader nor toast from the interceptor. */
+  createFood(food: Food, quiet = false): Observable<Food> {
+    const options = quiet ? { headers: { 'X-Skip-Loader': 'true', 'X-Skip-Toast': 'true' } } : {};
+    return this.http.post<Food>(`${environment.baseApiUrl}/api/food-ref`, this.toFoodApi(food), options).pipe(
+      map(result => this.fromFoodApi(result)),
+      // A new food: the « Fréquents » and the searches are read again (it must show up in the picker).
+      tap(() => {
+        this.frequentFoods = null;
+        this.pickerFoods.clear();
+      }),
+    );
   }
 
   updateFood(id: string, food: Food): Observable<Food> {
@@ -296,7 +331,8 @@ export class NutritionService {
     search: string = '',
     skipLoader = false
   ): Observable<Page<NutritionPlan>> {
-    const params: any = { page, size, planType };
+    // light: no meal photos nor full food references (audit 2026-11-23, M4); the editors read a plan by its id.
+    const params: any = { page, size, planType, light: true };
 
     if (search?.trim()) {
       params.search = search.trim();
@@ -313,7 +349,7 @@ export class NutritionService {
     search: string = '',
     skipLoader = false
   ): Observable<Page<NutritionPlan>> {
-    const params: any = { page, size };
+    const params: any = { page, size, light: true };
 
     if (search?.trim()) {
       params.search = search.trim();
@@ -346,13 +382,31 @@ export class NutritionService {
     return this.http.put<NutritionPlan>(`${this.mealPlanUrl}assign`, plan);
   }
 
+  /** « J'ai suivi mon plan » on a file plan, by its client (audit PDF/Excel 2026-11-23, lot 3). */
+  markNutritionFileDay(id: string, date: string, done: boolean): Observable<NutritionPlan> {
+    return this.http.put<NutritionPlan>(`${this.mealPlanUrl}${id}/file/done`, { date, done }, { headers: { 'X-Skip-Loader': 'true' } });
+  }
+
+  /** Renames a file plan (coach). */
+  updateNutritionFileDetails(id: string, name: string, details?: string): Observable<NutritionPlan> {
+    return this.http.patch<NutritionPlan>(`${this.mealPlanUrl}${id}/file/details`, { name, details: details ?? '' });
+  }
+
+  /** Replaces the PDF / Excel of a file plan (coach only): the client sees the new file. */
+  replaceNutritionFile(id: string, file: File, onProgress?: (percent: number) => void): Observable<NutritionPlan> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.put<NutritionPlan>(`${this.mealPlanUrl}${id}/file/replace`, formData, { reportProgress: true, observe: 'events' }).pipe(withUploadProgress(onProgress));
+  }
+
   createAndAssignFileNutritionPlanOnly(
     file: File,
     name: string,
     details: string | undefined,
     clientId: string,
     startDate: string,
-    endDate: string
+    endDate: string,
+    onProgress?: (percent: number) => void,
   ): Observable<NutritionPlan> {
     const formData = new FormData();
     formData.append('file', file);
@@ -362,7 +416,7 @@ export class NutritionService {
     formData.append('startDate', startDate);
     formData.append('endDate', endDate);
 
-    return this.http.post<NutritionPlan>(`${this.mealPlanUrl}file/assign-only`, formData);
+    return this.http.post<NutritionPlan>(`${this.mealPlanUrl}file/assign-only`, formData, { reportProgress: true, observe: 'events' }).pipe(withUploadProgress(onProgress));
   }
 
   createNutritionFilePlan(
@@ -370,7 +424,8 @@ export class NutritionService {
     name: string,
     details?: string,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    onProgress?: (percent: number) => void
   ): Observable<NutritionPlan> {
     const formData = new FormData();
     formData.append('file', file);
@@ -388,7 +443,7 @@ export class NutritionService {
       formData.append('endDate', endDate);
     }
 
-    return this.http.post<NutritionPlan>(`${this.mealPlanUrl}file`, formData);
+    return this.http.post<NutritionPlan>(`${this.mealPlanUrl}file`, formData, { reportProgress: true, observe: 'events' }).pipe(withUploadProgress(onProgress));
   }
 
   getNutritionFileUrl(plan: NutritionPlan | MealPlan | any): string {
@@ -498,6 +553,7 @@ export class NutritionService {
 }
 
 const PICKER_PAGE_SIZE = 100;
+const FREQUENT_FOODS_LIMIT = 12;
 
 /** Lower case, no accents, « œ » = « oe »: « pates » matches « Pâtes », « oeuf » matches « Œuf ». */
 export function foldFoodText(text: unknown): string {

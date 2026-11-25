@@ -91,6 +91,10 @@
           <ng-container *ngFor="let w of aiWarnings"> · {{ ('AI_WORKOUT_WARNING_' + w) | translate }}</ng-container>
         </p>
       </div>
+      <!-- Library program given to clients: they each have a copy, changes here do not reach them. -->
+      <div class="np-ai" *ngIf="!clientId && libraryCopies > 0" role="status">
+        <p><span aria-hidden="true">ℹ</span> {{ (libraryCopies === 1 ? 'LIBRARY_COPIES_PROGRAM_ONE' : 'LIBRARY_COPIES_PROGRAM_MANY') | translate: { count: libraryCopies } }}</p>
+      </div>
       <!-- A finished or stopped client program (A9): read-only, « Dupliquer » to reuse it. -->
       <div class="np-locked" *ngIf="readOnly" role="status">
         <i-feather name="lock" class="np-locked__icon"></i-feather>
@@ -329,7 +333,15 @@
           </button>
         </div>
         <div class="builder-rail">
-        <div class="wk-day-editor" *ngIf="selectedDay">
+        <!-- Audit workouts 2026-11-23 (G4): a session the client already did or started is kept as it is by the server. -->
+        <div class="np-locked np-locked--day" *ngIf="selectedDay && dayLocked" role="status">
+          <i-feather name="lock" class="np-locked__icon"></i-feather>
+          <div class="np-locked__text">
+            <strong>{{ 'WORKOUT_DAY_LOCKED_TITLE' | translate }}</strong>
+            <span>{{ 'WORKOUT_DAY_LOCKED_HINT' | translate }}</span>
+          </div>
+        </div>
+        <div class="wk-day-editor" *ngIf="selectedDay" [attr.inert]="dayLocked ? '' : null" [class.np-card--readonly]="dayLocked">
           <app-copied-day-banner [copy]="copy"></app-copied-day-banner>
         <div class="wk-day-editor__head">
             <div class="wk-day-editor__identity">
@@ -340,10 +352,10 @@
                        [class.is-empty]="!session.name?.trim()">
                   <span class="wk-day-editor__dot" aria-hidden="true"></span>
                   <input type="text" class="wk-day-editor__nameinput" [(ngModel)]="session.name" required
-                         [readonly]="readOnly" [size]="nameFieldSize(session.name)"
+                         [readonly]="dayReadOnly" [size]="nameFieldSize(session.name)"
                          [placeholder]="'WORKOUT_NAME' | translate" [attr.aria-label]="'WORKOUT_NAME' | translate"
                          [attr.aria-invalid]="!session.name?.trim()" />
-                  <i-feather *ngIf="!readOnly" name="edit-2" class="wk-day-editor__nameico" aria-hidden="true"></i-feather>
+                  <i-feather *ngIf="!dayReadOnly" name="edit-2" class="wk-day-editor__nameico" aria-hidden="true"></i-feather>
                 </label>
                 <span class="wk-day-editor__date" *ngIf="getSelectedDayDateLabel() as selectedDayDate">{{ selectedDayDate }}</span>
                 <span
@@ -371,7 +383,7 @@
                 <i-feather [name]="allCollapsed() ? 'maximize-2' : 'minimize-2'" class="wkex__collapseico"></i-feather>
                 {{ allCollapsed() ? ht('Expand all', 'Tout déplier') : ht('Collapse all', 'Tout replier') }}
               </button>
-              <div class="wkdaymenu" *ngIf="!readOnly">
+              <div class="wkdaymenu" *ngIf="!dayReadOnly">
                 <button type="button" class="wk-kebab" [attr.aria-label]="'DAY_OPTIONS' | translate" [title]="'DAY_OPTIONS' | translate"
                         [attr.aria-expanded]="dayMenuOpen" aria-haspopup="menu" (click)="toggleDayMenu($event)">
                   <i-feather name="more-vertical" class="wk-kebab__icon"></i-feather>
@@ -419,7 +431,7 @@
           <h3 class="wk-restbox__title">{{ 'REST_DAY' | translate }}</h3>
           <p class="wk-restbox__text">{{ 'REST_DAY_DESCRIPTION' | translate }}</p>
           <!-- Le jour de repos redevient une séance d'un clic (avant : seulement dans le menu ⋮). -->
-          <button type="button" class="np-rest-turn" *ngIf="!readOnly" (click)="toggleRestDay()">
+          <button type="button" class="np-rest-turn" *ngIf="!dayReadOnly" (click)="toggleRestDay()">
             <i-feather name="activity" class="np-rest-turn__ico"></i-feather>
             {{ ht('Turn into a workout', 'Transformer en séance') }}
           </button>
@@ -510,7 +522,7 @@
                  un trait bleu montre où l'élément va tomber, seulement aux places permises. -->
             <div class="wkex__stack" [class.is-sorting]="!!sortMode" cdkDropList cdkDropListLockAxis="y"
                  [style.padding-top.px]="sortSpacerTop || null" [style.padding-bottom.px]="sortSpacerBottom || null"
-                 [cdkDropListDisabled]="readOnly" [cdkDropListSortPredicate]="sortPredicate"
+                 [cdkDropListDisabled]="dayReadOnly" [cdkDropListSortPredicate]="sortPredicate"
                  (cdkDropListDropped)="onDropExercise($event)">
               <ng-container
                 *ngFor="
@@ -536,7 +548,7 @@
                      [class.is-alone]="sortMode === 'units'" [attr.data-grp-head]="exercise.supersetGroupId"
                      cdkDrag [cdkDragData]="{ kind: 'head', i: i }" [cdkDragStartDelay]="dragDelay"
                      (cdkDragStarted)="onDragStarted()" (cdkDragEnded)="onDragEnded()">
-                  <div *ngIf="!readOnly" class="wkex-card__drag wkgrp-drag" cdkDragHandle [title]="'DRAG_GROUP' | translate"
+                  <div *ngIf="!dayReadOnly" class="wkex-card__drag wkgrp-drag" cdkDragHandle [title]="'DRAG_GROUP' | translate"
                        (mousedown)="beginSort('units', i, $event)" (touchstart)="beginSort('units', i, $event)">
                     <i-feather name="menu" class="np-ico"></i-feather>
                   </div>
@@ -578,7 +590,7 @@
                   <button type="button" class="wkex-action" [title]="'WKGRP_UNGROUP' | translate" [attr.aria-label]="'WKGRP_UNGROUP' | translate" (click)="facade.ungroupAt(i)">
                     <i-feather name="scissors" class="wkex-action__icon"></i-feather>
                   </button>
-                  <div class="wkdaymenu wkgrp-menu" *ngIf="!readOnly">
+                  <div class="wkdaymenu wkgrp-menu" *ngIf="!dayReadOnly">
                     <button type="button" class="wkex-action" [title]="'WKGRP_OPTIONS' | translate" [attr.aria-label]="'WKGRP_OPTIONS' | translate"
                             aria-haspopup="menu" [attr.aria-expanded]="groupMenuAt === i" (click)="toggleGroupMenu(i, $event)">
                       <i-feather name="more-vertical" class="wkex-action__icon"></i-feather>
@@ -618,7 +630,7 @@
                   </div>
                   <div class="wkex-card__inner">
                     <div class="wkex-card__header">
-                      <div *ngIf="!readOnly" class="wkex-card__drag" cdkDragHandle [title]="'DRAG_EXERCISE' | translate"
+                      <div *ngIf="!dayReadOnly" class="wkex-card__drag" cdkDragHandle [title]="'DRAG_EXERCISE' | translate"
                            (mousedown)="beginSort(isInSuperset(i) ? 'members' : 'units', i, $event)"
                            (touchstart)="beginSort(isInSuperset(i) ? 'members' : 'units', i, $event)">
                         <i-feather name="menu" class="np-ico"></i-feather>

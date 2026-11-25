@@ -67,33 +67,47 @@
       </div>
 
     <div class="dropdown me-3" *ngIf="notificationsEnabled">
-      <a class="nav-link position-relative notification-trigger" id="notificationsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+      <a class="nav-link position-relative notification-trigger" id="notificationsDropdown" data-bs-toggle="dropdown" aria-expanded="false"
+         role="button" [attr.aria-label]="'NOTIFICATIONS' | translate" [title]="'NOTIFICATIONS' | translate">
         <i-feather name="bell" class="bell"></i-feather>
         @if(unreadNotificationCount > 0) {
-          <span class="badge badge-notification notification-pulse">{{unreadNotificationCount}}</span>
+          <span class="badge badge-notification">{{ unreadNotificationCount > 9 ? '9+' : unreadNotificationCount }}</span>
         }
       </a>
       <div class="dropdown-menu dropdown-menu-end notification-menu" aria-labelledby="notificationsDropdown">
         <div class="notification-header">
-          <strong>{{ 'NOTIFICATIONS' | translate }} <span class="header-count">{{unreadNotificationCount}}</span></strong>
-          <button type="button" (click)="markAllNotificationsRead($event)"><i-feather name="check"></i-feather> {{ 'MARK_ALL_AS_READ' | translate }}</button>
+          <strong>{{ 'NOTIFICATIONS' | translate }}@if(unreadNotificationCount > 0) { <span class="header-count">{{unreadNotificationCount}}</span> }</strong>
+          @if(unreadNotificationCount > 0) {
+            <button type="button" (click)="markAllNotificationsRead($event)"><i-feather name="check"></i-feather> {{ 'MARK_ALL_AS_READ' | translate }}</button>
+          }
         </div>
         <div class="notification-scroll">
-          @if(unreadNotifications.length) { <div class="notification-section-title">{{ 'UNREAD' | translate }}</div> }
-          @for(item of unreadNotifications; track item.id) {
-            <button class="notification-item unread" type="button" (click)="openNotification(item)">
-              <span class="type-icon"><i-feather [name]="notificationIcon(item.notificationType)"></i-feather></span>
-              <span class="notification-copy"><strong>{{item.title}}</strong><span>{{item.message}}</span><small class="notification-author">{{notificationInitials(item)}}</small>@if(notificationSourceLabel(item.source); as sourceLabel) { <small class="notification-source">{{sourceLabel}}</small> }</span>
-              <span class="notification-meta">{{notificationTime(item)}}<i></i></span>
-            </button>
-          }
-          @if(olderNotifications.length) { <div class="notification-section-title">{{ 'OLDER' | translate }}</div> }
-          @for(item of olderNotifications; track item.id) {
-            <button class="notification-item" type="button" (click)="openNotification(item)">
-              <span class="type-icon"><i-feather [name]="notificationIcon(item.notificationType)"></i-feather></span>
-              <span class="notification-copy"><strong>{{item.title}}</strong><span>{{item.message}}</span><small class="notification-author">{{notificationInitials(item)}}</small>@if(notificationSourceLabel(item.source); as sourceLabel) { <small class="notification-source">{{sourceLabel}}</small> }</span>
-              <span class="notification-meta">{{notificationTime(item)}}</span>
-            </button>
+          @for(group of notificationGroups; track group.key) {
+            <div class="notification-section-title">{{ group.key | translate }}</div>
+            @for(item of group.items; track item.id) {
+              <button class="notification-item" [class.unread]="!item.seen" type="button" (click)="openNotification(item)">
+                <span class="notification-visual" [ngClass]="'tone-' + notificationTone(item.notificationType)">
+                  @if(notificationPerson(item); as person) {
+                    @if(person.photo) {
+                      <img class="notification-avatar" [src]="person.photo" alt="" loading="lazy">
+                    } @else {
+                      <span class="notification-avatar">{{ person.initials }}</span>
+                    }
+                    <span class="type-icon type-icon--mini"><i-feather [name]="notificationIcon(item.notificationType)"></i-feather></span>
+                  } @else {
+                    <span class="type-icon"><i-feather [name]="notificationIcon(item.notificationType)"></i-feather></span>
+                  }
+                </span>
+                <span class="notification-copy">
+                  <span class="notification-title-row">
+                    <strong>{{item.title}}</strong>
+                    <span class="notification-meta">{{notificationTime(item)}}@if(!item.seen) { <i></i> }</span>
+                  </span>
+                  <span class="notification-message">{{item.message}}</span>
+                  @if(notificationSourceLabel(item.source); as sourceLabel) { <small class="notification-source">{{sourceLabel}}</small> }
+                </span>
+              </button>
+            }
           }
           @if(!notifications.length) { <div class="notification-empty">{{ 'NO_NOTIFICATIONS' | translate }}</div> }
         </div>

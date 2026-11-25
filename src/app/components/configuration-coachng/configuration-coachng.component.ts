@@ -906,6 +906,34 @@ export class ConfigurationCoachngComponent implements OnInit {
     });
   }
 
+  /** This browser's permission for the pop-up alerts (only asked on a click, never on its own). */
+  browserPermission: 'granted' | 'denied' | 'default' | 'unsupported' = ConfigurationCoachngComponent.readBrowserPermission();
+
+  private static readBrowserPermission(): 'granted' | 'denied' | 'default' | 'unsupported' {
+    return typeof window !== 'undefined' && 'Notification' in window ? window.Notification.permission : 'unsupported';
+  }
+
+  get browserPermissionText(): string {
+    switch (this.browserPermission) {
+      case 'granted': return 'NOTIF_BROWSER_GRANTED';
+      case 'denied': return 'NOTIF_BROWSER_DENIED';
+      default: return 'NOTIF_BROWSER_DEFAULT';
+    }
+  }
+
+  askBrowserPermission(): void {
+    if (this.browserPermission === 'unsupported') return;
+    const done = (value: NotificationPermission) => (this.browserPermission = value);
+    try {
+      // Older Safari answers through a callback, the others through a promise.
+      const asked = window.Notification.requestPermission(done);
+      if (asked && typeof asked.then === 'function') asked.then(done).catch(() => (this.browserPermission = ConfigurationCoachngComponent.readBrowserPermission()));
+    } catch {
+      this.browserPermission = ConfigurationCoachngComponent.readBrowserPermission();
+    }
+  }
+
+  /** « All my notifications »: off, the coach is told about nothing (phone, bell, message badges). */
   enableBrowserNotifications(): void {
     if (this.browserNotificationsEnabled) {
       this.browserNotificationsEnabled = false;

@@ -5,11 +5,12 @@ import { Router, RouterLink, provideRouter } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { FeatherModule } from 'angular-feather';
 import { allIcons } from 'angular-feather/icons';
-import { BehaviorSubject, of, throwError } from 'rxjs';
+import { BehaviorSubject, Subject, of, throwError } from 'rxjs';
 import { CoachDashboardComponent } from './coach-dashboard.component';
 import { CoachDashboardService } from '../../service/coach-dashboard.service';
 import { CoachSettingsService } from '../../service/coach-settings.service';
 import { ChatUnreadService } from '../../service/chat-unread.service';
+import { CheckinInboxService } from '../../service/checkin-inbox.service';
 import { WidgetStateComponent } from './shared/widget-state.component';
 import { DashboardSummary } from '../../models/coach-dashboard.model';
 
@@ -64,6 +65,7 @@ describe('CoachDashboardComponent', () => {
           },
         },
         { provide: ChatUnreadService, useValue: { unreadCounts$: unreadCounts, synced$: synced, refresh: jasmine.createSpy('refresh') } },
+        { provide: CheckinInboxService, useValue: { submitted$: new Subject<void>() } },
       ],
     });
     // Shallow: the self-loading widgets and the modals have their own tests.

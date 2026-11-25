@@ -9,10 +9,19 @@
     </div>
 
     <!-- YoCoach templates: only the admin creates them; a coach copies them. -->
-    <button class="primary-btn" type="button" appWriteAction *ngIf="!readOnlyTemplates" (click)="openChooseModal()">
-      <i-feather name="plus"></i-feather>
-      {{ (publicTemplates ? 'CREATE_PUBLIC_TEMPLATE' : 'CREATE_NUTRITION_PLAN') | translate }}
+    <!-- On the « Fichiers » tab the main button imports a PDF / Excel at once. -->
+    <button class="primary-btn" type="button" appWriteAction
+            *ngIf="!readOnlyTemplates && programTypeFilter === 'FILES' && nutritionFileEnabled !== false; else createNutritionButton"
+            (click)="openImportNutritionFile()">
+      <i-feather name="upload"></i-feather>
+      {{ 'PROGRAM_FILES.IMPORT_PDF_EXCEL' | translate }}
     </button>
+    <ng-template #createNutritionButton>
+      <button class="primary-btn" type="button" appWriteAction *ngIf="!readOnlyTemplates" (click)="openChooseModal()">
+        <i-feather name="plus"></i-feather>
+        {{ (publicTemplates ? 'CREATE_PUBLIC_TEMPLATE' : 'CREATE_NUTRITION_PLAN') | translate }}
+      </button>
+    </ng-template>
   </div>
 
   <div class="content">
@@ -35,23 +44,14 @@
       </div>
 
       <div class="type-filters" *ngIf="activeTab !== 'templates' && nutritionFileEnabled !== false">
-        <button class="type-filter" [class.active]="programTypeFilter === 'ALL'" (click)="setProgramTypeFilter('ALL')">
-          {{ 'ALL' | translate }}
-        </button>
-
+<!-- « Programmes » | « Fichiers » (audit PDF/Excel 2026-11-23, lot 3): never mixed in one list. -->
         <button class="type-filter" [class.active]="programTypeFilter === 'APP'" (click)="setProgramTypeFilter('APP')">
           <i-feather name="grid"></i-feather>
-          {{ 'APP_PROGRAMS' | translate }}
+          {{ 'PROGRAM_FILES.TAB_PROGRAMS' | translate }}
         </button>
-
-        <button *ngIf="nutritionFileEnabled !== false" class="type-filter type-filter--pdf" [class.active]="programTypeFilter === 'PDF'" (click)="setProgramTypeFilter('PDF')">
+        <button class="type-filter type-filter--pdf" [class.active]="programTypeFilter === 'FILES'" (click)="setProgramTypeFilter('FILES')">
           <i-feather name="file-text"></i-feather>
-          PDF
-        </button>
-
-        <button *ngIf="nutritionFileEnabled !== false" class="type-filter type-filter--excel" [class.active]="programTypeFilter === 'EXCEL'" (click)="setProgramTypeFilter('EXCEL')">
-          <i-feather name="file-text"></i-feather>
-          Excel
+          {{ 'PROGRAM_FILES.TAB_FILES' | translate }}
         </button>
       </div>
     </div>
@@ -60,13 +60,22 @@
     <div class="plans-state plans-state--error" *ngIf="!loading && error">{{ error }}</div>
     <ng-container *ngIf="!loading && !error && filteredPlans.length === 0">
       <app-empty-state
-        *ngIf="activeTab === 'my-library' && !searchTerm.trim() && programTypeFilter === 'ALL'; else noPlanFound"
+        *ngIf="activeTab === 'my-library' && !searchTerm.trim() && programTypeFilter !== 'FILES'; else noPlanFound"
         icon="book-open"
         title="EMPTY_NUTRITION_PLANS_TITLE"
         text="EMPTY_NUTRITION_PLANS_TEXT"
         actionLabel="CREATE_NUTRITION_PLAN"
         (action)="openChooseModal()"></app-empty-state>
       <ng-template #noPlanFound>
+        <app-empty-state
+          *ngIf="activeTab === 'my-library' && !searchTerm.trim() && programTypeFilter === 'FILES'; else noPlanText"
+          icon="file-text"
+          title="PROGRAM_FILES.LIBRARY_EMPTY_TITLE"
+          text="PROGRAM_FILES.LIBRARY_EMPTY_TEXT"
+          actionLabel="PROGRAM_FILES.IMPORT_PDF_EXCEL"
+          (action)="openImportNutritionFile()"></app-empty-state>
+      </ng-template>
+      <ng-template #noPlanText>
         <div class="plans-state" *ngIf="!publicTemplates || searchTerm.trim(); else noTemplate">{{ 'NO_NUTRITION_PLANS_FOUND' | translate }}</div>
         <ng-template #noTemplate><div class="plans-state">{{ (isAdmin ? 'NUTRITION_TEMPLATES_EMPTY_ADMIN' : 'NUTRITION_TEMPLATES_EMPTY') | translate }}</div></ng-template>
       </ng-template>
@@ -109,9 +118,9 @@
           </div>
 
           <div class="col-type" data-label="Type">
-            <span class="type-badge" [ngClass]="'type-badge--' + getPlanKind(plan).toLowerCase()">
+            <span class="type-badge" [title]="getPlanTypeLabel(plan)" [ngClass]="'type-badge--' + getPlanKind(plan).toLowerCase()">
               <i-feather [name]="getProgramIconName(plan)"></i-feather>
-              {{ getPlanTypeLabel(plan) }}
+              <span class="type-badge__text">{{ getPlanTypeLabel(plan) }}</span>
             </span>
           </div>
 
@@ -152,6 +161,16 @@
                   <button class="dropdown-item" type="button" (click)="downloadProgramFile(plan)">
                     <i-feather name="download"></i-feather>
                     {{ 'DOWNLOAD_FILE' | translate }}
+                  </button>
+
+                  <button class="dropdown-item" type="button" (click)="renameLibraryFile(plan)">
+                    <i-feather name="edit-2"></i-feather>
+                    {{ 'PROGRAM_FILES.RENAME' | translate }}
+                  </button>
+
+                  <button class="dropdown-item" type="button" [disabled]="libraryReplaceSaving" (click)="replaceLibraryFile(plan)">
+                    <i-feather name="refresh-cw"></i-feather>
+                    {{ 'PROGRAM_FILES.REPLACE' | translate }}
                   </button>
 
                   <button class="dropdown-item delete" type="button" (click)="openDeleteModal(plan)">
@@ -263,7 +282,7 @@
 
       <div class="import-nutrition-content">
         <label class="upload-zone" (drop)="onImportDrop($event)" (dragover)="onImportDragOver($event)">
-          <input type="file" accept=".pdf,.xls,.xlsx" (change)="onImportFileSelected($event)" hidden />
+          <input type="file" accept=".pdf,.xlsx" (change)="onImportFileSelected($event)" hidden />
           <div class="upload-icon"><i-feather name="upload-cloud"></i-feather></div>
           <strong>{{ importFile ? importFile.name : ('DROP_FILE_OR_BROWSE' | translate) }}</strong>
           <span>{{ 'SUPPORTED_FILE_SIZE_25MB' | translate }}</span>
@@ -289,7 +308,8 @@
           type="button"
           (click)="saveImportedNutritionFile()"
           [disabled]="importSaving || !importFile || !importPlanName.trim()">
-          {{ (importSaving ? 'SAVING' : 'SAVE_NUTRITION_FILE') | translate }}
+          <ng-container *ngIf="importSaving; else nutritionImportLabel">{{ 'PROGRAM_FILES.UPLOADING' | translate: { percent: uploadPercent } }}</ng-container>
+          <ng-template #nutritionImportLabel>{{ 'SAVE_NUTRITION_FILE' | translate }}</ng-template>
         </button>
       </div>
     </div>
@@ -325,3 +345,10 @@
     (assigned)="onAssignmentDone()"
   ></app-modal-assign-toclient>
 
+<app-program-file-viewer *ngIf="viewerPlan" [plan]="viewerPlan" kind="nutrition" (closed)="viewerPlan = null"></app-program-file-viewer>
+
+<!-- « Remplacer le fichier » of a library file (audit PDF/Excel 2026-11-23, lot 3). -->
+<input id="library-nutrition-replace-input" type="file" accept=".pdf,.xlsx" hidden (change)="onLibraryReplaceSelected($event)" />
+<div class="library-upload-progress" *ngIf="libraryReplaceSaving" role="status">
+  {{ 'PROGRAM_FILES.UPLOADING' | translate: { percent: libraryReplacePercent } }}
+</div>

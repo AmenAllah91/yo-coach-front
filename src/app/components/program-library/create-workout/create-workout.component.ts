@@ -32,11 +32,12 @@ import { ProgramScheduleService } from 'app/service/program-schedule.service';
 import { ToastService } from 'app/service/toast.service';
 import { Client, ClientService } from 'app/service/client.service';
 import { WorkoutService } from 'app/service/workout.service';
-import { isLockedError, isPlanLocked, todayIso } from '@shared/models/program-schedule';
+import { isHasActivityError, isLockedError, isPlanLocked, todayIso } from '@shared/models/program-schedule';
 import { isoOf } from '@shared/program-calendar/program-calendar.model';
 import { ConfirmDialogService } from '@shared/components/confirm-dialog/confirm-dialog.service';
 import { LeavesUnsavedChanges, SavedContent, warnBeforeUnload } from '@config/guard/unsaved-changes.guard';
-import { WorkoutAiDraft } from 'app/service/workout-ai.service';
+import { MAX_PROGRAM_WEEKS, WorkoutAiDraft } from 'app/service/workout-ai.service';
+import { renumberDayTitle, weeksOfDays } from '@shared/models/workout-day-title';
 import { ExerciseHistoryService } from 'app/service/exercise-history.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { ExerciseProgressDetailComponent } from '@shared/components/exercise-progress-detail/exercise-progress-detail.component';
@@ -76,17 +77,6 @@ const EXERCISE_DISPLAY_FIELDS = new Set(['image', 'imageUrl', 'thumbnailUrl', 'p
  * the client (`clients/create-workout/:idClient`): then each day has its date, a finished or stopped program opens
  * read-only, and a longer program asks before it reaches the next one.
  */
-/**
- * The « Day N » title follows the place of the day; a title the coach wrote (« Push », « Jambes ») stays. Before, every
- * save of a library program put « Day N » back on every day.
- */
-function renumberDayTitle(day: { title?: string; name?: string }, index: number): void {
-  const title = (day.title ?? '').trim();
-  if (title && !/^(day|jour)\s+\d+$/i.test(title)) return;
-  day.title = `Day ${(index % 7) + 1}`;
-  day.name = day.title;
-}
-
 @Component({
   selector: 'app-create-workout',
   standalone: true,
@@ -99,9 +89,18 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
   isEditMode = false;
   isVisibleToOthers = false;
   durationWeeks = 4;
-  /** Toutes les durées de 1 à 12 semaines (« Ajouter une semaine » passe de 6 à 7, de 8 à 9…). */
-  readonly durationOptions = Array.from({ length: 12 }, (_, i) => i + 1);
-  readonly maxWeeks = 12;
+  /** Le plafond commun (MAX_PROGRAM_WEEKS) : création, IA, « Ajouter une semaine » et la façade. */
+  readonly maxWeeks = MAX_PROGRAM_WEEKS;
+  private durationOptionsCache: number[] = [];
+  /**
+   * Toutes les durées de 1 à 12 semaines (« Ajouter une semaine » passe de 6 à 7, de 8 à 9…) ; un programme déjà plus
+   * long garde sa durée dans la liste (elle ne descend que si le coach confirme).
+   */
+  get durationOptions(): number[] {
+    const top = Math.max(this.maxWeeks, this.durationWeeks || 1);
+    if (this.durationOptionsCache.length !== top) this.durationOptionsCache = Array.from({ length: top }, (_, i) => i + 1);
+    return this.durationOptionsCache;
+  }
   pendingDurationWeeks: number | null = null;
   pendingDurationRemovedDays = 0;
   collapsedWeeks = new Set<number>(Array.from({length: 11}, (_, index) => index + 2));
@@ -135,6 +134,8 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
   /** The end saved on the server: a longer program is checked against the next one (backlog-programmes.md P9). */
   savedEnd: string | null = null;
   duplicating = false;
+  /** Library program: how many active clients have their own copy (changes here never reach them). */
+  libraryCopies = 0;
   @ViewChild(ProgramOverflowComponent) overflow?: ProgramOverflowComponent;
   /** The program as last loaded or saved: leaving with something else asks first. */
   private readonly savedContent = new SavedContent();
@@ -223,6 +224,20 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
   /** Le jour ouvert est déjà commencé ou fait par le client : on montre CE jour, pas « la dernière fois ». */
   private get selectedDayDone(): boolean {
     return this.isClientMode && workoutDayActive(this.selectedDay);
+  }
+
+  /**
+   * Audit workouts 2026-11-23 (G4) : la séance ouverte est déjà faite ou commencée par le client. Le serveur garde
+   * ce jour tel quel (ClientDayActivity.keepWorkoutDays) : avant, le coach pouvait la modifier, voyait « Enregistré »,
+   * et retrouvait l'ancienne version au rechargement. Elle est donc en lecture seule, avec un bandeau.
+   */
+  get dayLocked(): boolean {
+    return !this.readOnly && this.selectedDayDone;
+  }
+
+  /** Programme verrouillé, ou seulement la séance ouverte. */
+  get dayReadOnly(): boolean {
+    return this.readOnly || this.selectedDayDone;
   }
 
   /** Ce que le client a noté ce jour-là pour cet exercice. */
@@ -626,6 +641,8 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
       this.facade.initEdit();
       // Opened from the library (or just created): the program is already here, shown at once.
       const handedOver = history.state?.workoutPlan as WorkoutPlan | undefined;
+      // Used once: a reload (F5) reads the program from the server, never this old copy (it would end in a 409).
+      if (handedOver) history.replaceState({ ...history.state, workoutPlan: null }, '');
       if (handedOver?.id === planId && Array.isArray(handedOver.workoutDays)) {
         this.applyLoadedPlan(handedOver);
       } else {
@@ -686,7 +703,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
       coach: this.facade.plan.coach,
       isWorkoutPlanTemplate: this.isVisibleToOthers,
     });
-    this.durationWeeks = this.normalizeDurationWeeks(Math.ceil((this.days.length || 7) / 7));
+    this.durationWeeks = weeksOfDays(this.days.length || 7);
     this.aiDraftShown = true;
     this.aiWarnings = draft.warnings || [];
   }
@@ -748,9 +765,8 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
       ...this.facade.plan,
       isWorkoutPlanTemplate: this.isVisibleToOthers,
     });
-    this.durationWeeks = this.normalizeDurationWeeks(
-      Math.ceil((this.days.length || 28) / 7)
-    );
+    // Its real length, even above the cap: a longer program never loses weeks without a confirmation.
+    this.durationWeeks = weeksOfDays(this.days.length || 28);
     if (this.clientId) {
       this.readOnly = isPlanLocked(plan as any, todayIso());
       this.stoppedAt = (plan as any)?.stoppedAt || null;
@@ -761,7 +777,21 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
     }
     this.openRequestedDay();
     this.savedContent.rememberAfterDisplay(() => this.content());
+    this.forgetUnsaved();
     this.openRequestedWindow();
+    this.loadLibraryCopies(plan);
+  }
+
+  /** Library program only: the banner « Utilisé par N clients » (each client has a copy that does not change). */
+  private loadLibraryCopies(plan: WorkoutPlan): void {
+    this.libraryCopies = 0;
+    if (this.clientId || (plan as any)?.client || !plan?.id) return;
+    this.workoutService.countClientCopies(plan.id).subscribe({
+      next: (res) => {
+        if (!this.destroyed) this.libraryCopies = Number(res?.activeClients) || 0;
+      },
+      error: () => (this.libraryCopies = 0),
+    });
   }
 
   /**
@@ -944,15 +974,41 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
   ngDoCheck(): void {
     this.summaryCache = null;
     this.calendarCache = null;
-    this.unsavedCache = null;
+    this.checkCycle++;
     this.win.check(this.saveError);
   }
 
-  /** Des changements pas encore envoyés au serveur (calculé une fois par détection de changements). */
+  /**
+   * « Modifications non enregistrées » in the toolbar (audit workouts M13). Comparing the whole program as text at each
+   * change detection was slow on a big program: the answer is kept, computed again at most every UNSAVED_CHECK_MS. Asked
+   * again before that, a timer brings one more check once the delay is over, so the toolbar always ends up right. The
+   * guard « quitter sans enregistrer » and the browser's question (closing the tab) still compare at once
+   * (hasUnsavedChanges).
+   */
+  private static readonly UNSAVED_CHECK_MS = 400;
   private unsavedCache: boolean | null = null;
+  private unsavedCheckedAt = 0;
+  private unsavedCheckedCycle = -1;
+  private unsavedTimer: ReturnType<typeof setTimeout> | null = null;
+  private checkCycle = 0;
 
   get unsaved(): boolean {
-    return this.unsavedCache ??= this.hasUnsavedChanges();
+    const now = Date.now();
+    const age = now - this.unsavedCheckedAt;
+    if (this.unsavedCache === null || age >= CreateWorkoutComponent.UNSAVED_CHECK_MS) {
+      this.unsavedCache = this.hasUnsavedChanges();
+      this.unsavedCheckedAt = now;
+      this.unsavedCheckedCycle = this.checkCycle;
+    } else if (this.unsavedCheckedCycle !== this.checkCycle && !this.unsavedTimer && !this.destroyed) {
+      // A later change detection (a key typed…) inside the delay: one more check once it is over.
+      this.unsavedTimer = setTimeout(() => (this.unsavedTimer = null), CreateWorkoutComponent.UNSAVED_CHECK_MS - age + 20);
+    }
+    return this.unsavedCache;
+  }
+
+  /** Saved, loaded, read-only…: the toolbar asks again at once. */
+  private forgetUnsaved(): void {
+    this.unsavedCache = null;
   }
 
   get programSummary(): ProgramSummary {
@@ -1072,13 +1128,15 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
     });
   }
 
+  /** A duration asked (address, choice of the coach): 1 to the cap, or the current length of a longer program. */
   private normalizeDurationWeeks(value: number): number {
-    return Math.max(1, Math.min(Number(value) || 4, 52));
+    return Math.max(1, Math.min(Number(value) || 4, Math.max(this.maxWeeks, this.days.length ? weeksOfDays(this.days.length) : 0)));
   }
 
   onDurationWeeksChange(value: number) {
     const nextWeeks = this.normalizeDurationWeeks(value);
-    const currentWeeks = this.normalizeDurationWeeks(Math.ceil((this.days.length || 1) / 7));
+    // The real length (not capped): fewer weeks than now always asks first.
+    const currentWeeks = weeksOfDays(this.days.length || 1);
 
     if (nextWeeks < currentWeeks) {
       this.pendingDurationWeeks = nextWeeks;
@@ -1192,6 +1250,11 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
   async deleteDay(d: WorkoutDay, ev?: Event) {
     ev?.stopPropagation();
     if (this.days.length <= 1) return;
+    // A day the client already did stays (the server would refuse it): said at once instead of after the save.
+    if (this.isClientMode && workoutDayActive(d)) {
+      this.toast.info(this.translate.instant('WORKOUT_DAY_LOCKED_TITLE'), this.translate.instant('WORKOUT_DAY_LOCKED_HINT'));
+      return;
+    }
     const confirmed = await this.confirmDialog.ask({
       title: 'CONFIRM_ACTION.DELETE_DAY_TITLE',
       text: 'CONFIRM_ACTION.DELETE_DAY_TEXT',
@@ -1221,7 +1284,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
 
   async toggleRestDay() {
     const day = this.selectedDay;
-    if (!day) return;
+    if (!day || this.dayReadOnly) return;
     // A rest day has no session: the exercises of the day are removed, so it is asked first.
     if (!day.isRestDay && workoutDayStatus(day) !== 'EMPTY') {
       const confirmed = await this.confirmDialog.ask({
@@ -1263,6 +1326,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
   }
 
   openExerciseSelector() {
+    if (this.dayReadOnly) return;
     // Already fetched in the background: the panel opens with its list.
     this.facade.openExerciseSelector();
   }
@@ -1377,7 +1441,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
 
   /** Appui sur une poignée ☰ : la liste passe en lignes avant que le geste commence. */
   beginSort(mode: 'units' | 'members', i: number, ev?: Event) {
-    if (this.readOnly || this.dragActive) return;
+    if (this.dayReadOnly || this.dragActive) return;
     if (ev instanceof MouseEvent && ev.button !== 0) return;
     const list = this.dayExercises;
     if (!list[i]) return;
@@ -1485,7 +1549,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
     const mode = this.sortMode;
     const from = event.previousIndex;
     const to = event.currentIndex;
-    if (this.readOnly || !mode || !list.length || !rows[from] || !rows[to]) {
+    if (this.dayReadOnly || !mode || !list.length || !rows[from] || !rows[to]) {
       this.endSort();
       return;
     }
@@ -1599,7 +1663,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
 
   moveGroupBy(i: number, direction: -1 | 1) {
     this.groupMenuAt = null;
-    if (this.readOnly || !this.facade.canMoveGroupAt(i, direction)) return;
+    if (this.dayReadOnly || !this.facade.canMoveGroupAt(i, direction)) return;
     const list = this.dayExercises;
     const before = [...list];
     const ex = list[i];
@@ -1619,7 +1683,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
   })();
 
   get showDragTip(): boolean {
-    return !this.readOnly && !this.dragTipDismissed && this.dayExercises.length >= 2;
+    return !this.dayReadOnly && !this.dragTipDismissed && this.dayExercises.length >= 2;
   }
 
   dismissDragTip() {
@@ -1674,7 +1738,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
 
   /** Pour un ajout simple seulement : en mode « ajouter au groupe / à l'échauffement », le « + » suffit. */
   get canDragFromLibrary(): boolean {
-    return !this.readOnly && !this.facade.addTargetGroup && !this.facade.addTargetWarmup && !!this.libDragMedia?.matches;
+    return !this.dayReadOnly && !this.facade.addTargetGroup && !this.facade.addTargetWarmup && !!this.libDragMedia?.matches;
   }
 
   /** Appui sur une ligne de la bibliothèque : le glisser commence après 5 px de mouvement (un clic reste un clic). */
@@ -2159,7 +2223,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
     restored.forEach((day) => (day.session = day.workoutSessions?.[0] ?? null));
     const index = Math.max(0, this.days.indexOf(this.selectedDay as WorkoutDay));
     this.days.splice(0, this.days.length, ...restored);
-    this.durationWeeks = this.normalizeDurationWeeks(Math.ceil((this.days.length || 7) / 7));
+    this.durationWeeks = weeksOfDays(this.days.length || 7);
     this.facade.syncPlanDays();
     const day = this.days[Math.min(index, this.days.length - 1)];
     if (day) this.facade.selectDay(day);
@@ -2530,7 +2594,10 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
     if (!taken.length) return;
     this.refreshDates();
     // Their content is the server's: not a change of the coach.
-    if (untouched) this.savedContent.remember(this.content());
+    if (untouched) {
+      this.savedContent.remember(this.content());
+      this.forgetUnsaved();
+    }
     const labels = taken.map((day) => [this.weekDayLabel(day), this.getRailDateLabel(day)].filter(Boolean).join(' · ')).join(', ');
     this.toast.show({
       type: 'info',
@@ -2555,6 +2622,11 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
         "Entre-temps, votre client a fait un jour que vous avez déplacé ou supprimé. Rien n'est enregistré : rechargez la page pour le voir, puis refaites votre changement.");
       return;
     }
+    // « Retirer » the next program (P9) while the client already trained in it: it stays, the server says so.
+    if (isHasActivityError(error)) {
+      this.saveError = this.translate.instant('CLIENT_PROGRAMS.REMOVE_HAS_ACTIVITY');
+      return;
+    }
     const refused = programDaysError(error);
     if (refused?.code === 'PROGRAM_GAP') {
       this.emptyDaysPrompt = refused.days;
@@ -2572,6 +2644,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
 
   ngOnDestroy(): void {
     this.destroyed = true;
+    if (this.unsavedTimer) clearTimeout(this.unsavedTimer);
     // Saved from the window over the profile: the next click reads the program again.
     if (this.embedded && this.savedAt) forgetDayWindowPlan(this.route.snapshot.paramMap.get('id'));
     this.headerObserver?.disconnect();
@@ -2582,6 +2655,7 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
 
   /** `sent`: the content when the save was sent (what the coach changed meanwhile is still unsaved). */
   private markSaved(sent: string): void {
+    this.forgetUnsaved();
     this.savingDraft = false;
     this.savedAt = new Date();
     this.savedContent.remember(sent);
@@ -2631,6 +2705,13 @@ export class CreateWorkoutComponent implements OnInit, AfterViewInit, AfterViewC
           this.markSaved(sent);
           this.facade.setPlan({...this.facade.plan, id: res.id});
           this.isEditMode = true;
+          // The program's own address (AI draft, new program), without reloading the editor: F5 opens this program.
+          if (res?.id && !navigateAfterSave && !this.destroyed) {
+            const editUrl = this.router.createUrlTree(['/workout/edit-workout', res.id], {
+              queryParams: this.returnUrl ? { returnUrl: this.returnUrl } : {},
+            }).toString();
+            this.location.replaceState(editUrl, '', history.state);
+          }
 
           if (this.returnUrl) {
             if (navigateAfterSave) this.router.navigateByUrl(this.returnUrl, {

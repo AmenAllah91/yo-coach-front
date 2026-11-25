@@ -37,6 +37,21 @@ describe('Client access isolation from admin and coach sessions', () => {
     service.refresh().then(value=>allowed=value); flushMicrotasks(); http.expectOne(url).flush({status:'ACTIVE'}); flushMicrotasks();
     expect(allowed).toBeTrue(); expect(service.blocked$.value).toBeFalse();
   }));
+  it('never calls a client « archived » when the server cannot be reached', fakeAsync(()=>{
+    let allowed=true;
+    // No answer yet: blocked, but as « cannot connect ».
+    service.refresh().then(value=>allowed=value); flushMicrotasks(); http.expectOne(url).error(new ProgressEvent('error')); flushMicrotasks();
+    expect(allowed).toBeFalse(); expect(service.blocked$.value).toBeTrue(); expect(service.unreachable$.value).toBeTrue();
+    service.refresh(); flushMicrotasks(); http.expectOne(url).flush({status:'ACTIVE'}); flushMicrotasks();
+    expect(service.blocked$.value).toBeFalse(); expect(service.unreachable$.value).toBeFalse();
+    // Access granted earlier in the session: a failed check (deployment, Wi-Fi) keeps the pages.
+    service.refresh().then(value=>allowed=value); flushMicrotasks(); http.expectOne(url).flush({}, {status:503,statusText:'Unavailable'}); flushMicrotasks();
+    expect(allowed).toBeTrue(); expect(service.blocked$.value).toBeFalse(); expect(service.unreachable$.value).toBeFalse();
+    // Archived by the coach: a failed check afterwards still says archived.
+    service.refresh(); flushMicrotasks(); http.expectOne(url).flush({status:'ARCHIVED'}); flushMicrotasks();
+    service.refresh(); flushMicrotasks(); http.expectOne(url).error(new ProgressEvent('error')); flushMicrotasks();
+    expect(service.blocked$.value).toBeTrue(); expect(service.unreachable$.value).toBeFalse();
+  }));
   it('ignores a pending client response after the session becomes admin', fakeAsync(()=>{
     service.refresh(); flushMicrotasks(); const pending=http.expectOne(url);
     roles=['ROLE_ADMIN','ROLE_CLIENT']; service.refresh(); flushMicrotasks(); expect(service.blocked$.value).toBeFalse();

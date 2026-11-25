@@ -180,90 +180,7 @@
 }
 
 .summary {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-}
-
-.ring {
-  position: relative;
-  flex: none;
-  width: 104px;
-  height: 104px;
-
-  svg {
-    width: 104px;
-    height: 104px;
-    transform: rotate(-90deg);
-  }
-
-  circle {
-    fill: none;
-    stroke-width: 10;
-  }
-
-  &__track {
-    stroke: #e8ebf0;
-  }
-
-  &__value {
-    stroke: var(--yc-primary);
-    stroke-linecap: round;
-    stroke-dasharray: 295.3;
-    transition: stroke-dashoffset 0.3s ease;
-  }
-
-  &__label {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-
-    strong {
-      font-size: 22px;
-      line-height: 1.1;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-    }
-
-    small {
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--yc-text-secondary);
-    }
-  }
-}
-
-.macro-bars {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.macro-bar {
-  &__row {
-    display: flex;
-    align-items: center;
-    margin-bottom: 6px;
-
-    .yc-label {
-      flex: 1;
-      font-size: 13px;
-    }
-
-    strong {
-      font-size: 12px;
-      font-weight: 600;
-    }
-  }
-
-  .yc-progress {
-    background: light-dark(#e8ebf0, #2a2e32);
-  }
+  display: block;
 }
 
 .total-day {
@@ -276,19 +193,8 @@
     font-size: 24px;
   }
 
-  &__badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-
-    span {
-      padding: 6px 10px;
-      border-radius: 8px;
-      background: light-dark(#f1f3f7, #14181c);
-      font-size: 13px;
-      font-weight: 600;
-      white-space: pre;
-    }
+  &__chart {
+    max-width: 460px;
   }
 }
 
@@ -408,27 +314,11 @@
 }
 
 .meal-macros {
-  display: flex;
-  padding: 11px 0;
+  padding: 14px;
   background: light-dark(#f6f8fa, #161a1e);
 
-  span {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1px;
-  }
-
-  strong {
-    font-size: 15px;
-    font-weight: 700;
-  }
-
-  small {
-    font-size: 11.5px;
-    font-weight: 500;
-    color: var(--yc-text-secondary);
+  app-macro-chart {
+    max-width: 440px;
   }
 }
 
@@ -507,7 +397,7 @@
   }
 
   &__fallback {
-    --tint: #0c86c8;
+    --tint: var(--yc-primary);
     width: 100%;
     height: 100%;
     display: flex;
@@ -856,6 +746,30 @@
   }
 }
 
+// Part of a « modified » meal eaten: ¼ ½ ¾ Tout
+.report-portions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.report-portion {
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--yc-border);
+  background: var(--yc-surface);
+  color: var(--yc-text-primary);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &.selected {
+    border: 1.5px solid var(--yc-primary);
+    background: color-mix(in srgb, var(--yc-primary) 7%, transparent);
+    color: var(--yc-primary);
+  }
+}
+
 .report-option {
   display: flex;
   align-items: center;
@@ -1025,7 +939,7 @@
   gap: 6px;
 
   em {
-    --pill: #0c86c8;
+    --pill: var(--yc-primary);
     padding: 3px 8px;
     border-radius: 6px;
     font-size: 11.5px;

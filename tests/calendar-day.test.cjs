@@ -143,3 +143,12 @@ test('planned meals: an empty meal is left out, whatever its name; a reported on
   assert.deepEqual(d.mealLines(day).map((line) => line.number), [1, 3, 4], 'each meal keeps its place');
   assert.equal(d.nutritionReport(day).meals.length, d.mealLines(day).length, 'the day panel reads both side by side');
 });
+
+test('nutrition: a « modified » meal shows the part eaten (¼, ½, ¾), nothing for all of it', () => {
+  const report = d.nutritionReport({
+    meals: [{ id: 'a', name: 'A', foods: [{ name: 'x' }] }, { id: 'b', name: 'B', foods: [{ name: 'x' }] }, { id: 'c', name: 'C', foods: [{ name: 'x' }] }, { id: 'e', name: 'E', foods: [{ name: 'x' }] }],
+    clientMealLogs: [{ mealId: 'a', status: 'MODIFIED', portion: 0.5 }, { mealId: 'b', status: 'MODIFIED', portion: 1 },
+      { mealId: 'c', status: 'MODIFIED' }, { mealId: 'e', status: 'AS_PLANNED', portion: 0.25 }],
+  });
+  assert.deepEqual(report.meals.map((m) => m.part), ['½', '', '', '']);
+});

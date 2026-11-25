@@ -14,3 +14,6 @@
 .activity-notice p { margin:0; color:light-dark(#43566b, #bec5cd); font-size:14px; }
 .activity-notice p i { margin-right:6px; color:light-dark(#0798d3, #3cb4f1); }
 .activity-notice .activity-send-message { width:auto; height:34px; padding:0 14px; display:flex; align-items:center; gap:6px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; }
+
+// The day's targets as a donut, like MyFitnessPal (2026-11-24).
+.activity-detail-chart { max-width:440px; margin-top:10px; }

@@ -9,16 +9,20 @@ import { CoachDashboardService } from '../../../service/coach-dashboard.service'
 import { DashboardAlertItem, DashboardAlertType, WidgetStatus } from '../../../models/coach-dashboard.model';
 import { WidgetStateComponent } from '../shared/widget-state.component';
 import { CheckinCardComponent } from '@shared/components/checkin-card/checkin-card.component';
-import { avatarTone, initials, relativeTime } from '../shared/dashboard-format';
+import { avatarTone, initials } from '../shared/dashboard-format';
 
-type CheckInTab = 'toReview' | 'overdue';
+type CheckInTab = 'toReview' | 'overdue' | 'missed';
 
 const TAB_TYPES: Record<CheckInTab, DashboardAlertType> = {
   toReview: 'CHECK_INS_TO_REVIEW',
   overdue: 'CHECK_INS_OVERDUE',
+  missed: 'CHECK_INS_MISSED',
 };
 
-/** Check-ins to review / overdue (real due dates only). Rows open the existing check-in review page. */
+/**
+ * Check-ins to review / late (1 to 7 days) / missed (more than 7 days): the same lists and numbers as the check-ins
+ * page and the menu badge. Rows open the existing check-in review page.
+ */
 @Component({
   selector: 'app-checkins-widget',
   standalone: true,
@@ -28,7 +32,7 @@ const TAB_TYPES: Record<CheckInTab, DashboardAlertType> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CheckinsWidgetComponent implements OnChanges {
-  @Input() counts: { toReview: number; overdue: number } | null = null;
+  @Input() counts: { toReview: number; overdue: number; missed?: number } | null = null;
   @Input() lang: string | undefined;
   /** Changes when the dashboard is refreshed. */
   @Input() refreshKey = 0;
@@ -81,10 +85,6 @@ export class CheckinsWidgetComponent implements OnChanges {
 
   tone(item: DashboardAlertItem): number {
     return avatarTone(item.clientId);
-  }
-
-  when(item: DashboardAlertItem): string {
-    return relativeTime(this.tab === 'toReview' ? item.submittedAt : item.dueAt, this.lang);
   }
 
   trackById(_: number, item: DashboardAlertItem): string {

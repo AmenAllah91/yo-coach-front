@@ -39,9 +39,9 @@ import { PaymentIncidentNoticeComponent } from 'app/components/payment-incident-
           <p class="amount">{{ amount }}</p>
           <app-payment-incident-notice></app-payment-incident-notice>
           <button type="button" class="btn-primary" (click)="pay()" [disabled]="states.paymentsPaused">
-            {{ (savedCard ? 'MY_SUB_PAY_WITH_CARD' : method === 'STRIPE' ? 'CHECKOUT_PAY_BY_CARD' : 'CHECKOUT_PAY_WITH_FLOUCI') | translate: { card: savedCard } }}
+            {{ (savedCard ? 'MY_SUB_PAY_WITH_CARD' : method === 'STRIPE' || method === 'CLICTOPAY' ? 'CHECKOUT_PAY_BY_CARD' : 'CHECKOUT_PAY_WITH_FLOUCI') | translate: { card: savedCard } }}
           </button>
-          <p class="secure"><i-feather name="lock"></i-feather>{{ (method === 'STRIPE' ? 'CHECKOUT_SECURE_STRIPE' : 'CHECKOUT_SECURE_FLOUCI') | translate }}</p>
+          <p class="secure"><i-feather name="lock"></i-feather>{{ (method === 'STRIPE' ? 'CHECKOUT_SECURE_STRIPE' : method === 'CLICTOPAY' ? 'CHECKOUT_SECURE_CLICTOPAY' : 'CHECKOUT_SECURE_FLOUCI') | translate }}</p>
           <button type="button" class="btn-link" (click)="toDashboard()">{{ 'CHECKOUT_BACK_TO_DASHBOARD' | translate }}</button>
         </div>
       </ng-template>
@@ -74,7 +74,7 @@ import { PaymentIncidentNoticeComponent } from 'app/components/payment-incident-
 export class PayInvoiceComponent implements OnInit {
   error = '';
   invoice: CoachInvoice | null = null;
-  /** FLOUCI, STRIPE: the method of the subscription, decided by YoSales. */
+  /** FLOUCI, CLICTOPAY, STRIPE: the method of the subscription, decided by YoSales. */
   method = 'FLOUCI';
   /** "Visa •••• 4242" when the payment is charged on the saved card; empty otherwise. */
   savedCard = '';

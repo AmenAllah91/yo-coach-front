@@ -14,6 +14,7 @@ import { AssignResult, ClientSchedulePreview, changeSentence, programLengthDays 
  * Client profile: choose a library nutrition program for this client (backlog-programmes.md A2-A7). One start date,
  * what changes on the client's calendar under it, a confirmation only when something changes, « Annuler » after.
  */
+import { isFilePlan } from '@shared/models/program-file-check';
 @Component({
   selector: 'app-nutrition-selection-modal',
   standalone: true,
@@ -101,9 +102,10 @@ export class NutritionSelectionModalComponent implements OnChanges {
     this.pageChange.emit(page);
   }
 
+  /** The chosen plan stays chosen after a search or another page (the date block and « Attribuer » follow it). */
   get selectedProgram(): any | null {
     if (!this.selectedProgramId) return null;
-    return this.programs.find((p) => p.id === this.selectedProgramId) || null;
+    return this.programs.find((p) => p.id === this.selectedProgramId) || this.selectedProgramItem || null;
   }
 
   /** The program's length, to show its end at once (the server confirms it). */
@@ -112,19 +114,7 @@ export class NutritionSelectionModalComponent implements OnChanges {
   }
 
   isFileProgram(program: any): boolean {
-    const mode = String(program?.nutritionPlanMode || '').toUpperCase();
-    const type = String(program?.resourceType || '').toUpperCase();
-
-    return (
-      mode === 'FILE' ||
-      type === 'PDF' ||
-      type === 'EXCEL' ||
-      type === 'XLS' ||
-      type === 'XLSX' ||
-      !!program?.fileName ||
-      !!program?.originalFileName ||
-      !!program?.fileUrl
-    );
+    return isFilePlan(program);
   }
 
   getFileKind(program: any): 'PDF' | 'EXCEL' {

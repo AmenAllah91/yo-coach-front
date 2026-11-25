@@ -228,7 +228,7 @@ export class ChangePlanComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Pays the change waiting for payment (Flouci, chosen by the system). */
+  /** Pays the change waiting for payment (Flouci, ClicToPay or Stripe, chosen by the system). */
   payPending(): void {
     const pending = this.options?.pendingRequest;
     if (!pending || this.busy || pending.paymentInProgress || this.stateService.paymentsPaused) return;

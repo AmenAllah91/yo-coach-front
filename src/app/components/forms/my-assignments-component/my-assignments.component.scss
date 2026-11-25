@@ -486,6 +486,14 @@
     small { font-size: 12.5px; font-weight: 600; color: var(--yc-text-secondary); }
   }
 
+  &__saved {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--yc-success) !important;
+    i-feather { width: 13px; height: 13px; }
+  }
+
   &__close {
     flex: none;
     padding: 6px 12px;
@@ -574,6 +582,66 @@
   &__title { margin: 16px 0 0 !important; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
   &__text { margin: 8px auto 0 !important; max-width: 480px; font-size: 15px; line-height: 1.5; color: var(--yc-text-secondary); white-space: pre-line; }
   &__chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 16px; }
+  &__avatar--photo {
+    display: block;
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  &__from {
+    margin: 14px 0 -8px !important;
+    font-size: 13px;
+    color: var(--yc-text-secondary);
+    strong { color: var(--yc-text-primary); font-weight: 600; }
+  }
+  &__safe {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 14px auto 0 !important;
+    max-width: 420px;
+    font-size: 12.5px;
+    color: var(--yc-text-secondary);
+    i-feather { flex: none; width: 14px; height: 14px; }
+  }
+}
+
+// Intro without parts: the first questions in a light card.
+.ck-preview {
+  margin: 22px 0 0;
+  padding: 14px 16px;
+  border: 1px solid var(--yc-hairline);
+  border-radius: 14px;
+  background: var(--yc-surface);
+  text-align: start;
+  animation: ck-rise 0.4s cubic-bezier(0.33, 1, 0.68, 1) 0.12s both;
+
+  &__title {
+    margin: 0 0 8px !important;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--yc-text-secondary);
+  }
+  ol { display: grid; gap: 8px; margin: 0 !important; padding: 0 !important; list-style: none; }
+  li { display: flex; align-items: flex-start; gap: 10px; font-size: 14.5px; line-height: 1.4; }
+  &__num {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--ck-soft);
+    color: var(--ck-accent);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  &__more { margin: 8px 0 0 32px !important; font-size: 13px; color: var(--yc-text-secondary); }
+  &__note { margin: 10px 0 0 !important; font-size: 12.5px; color: var(--yc-text-secondary); }
 }
 
 .ck-chip {
@@ -660,10 +728,22 @@
   animation-delay: calc(min(var(--qi), 6) * 0.05s);
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
 
-  // Answered: a coloured edge and a small tick.
+  // The field being filled: a soft ring on the card.
+  &:focus-within { border-color: color-mix(in srgb, var(--ck-accent) 40%, var(--yc-hairline)); }
+
+  &__number {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--yc-text-secondary);
+  }
+
+  // Answered: only a small tick next to the question (no coloured edge: the card no longer changes colour
+  // under the client's fingers while typing).
   &.is-answered {
-    border-color: color-mix(in srgb, var(--ck-accent) 45%, var(--yc-hairline));
-    box-shadow: inset 4px 0 0 var(--ck-accent);
 
     .question__label::after {
       content: '✓';
@@ -796,7 +876,8 @@
 
     i-feather { width: 18px; height: 18px; }
     &.is-waiting { opacity: 0.55; }
-    &.is-ready { animation: ck-glow 1.6s ease-in-out infinite; }
+    // Ready to send: two soft pulses, then it stays still.
+    &.is-ready { animation: ck-glow 1.6s ease-in-out 2; }
     &:active { transform: scale(0.985); }
   }
 }
@@ -847,3 +928,72 @@
 
 .wk-row.locked { cursor: default; }
 app-history-timeline .assignment-card { margin-bottom: 0; }
+
+// One line under the week strip: how many check-ins are late before this week, opens the latest one.
+.late-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 12px 0 0;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--yc-error, #e5484d) 28%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--yc-error, #e5484d) 7%, transparent);
+  color: var(--yc-error, #e5484d);
+  font-size: 13px;
+  text-align: start;
+  cursor: pointer;
+
+  i-feather { width: 16px; height: 16px; flex: none; }
+  span { flex: 1; min-width: 0; }
+  strong { flex: none; font-weight: 600; text-decoration: underline; }
+}
+
+// History: summary (sent / not sent, rate) and filters above the timeline.
+.hist-summary {
+  margin: 4px 0 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--yc-hairline);
+  border-radius: 16px;
+  background: var(--yc-surface);
+
+  &__stats { display: flex; align-items: baseline; gap: 6px; font-size: 14px; color: var(--yc-text-secondary); }
+  &__stats strong { font-size: 18px; color: var(--yc-text-primary); }
+  &__sep { opacity: 0.6; }
+  &__rate { margin-inline-start: auto; font-size: 14px; font-weight: 700; color: var(--yc-success); }
+  &__bar {
+    height: 6px;
+    margin: 10px 0 12px;
+    border-radius: 999px;
+    background: light-dark(#eef1f5, #2c3036);
+    overflow: hidden;
+    span { display: block; height: 100%; border-radius: inherit; background: var(--yc-success); transition: width 0.4s ease; }
+  }
+}
+
+.hist-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: 1px solid var(--yc-hairline);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--yc-text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+
+    small { font-size: 12px; opacity: 0.75; }
+    &.is-active { border-color: var(--yc-primary); background: color-mix(in srgb, var(--yc-primary) 10%, transparent); color: var(--yc-primary); }
+  }
+}
+
+// Today in a filtered history, with nothing in it.
+.hist-none { margin: 0 !important; font-size: 13px; color: var(--yc-text-secondary); }

@@ -396,8 +396,7 @@
 .qm__input input:focus { border-color: #69c6f2; box-shadow: 0 0 0 3px rgba(45, 168, 232, .12); }
 .qm__input em { position: absolute; top: 50%; right: 13px; transform: translateY(-50%); color: light-dark(#7b8798, #979ca5); font-style: normal; font-size: 14px; pointer-events: none; }
 .qm__share { color: light-dark(#667085, #a9adb6); font-size: 13px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
-.qm__bar { display: flex; height: 8px; margin-top: 4px; overflow: hidden; border-radius: 999px; background: light-dark(#eef2f6, #14171b); }
-.qm__bar i { display: block; height: 100%; transition: width .25s ease; }
+.qm__chart { width: max-content; margin: 6px auto 0; }
 .qm__whole { margin: 10px 2px 0; color: var(--meal-muted); font-size: 13px; }
 .qm__whole b { color: light-dark(#101828, #e7ecf6); }
 .macros-note { display: flex; align-items: center; gap: 8px; margin: 12px 0 0; color: var(--meal-muted); font-size: 12px; }
@@ -434,6 +433,7 @@
 .ghost-button i-feather { width: 16px; height: 16px; }
 
 .inline-error { display: block; margin-top: 4px; color: light-dark(#dc3545, #ff7e7f); font-size: 12px; }
+.meal-copies-note { margin: 12px 0 0; color: light-dark(#5f6b7a, #a7abb4); font-size: 12px; }
 .save-error,
 .ingredient-validation { margin: 8px 0 0; color: light-dark(#d92d20, #ff8271); font-size: 12px; }
 .ingredients-note { display: flex; align-items: center; gap: 8px; margin-top: 12px; color: light-dark(#7b8797, #969da5); font-size: 11px; }

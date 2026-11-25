@@ -31,6 +31,31 @@ export function nutritionContent(plan: Partial<MealPlan>): string {
   }, (key, value) => (DISPLAY_ONLY_KEYS.has(key) ? undefined : value));
 }
 
+/** A macro value other than empty or 0. */
+function someTarget(targets: unknown): boolean {
+  const t = (targets || {}) as Record<string, unknown>;
+  return ['calories', 'proteinG', 'carbsG', 'fatG'].some((key) => Number(t[key]) > 0);
+}
+
+/** A meal with a food, macros above 0, steps or a photo: deleting it is asked first. */
+export function nutritionMealHasContent(meal: Meal | null | undefined): boolean {
+  return !!meal && (!!(meal.foods || []).length || someTarget(meal.mealTargets) || !!(meal.directions || []).length || !!meal.coverImage);
+}
+
+/**
+ * A plan with nothing but its name (2026-11-23): no food, no macros, no free day, no description. « Continuer » on the
+ * first screen creates the plan at once; left like this, the editor deletes it again (never a client's plan).
+ */
+export function isEmptyNutritionPlan(plan: { details?: string | null; mealDays?: MealDay[] | null; days?: MealDay[] | null } | null | undefined): boolean {
+  if (!plan) return false;
+  if (String(plan.details || '').trim()) return false;
+  const days = plan.mealDays || plan.days || [];
+  return days.every((day) => !day || (
+    !day.cheatMeal && !day.refeedDay && !String(day.description || '').trim() && !someTarget(day.dayTargets)
+    && (day.meals || []).every((meal) => !nutritionMealHasContent(meal))
+  ));
+}
+
 /**
  * State shared by the six nutrition builders. No weekly publication any more (backlog-programmes.md): one save, the
  * client sees the filled days; empty days in the middle are marked as free days or filled first (R4).
@@ -67,6 +92,11 @@ export class NutritionDraftState {
   clientDaysKept?: (saved: MealPlan) => boolean;
   /** The plan as last loaded or saved: leaving with something else asks first. */
   private readonly savedContent = new SavedContent();
+  /** The plan this visit of the editor created (« Continuer »), and what its last save sent. */
+  private createdId: string | null = null;
+  private lastSent: string | null = null;
+  /** The editor was left: a save still on its way checks again when it comes back. */
+  private left: { assigned: boolean } | null = null;
 
   constructor(
     private service: NutritionService,
@@ -224,6 +254,8 @@ export class NutritionDraftState {
     request.subscribe({
       next: saved => {
         this.planId = saved.id || payload.id || this.planId;
+        if (!payload.id && this.planId) this.createdId = this.planId;
+        this.lastSent = sent;
         this.savedAt = new Date();
         const untouched = !!this.editedPlan && nutritionContent(this.editedPlan()) === sent;
         this.savedContent.remember(sent);
@@ -243,6 +275,7 @@ export class NutritionDraftState {
             replaceUrl: true,
           });
         }
+        if (this.left) this.discardIfEmptyNew(this.left.assigned);
       },
       error: err => {
         this.saving = false;
@@ -269,6 +302,22 @@ export class NutritionDraftState {
           : err?.error?.message || 'Unable to save the nutrition plan.';
       },
     });
+  }
+
+  /**
+   * The editor is left (its ngOnDestroy): the plan this visit created with « Continuer » and saved with nothing but its
+   * name is deleted again, without a message. Never a plan that existed before, has content, or belongs to a client.
+   */
+  discardIfEmptyNew(assigned: boolean): void {
+    this.left = { assigned };
+    // A save on its way: it checks again when it comes back (with what it sent).
+    if (assigned || this.saving || !this.createdId || this.lastSent === null) return;
+    let sent: { details?: string; days?: MealDay[] };
+    try { sent = JSON.parse(this.lastSent); } catch { return; }
+    if (!isEmptyNutritionPlan(sent)) return;
+    const id = this.createdId;
+    this.createdId = null;
+    this.service.deleteNutritionPlan(id, true).subscribe({ error: () => undefined });
   }
 
   /** A nutrition program is 1 to 12 full weeks of 7 days; an older one can have, say, 8 days: what to do, or null. */

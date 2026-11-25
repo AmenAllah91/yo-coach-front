@@ -2,7 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
-import { ClientService, Client, ClientListSort, ClientStatus } from '../service/client.service';
+import { ClientService, Client, ClientListSort, ClientStatus, clientStatusErrorKey } from '../service/client.service';
 import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import { AuthService } from '../config/auth.service';
 import { environment } from '../../environments/environment';
@@ -237,11 +237,12 @@ export class ClientsComponent implements OnInit, OnDestroy {
 
   /**
    * "Waiting" tab: people who are not clients yet, received requests first (the coach has to answer them) then
-   * invitations sent. Its counter shows the requests to answer, or the invitations sent when none is waiting.
+   * invitations sent. 2026-11-23: its counter is both (requests received + invitations sent and not expired), as the
+   * two parts of the tab show them. An invitation blocked by the plan limit with its waiting-list request is listed
+   * once, as the request (CE leaves it out of the invitations).
    */
   get waitingTabCount(): number {
-    const received = this.joinRequests?.requests?.length ?? 0;
-    return received > 0 ? received : this.pendingInvitations.length;
+    return (this.joinRequests?.requests?.length ?? 0) + this.pendingInvitations.length;
   }
 
   openWaiting(): void {
@@ -271,8 +272,13 @@ export class ClientsComponent implements OnInit, OnDestroy {
     }, 2000);
   }
 
+  /** 2026-11-23: never offered for an invitation blocked by the plan limit (CE refuses it while the plan is full). */
+  canResend(invitation: CoachInvitation): boolean {
+    return invitation.status !== 'BLOCKED';
+  }
+
   resendInvitation(invitation: CoachInvitation): void {
-    if (this.busyInvitationId) return;
+    if (this.busyInvitationId || !this.canResend(invitation)) return;
     this.busyInvitationId = invitation.id;
     this.invitationService.resendInvitation(invitation.id).subscribe({
       next: () => {
@@ -280,9 +286,10 @@ export class ClientsComponent implements OnInit, OnDestroy {
         this.toastService.success(this.translate.instant('INVITATION_SENT_SUCCESSFULLY'));
         this.loadInvitations();
       },
-      error: () => {
+      error: (error) => {
         this.busyInvitationId = null;
-        this.toastService.error(this.translate.instant('UNABLE_TO_SEND_INVITATION'));
+        this.toastService.error(this.translate.instant(
+          error?.error?.code === 'INVITATION_BLOCKED_NO_SLOT' ? 'INVITATION_BLOCKED_NO_SLOT' : 'UNABLE_TO_SEND_INVITATION'));
       },
     });
   }
@@ -442,11 +449,6 @@ export class ClientsComponent implements OnInit, OnDestroy {
   /** Clients: searched by the server in the whole list. Requests and invitations (all loaded) filter at once. */
   onSearch() {
     this.searchTyped.next(this.searchTerm.trim());
-  }
-
-  onSortChange() {
-    this.currentPage = 0;
-    this.loadClients();
   }
 
   setStatusFilter(status: ClientStatus) {
@@ -620,10 +622,23 @@ export class ClientsComponent implements OnInit, OnDestroy {
         this.loadClients();
       },
       error: (error) => {
-        console.error('Error updating client status:', error);
         this.isStatusUpdating = false;
+        // 2026-11-23: a readable message instead of the console. A full plan opens the plan notice (interceptor).
+        const key = clientStatusErrorKey(error);
+        if (key) this.toastService.error(this.translate.instant(key));
+        this.closeStatusModal();
+        if (error?.error?.code === 'CLIENT_LEFT_COACH') this.loadClients();
       },
     });
+  }
+
+  /** 2026-11-23: a former client (left, or removed by another coach) cannot be reactivated by this coach. */
+  canReactivate(client: Client): boolean {
+    return this.getClientStatus(client) === 'ARCHIVED' && !client.formerClient;
+  }
+
+  formerClientLabel(client: Client): string {
+    return client.leftForAnotherCoach ? 'CLIENT_LEFT_FOR_ANOTHER_COACH' : 'CLIENT_LEFT_YOUR_COACHING';
   }
 
   getStatusModalTitle(): string {

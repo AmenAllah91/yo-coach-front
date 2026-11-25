@@ -94,6 +94,10 @@
         {{ t('Planned', 'Prévu') }} : {{ plannedLine(step) }}
         <ng-container *ngIf="previousLine as before">&nbsp;·&nbsp; {{ t('last set', 'série d’avant') }} : {{ before }}</ng-container>
       </p>
+      <!-- The coach's note for this exercise, kept in sight during the set (audit workouts 2026-11-23, G7). -->
+      <p *ngIf="coachNote(run) as text" class="wp-coach-note">
+        <i-feather name="message-square"></i-feather><span><strong>{{ t('Coach: ', 'Coach : ') }}</strong>{{ text }}</span>
+      </p>
 
       <!-- Exercice au temps : 5 secondes pour se placer, puis le compte à rebours. -->
       <div *ngIf="counting" class="wp-ring" [class.wp-ring--ready]="count === 'ready'">

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, concat, of, tap } from 'rxjs';
+import { withUploadProgress } from '@shared/models/program-file-check';
 import { environment } from '../../environments/environment';
 import { WorkoutPlan } from '@shared/models/workout.models';
 
@@ -127,6 +128,13 @@ export class WorkoutService {
   }
 
 
+  /** How many active clients have their own copy of this library program (they keep it as it was). */
+  countClientCopies(id: string): Observable<{ activeClients: number }> {
+    return this.http.get<{ activeClients: number }>(`${this.apiUrl}${id}/client-copies`, {
+      headers: { 'X-Skip-Loader': 'true' },
+    });
+  }
+
   getWorkoutById(id: string, skipLoader = false): Observable<WorkoutPlan> {
     return this.http.get<WorkoutPlan>(`${this.apiUrl}${id}`, {
       headers: skipLoader ? { 'X-Skip-Loader': 'true' } : {},
@@ -161,7 +169,8 @@ export class WorkoutService {
     details: string | undefined,
     clientId: string,
     startDate: string,
-    endDate: string
+    endDate: string,
+    onProgress?: (percent: number) => void
   ): Observable<WorkoutPlan> {
     const formData = new FormData();
     formData.append('file', file);
@@ -171,28 +180,39 @@ export class WorkoutService {
     formData.append('startDate', startDate);
     formData.append('endDate', endDate);
 
-    return this.http.post<WorkoutPlan>(`${this.apiUrl}file/assign-only`, formData);
+    return this.http.post<WorkoutPlan>(`${this.apiUrl}file/assign-only`, formData, { reportProgress: true, observe: 'events' }).pipe(withUploadProgress(onProgress));
   }
 
   createFileWorkout(
     file: File,
     name: string,
     details?: string,
-    isWorkoutPlanTemplate: boolean = false
+    isWorkoutPlanTemplate: boolean = false,
+    onProgress?: (percent: number) => void
   ): Observable<WorkoutPlan> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('name', name);
     if (details) formData.append('details', details);
     formData.append('isWorkoutPlanTemplate', String(isWorkoutPlanTemplate));
-    return this.http.post<WorkoutPlan>(`${this.apiUrl}file`, formData);
+    return this.http.post<WorkoutPlan>(`${this.apiUrl}file`, formData, { reportProgress: true, observe: 'events' }).pipe(withUploadProgress(onProgress));
   }
 
 
-  replaceWorkoutFile(id: string, file: File): Observable<WorkoutPlan> {
+  /** « J'ai fait ma séance » on a file program, by its client (audit PDF/Excel 2026-11-23, lot 3). */
+  markWorkoutFileDay(id: string, date: string, done: boolean): Observable<WorkoutPlan> {
+    return this.http.put<WorkoutPlan>(`${this.apiUrl}${id}/file/done`, { date, done }, { headers: { 'X-Skip-Loader': 'true' } });
+  }
+
+  /** Renames a file program (coach). */
+  updateWorkoutFileDetails(id: string, name: string, details?: string): Observable<WorkoutPlan> {
+    return this.http.patch<WorkoutPlan>(`${this.apiUrl}${id}/file/details`, { name, details: details ?? '' });
+  }
+
+  replaceWorkoutFile(id: string, file: File, onProgress?: (percent: number) => void): Observable<WorkoutPlan> {
     const formData = new FormData();
     formData.append('file', file);
-    return this.http.put<WorkoutPlan>(`${this.apiUrl}${id}/file/replace`, formData);
+    return this.http.put<WorkoutPlan>(`${this.apiUrl}${id}/file/replace`, formData, { reportProgress: true, observe: 'events' }).pipe(withUploadProgress(onProgress));
   }
 
   /** « Modifier les dates » (backlog-programmes.md CD-01): the next programs are shifted unless `overlap` is REMOVE. */

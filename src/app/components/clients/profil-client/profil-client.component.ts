@@ -8,7 +8,7 @@ import { Component, HostListener, Input, ViewChild, forwardRef, inject } from '@
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Client, ClientService } from 'app/service/client.service';
+import { Client, ClientService, clientStatusErrorKey } from 'app/service/client.service';
 import { UsersService } from 'app/service/users.service';
 
 import { ChoosePlanTypeModalComponent, NutritionPlanChoice } from 'app/components/nutrition/choose-plan-type-modal/choose-plan-type-modal.component';
@@ -46,7 +46,8 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AssignScheduleComponent } from '@shared/components/assign-schedule/assign-schedule.component';
 import { AssignConfirmComponent, AssignConfirmRow } from '@shared/components/assign-confirm/assign-confirm.component';
 import { ProgramScheduleService } from 'app/service/program-schedule.service';
-import { ClientSchedulePreview, ProgramOverview, changeSentence } from '@shared/models/program-schedule';
+import { ClientSchedulePreview, ProgramOverview, addDaysIso, changeSentence, todayIso } from '@shared/models/program-schedule';
+import { PROGRAM_FILE_ACCEPT, programFileProblem, programFileUploadErrorKey } from '@shared/models/program-file-check';
 import { ClientHeaderStatus, ClientProfilePanelComponent } from '../shared/client-profile-panel.component';
 import { ClientActivityDetailComponent } from './client-activity/client-activity-detail.component';
 import { RecentActivitiesComponent } from '../../coach-dashboard/recent-activities/recent-activities.component';
@@ -127,6 +128,7 @@ export interface ScheduledCheckIn {
 }
 type ClientPreviewSection = 'workouts' | 'nutrition' | 'tasks' | 'chat' | 'checkins' | 'settings' | 'measurements' | 'pictures';
 
+import { isFilePlan } from '@shared/models/program-file-check';
 @Component({
   selector: 'app-profil-client',
   standalone: true,
@@ -224,6 +226,7 @@ export class ProfilClientComponent {
   /** Form names do not change while on the profile: each form is asked once. */
   private formNames = new Map<string, string>();
   clientPreviewOpen = false;
+  clientPreviewFiles = false;
   clientPreviewDevice: 'desktop' | 'mobile' = 'desktop';
   clientPreviewSection: ClientPreviewSection = 'workouts';
   /** Same entries, order and icons as the client's own menu (sidebar items of ROLE_CLIENT). */
@@ -838,6 +841,9 @@ export class ProfilClientComponent {
   profileImportEndDate = '';
   profileImportSaving = false;
   profileImportError = '';
+  readonly programFileAccept = PROGRAM_FILE_ACCEPT;
+  /** Upload progress of the file being sent (0-100, audit PDF/Excel 2026-11-23, lot 3). */
+  uploadPercent = 0;
 
   showNutritionFileImportModal = false;
   profileImportNutritionFile: File | null = null;
@@ -1171,17 +1177,33 @@ export class ProfilClientComponent {
 
   get clientArchived(): boolean { return !!this.client?.clientStatus && this.client.clientStatus !== 'ACTIVE'; }
 
+  /** 2026-11-23: no longer coached by this coach (left, or joined another coach): no « Reactivate ». */
+  get clientFormer(): boolean { return !!this.client?.formerClient; }
+
   private canCoach(): boolean {
     if (!this.clientArchived) return true;
-    this.toastService.error('This client is archived. Reactivate the client to continue coaching.');
+    this.toastService.error(this.translate.instant(this.clientFormer ? 'CLIENT_LEFT_COACH_ERROR' : 'ARCHIVED_CLIENT_NOTICE'));
     return false;
   }
 
+  private reactivating = false;
+
   reactivateClient(): void {
-    this.clientService.updateClientStatus(this.clientId, 'ACTIVE').subscribe(client => {
-      this.client = client;
-      this.profileCache.forget('client', this.clientId);
-      this.loadClientData();
+    if (this.reactivating || this.clientFormer) return;
+    this.reactivating = true;
+    this.clientService.updateClientStatus(this.clientId, 'ACTIVE').subscribe({
+      next: client => {
+        this.reactivating = false;
+        this.client = client;
+        this.profileCache.forget('client', this.clientId);
+        this.loadClientData();
+      },
+      error: error => {
+        this.reactivating = false;
+        // A readable message (a full plan opens the plan notice of the interceptor).
+        const key = clientStatusErrorKey(error);
+        if (key) this.toastService.error(this.translate.instant(key));
+      },
     });
   }
 
@@ -2412,19 +2434,7 @@ export class ProfilClientComponent {
 
 
   isFileNutritionPlan(plan: any): boolean {
-    const mode = String(plan?.nutritionPlanMode || '').toUpperCase();
-    const type = String(plan?.resourceType || '').toUpperCase();
-
-    return (
-      mode === 'FILE' ||
-      type === 'PDF' ||
-      type === 'EXCEL' ||
-      type === 'XLS' ||
-      type === 'XLSX' ||
-      !!plan?.fileName ||
-      !!plan?.originalFileName ||
-      !!plan?.fileUrl
-    );
+    return isFilePlan(plan);
   }
 
   get nutritionSelectionPrograms(): any[] {
@@ -2483,9 +2493,11 @@ export class ProfilClientComponent {
     this.showProgramSelectionModal = true;
   }
 
-  openClientPreview(): void {
-    this.clientPreviewDevice = window.innerWidth <= 768 ? 'mobile' : 'desktop';
-    this.clientPreviewSection = 'workouts';
+  /** {@code files}: « Voir comme mon client » on a file (audit PDF/Excel 2026-11-23, lot 3), the client's « Fichiers » tab. */
+  openClientPreview(section: 'workouts' | 'nutrition' = 'workouts', files = false): void {
+    this.clientPreviewFiles = files;
+    this.clientPreviewDevice = files || window.innerWidth <= 768 ? 'mobile' : 'desktop';
+    this.clientPreviewSection = section;
     this.clientPreviewSidebarOpen = this.clientPreviewDevice === 'desktop';
     this.clientPreviewOpen = true;
     document.body.classList.add('client-preview-open');
@@ -2564,8 +2576,9 @@ export class ProfilClientComponent {
     this.profileImportNutritionFile = null;
     this.profileImportNutritionName = '';
     this.profileImportNutritionDetails = '';
-    this.profileImportNutritionStartDate = '';
-    this.profileImportNutritionEndDate = '';
+    // 4 weeks from today by default (audit PDF/Excel 2026-11-23, lot 3): the coach changes them if needed.
+    this.profileImportNutritionStartDate = todayIso();
+    this.profileImportNutritionEndDate = addDaysIso(this.profileImportNutritionStartDate, 27);
     this.profileImportNutritionError = '';
     this.profileImportNutritionSaving = false;
   }
@@ -2815,8 +2828,9 @@ export class ProfilClientComponent {
     this.profileImportWorkoutFile = null;
     this.profileImportWorkoutName = '';
     this.profileImportWorkoutDetails = '';
-    this.profileImportStartDate = '';
-    this.profileImportEndDate = '';
+    // 4 weeks from today by default (audit PDF/Excel 2026-11-23, lot 3): the coach changes them if needed.
+    this.profileImportStartDate = todayIso();
+    this.profileImportEndDate = addDaysIso(this.profileImportStartDate, 27);
     this.profileImportError = '';
     this.profileImportSaving = false;
   }
@@ -2839,19 +2853,9 @@ export class ProfilClientComponent {
 
     if (!file) return;
 
-    const fileName = file.name.toLowerCase();
-    const valid = fileName.endsWith('.pdf') || fileName.endsWith('.xls') || fileName.endsWith('.xlsx');
-
-    if (!valid) {
-      this.profileImportError = 'Only PDF, XLS, or XLSX files are accepted.';
-      input.value = '';
-      return;
-    }
-
-    const maxSize = 25 * 1024 * 1024;
-
-    if (file.size > maxSize) {
-      this.profileImportError = 'File size must be less than 25 MB.';
+    const problem = programFileProblem(file);
+    if (problem) {
+      this.profileImportError = this.translate.instant(problem);
       input.value = '';
       return;
     }
@@ -2888,6 +2892,7 @@ export class ProfilClientComponent {
 
     this.profileImportSaving = true;
     this.profileImportError = '';
+    this.uploadPercent = 0;
 
     this.workoutService.createAndAssignFileWorkoutOnly(
       this.profileImportWorkoutFile,
@@ -2895,7 +2900,8 @@ export class ProfilClientComponent {
       this.profileImportWorkoutDetails?.trim() || undefined,
       this.clientId,
       this.profileImportStartDate,
-      this.profileImportEndDate
+      this.profileImportEndDate,
+      percent => (this.uploadPercent = percent)
     ).subscribe({
       next: (created: any) => {
         this.profileImportSaving = false;
@@ -2908,9 +2914,8 @@ export class ProfilClientComponent {
         this.workoutsTab?.getWorkOutPlanByCoachAndClient(this.userid, this.clientId);
       },
       error: (err) => {
-        console.error('Failed to import and assign file workout:', err);
         this.profileImportSaving = false;
-        this.profileImportError = 'Impossible d’importer et assigner ce programme. Vérifiez le fichier et les dates.';
+        this.profileImportError = this.translate.instant(programFileUploadErrorKey(err));
       },
     });
   }
@@ -2934,19 +2939,9 @@ export class ProfilClientComponent {
 
     if (!file) return;
 
-    const fileName = file.name.toLowerCase();
-    const valid = fileName.endsWith('.pdf') || fileName.endsWith('.xls') || fileName.endsWith('.xlsx');
-
-    if (!valid) {
-      this.profileImportNutritionError = 'Only PDF, XLS, or XLSX files are accepted.';
-      input.value = '';
-      return;
-    }
-
-    const maxSize = 25 * 1024 * 1024;
-
-    if (file.size > maxSize) {
-      this.profileImportNutritionError = 'File is too large. Maximum size is 25 MB.';
+    const problem = programFileProblem(file);
+    if (problem) {
+      this.profileImportNutritionError = this.translate.instant(problem);
       input.value = '';
       return;
     }
@@ -2983,47 +2978,31 @@ export class ProfilClientComponent {
 
     this.profileImportNutritionSaving = true;
     this.profileImportNutritionError = '';
+    this.uploadPercent = 0;
 
-    this.nutritionService.createNutritionFilePlan(
+    // One request, like the workout file (audit PDF/Excel 2026-11-23): before, the file was saved to the library then
+    // assigned, and a refused assignment left « imported, but not assigned ».
+    this.nutritionService.createAndAssignFileNutritionPlanOnly(
       this.profileImportNutritionFile,
       this.profileImportNutritionName.trim(),
       this.profileImportNutritionDetails?.trim() || undefined,
-      undefined,
-      undefined
+      this.clientId,
+      this.profileImportNutritionStartDate,
+      this.profileImportNutritionEndDate,
+      percent => (this.uploadPercent = percent)
     ).subscribe({
-      next: (createdPlan: any) => {
-        const item = {
-          ...createdPlan,
-          client: this.client,
-          startDate: this.profileImportNutritionStartDate,
-          endDate: this.profileImportNutritionEndDate,
-          mealDays: [],
-          isMealPlanTemplate: false,
-        };
-
-        this.nutritionService.assignNutritionPlan(item).subscribe({
-          next: (assigned: any) => {
-            this.profileImportNutritionSaving = false;
-            this.programSchedule.announceChanges(assigned?.scheduleChanges, this.fullName);
-            this.resetScheduleState();
-            this.showNutritionFileImportModal = false;
-            this.closeAssignFlow();
-            this.getAllNutrition();
-            this.loadDashboardPrograms();
-            this.nutritionTab?.getMealPlanByCoachAndClient(this.userid, this.clientId);
-          },
-          error: (err) => {
-            console.error('Failed to assign imported nutrition file:', err);
-            this.profileImportNutritionSaving = false;
-            this.profileImportNutritionError = 'File imported, but assignment failed. Please try assigning it from Existing Nutrition Programs.';
-            this.getAllNutrition();
-          },
-        });
+      next: (assigned: any) => {
+        this.profileImportNutritionSaving = false;
+        this.programSchedule.announceChanges(assigned?.scheduleChanges, this.fullName);
+        this.resetScheduleState();
+        this.showNutritionFileImportModal = false;
+        this.closeAssignFlow();
+        this.loadDashboardPrograms();
+        this.nutritionTab?.getMealPlanByCoachAndClient(this.userid, this.clientId);
       },
       error: (err) => {
-        console.error('Failed to import nutrition file:', err);
         this.profileImportNutritionSaving = false;
-        this.profileImportNutritionError = 'Impossible d’importer et assigner ce programme nutrition. Vérifiez le fichier et les dates.';
+        this.profileImportNutritionError = this.translate.instant(programFileUploadErrorKey(err));
       },
     });
   }

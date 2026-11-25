@@ -24,7 +24,7 @@ export const POLL_MAX_ATTEMPTS = 40;
 export const REDIRECT_DELAY_MS = 3000;
 
 /**
- * SUB-23: page where Flouci sends the coach back (through the payment service: /payment/success or /payment/failed).
+ * SUB-23: page where the payment page (Flouci, ClicToPay...) sends the coach back (through the payment service: /payment/success or /payment/failed).
  * It never creates an invoice or a payment: it only reads the invoice status.
  */
 @Component({
@@ -61,7 +61,7 @@ export class PaymentReturnComponent implements OnInit, OnDestroy {
       if (this.phase === 'timeout') this.stateService.refresh().subscribe();
       return;
     }
-    // Flouci said "failed": one check is enough (the payment may still have gone through).
+    // The payment page said "failed": one check is enough (the payment may still have gone through).
     this.poll(returnedAsFailed ? 1 : POLL_MAX_ATTEMPTS, returnedAsFailed);
   }
 

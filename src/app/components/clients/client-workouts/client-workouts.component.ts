@@ -1,12 +1,11 @@
-import { Component, ElementRef, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, HostListener, Input, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { FeatherModule } from 'angular-feather';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { Subscription, catchError, of } from 'rxjs';
-import * as XLSX from 'xlsx';
+import { EMPTY, Observable, Subject, Subscription, catchError, concatMap, of, tap } from 'rxjs';
 import { WorkoutService } from 'app/service/workout.service';
 import { WorkoutDayService } from 'app/service/workout-day.service';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
@@ -21,6 +20,23 @@ import {
   allExercises, capitalizeFirst, dateKey, estimatedWorkoutMinutes, exerciseCardImage, isRestDay, nothingToLog, planDate,
   programWeek, workoutDayTitle, youtubeVideoId,
 } from '../shared/client-plan-utils';
+import {
+  LocalWorkoutDraft, clearLocalDraft, elapsedSince, isNetworkError, localDraftNeeded, readLocalDraft, workoutDayKey,
+  writeLocalDraft,
+} from './workout-local-draft';
+
+/** One request of the day's save queue (M15): sent one after the other, in the order they were asked. */
+interface DaySave {
+  seq: number;
+  kind: 'draft' | 'final';
+  planId: string;
+  dayKey: string;
+  payload: any;
+  ok?: (response: unknown) => void;
+  failed?: (error: any) => void;
+  /** Not sent: a newer draft or the end of the day follows. */
+  skipped?: () => void;
+}
 
 /** Days during which the client can correct a finished workout (ClientDayRules.CLIENT_EDIT_DAYS on the server). */
 const CLIENT_EDIT_DAYS = 7;
@@ -67,22 +83,29 @@ interface ExerciseGroup {
 /** One day of the week shown: its date and what is planned on it (nothing = empty line). */
 interface WeekRow { key: string; date: Date; today: boolean; selected: boolean; items: DayItem[]; }
 
-interface FileProgram { plan: any; type: 'PDF' | 'EXCEL'; isCurrent: boolean; }
+interface FileProgram { plan: any; type: 'PDF' | 'EXCEL'; isCurrent: boolean; upcoming: boolean; }
 
 /**
  * Client workouts, same content and logic as the mobile WorkoutScreen, WorkoutDetailScreen and
  * ExerciseDetailScreen: month list (upcoming / past), program files, the day run (timer, set by set
  * tracking, log as completed, missed) and the exercise page.
  */
+import { programFileOpenErrorKey } from '@shared/models/program-file-check';
+import { fileProgramWeek, isFilePlan } from '@shared/models/program-file-check';
+import { isoDate } from '@shared/models/program-schedule';
+import { ProgramFileViewerComponent } from '@shared/components/program-file-viewer/program-file-viewer.component';
+import { PdfDay, workoutPdfDays } from '../shared/workout-pdf';
 @Component({
   selector: 'app-client-workouts',
   standalone: true,
-  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule, CompletionCelebrationComponent, WorkoutPlayerComponent, NumberOnlyDirective, WeekStripComponent, HistoryTimelineComponent],
+  imports: [CommonModule, FormsModule, FeatherModule, TranslateModule, ProgramFileViewerComponent, CompletionCelebrationComponent, WorkoutPlayerComponent, NumberOnlyDirective, WeekStripComponent, HistoryTimelineComponent],
   templateUrl: './client-workouts.component.html',
   styleUrl: './client-workouts.component.scss',
 })
 export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   @Input() previewClientId = '';
+  /** The tab to open first (the coach's « Voir comme mon client » on a file: « Fichiers »). */
+  @Input() startTab: 'program' | 'files' = 'program';
   @Input() previewMode = false;
 
   view: 'list' | 'history' | 'files' | 'file' | 'day' = 'list';
@@ -95,7 +118,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   selectedDate = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
   plans: any[] = [];
   showExerciseWeight = true;
-  workoutFilesEnabled = false;
+  workoutFilesEnabled = true;
   toast: { message: string; tone: 'success' | 'error' | 'info' } | null = null;
 
   // Opened day
@@ -124,20 +147,9 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
 
   // Files
   openedFile: FileProgram | null = null;
-  fileLoading = false;
-  fileError = '';
-  fileBlobUrl: string | null = null;
-  excelSheets: string[] = [];
-  excelSheet = '';
-  excelRows: any[][] = [];
-  excelHeaders: string[] = [];
-  pdfCurrentPage = 1;
-  pdfTotalPages = 0;
-  pdfZoom = 100;
-  @ViewChild('pdfCanvas') pdfCanvas?: ElementRef<HTMLCanvasElement>;
-  private pdfDocument: any = null;
-  private pdfRenderTask: any = null;
-  private workbook: XLSX.WorkBook | null = null;
+  private fileReturnView: 'list' | 'files' = 'files';
+  fileDoneBusy: string | null = null;
+  private startTabPicked = false;
 
   private clientId = sessionStorage.getItem('userId') || '';
   private initialDayId = '';
@@ -148,6 +160,22 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   private noticeTimer: ReturnType<typeof setTimeout> | null = null;
   private toastTimer: ReturnType<typeof setTimeout> | null = null;
   private hasPendingDraft = false;
+  /** M14: the timer counts from the real clock (Date.now()), not from ticks (a sleeping tab stops them). */
+  private runningSince: number | null = null;
+  private runningFrom = 0;
+  /**
+   * M15: drafts and the end of the workout go one after the other, in order (a slow draft never lands after
+   * « Terminer »). A draft already followed by a newer draft or by the end of the same day is not sent.
+   */
+  private readonly saveQueue = new Subject<DaySave>();
+  private saveSeq = 0;
+  private readonly latestDraft = new Map<string, number>();
+  private readonly latestFinal = new Map<string, number>();
+  /** M16: drafts of this device being sent again (one at a time per day). */
+  private readonly resending = new Set<string>();
+  /** M16: a draft is kept on this device, waiting for the network (small note under the timer). */
+  offlineSaved = false;
+  private destroyed = false;
   private subscriptions = new Subscription();
   private plansRequest?: Subscription;
 
@@ -159,7 +187,10 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     private translate: TranslateService,
     private route: ActivatedRoute,
     private theme: ClientThemeService,
-  ) {}
+  ) {
+    // Not tied to the page's subscriptions: what was asked before leaving still reaches the server, in order.
+    this.saveQueue.pipe(concatMap(job => this.send(job))).subscribe();
+  }
 
   get fr(): boolean { return this.translate.currentLang?.startsWith('fr') ?? false; }
   private get locale(): string { return this.fr ? 'fr-FR' : 'en-US'; }
@@ -183,11 +214,13 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.hasPendingDraft && this.canEditWorkout) this.saveProgress();
+    this.destroyed = true;
+    // The requests already asked still go (in order); nothing new comes after.
+    this.saveQueue.complete();
     this.stopTimer();
     [this.draftTimer, this.noticeTimer, this.toastTimer].forEach(timer => timer && clearTimeout(timer));
     this.subscriptions.unsubscribe();
     this.plansRequest?.unsubscribe();
-    this.revokeFile();
     document.body.classList.remove('client-workout-detail-open');
   }
 
@@ -203,10 +236,14 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
       next: plans => {
         this.plans = this.plansOfCurrentCoach((plans as any[]) || []);
         this.loading = false;
+        // M16: what this device kept while offline is shown and sent again before anything opens.
+        this.resendLocalDrafts();
         this.loadCoachSettings();
+        this.pickStartTab();
         this.openInitialTarget();
       },
-      error: err => { this.loading = false; this.error = err?.message || this.somethingWentWrong; },
+      // Never the raw English text of the HTTP error.
+      error: () => { this.loading = false; this.error = this.somethingWentWrong; },
     });
   }
 
@@ -240,9 +277,10 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   /** Program files and the weight column follow the coach's settings. */
   private loadCoachSettings(): void {
     const coachId = this.plans.map(plan => String(plan?.coach?.id || '').trim()).find(Boolean);
-    if (!coachId) { this.workoutFilesEnabled = false; return; }
+    // The program files given by the coach are always shown (audit PDF/Excel, G1): before, a settings read that failed
+    // (or the coach turning the option off) hid them from the client.
+    if (!coachId) return;
     this.subscriptions.add(this.coachSettings.getConfigForCoach(coachId, true).pipe(catchError(() => of(null))).subscribe(config => {
-      this.workoutFilesEnabled = !!config && config.workout?.workoutFileEnabled !== false;
       this.showExerciseWeight = config ? config.workout?.showExerciseWeight !== false : true;
     }));
   }
@@ -254,7 +292,12 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
       const plan = this.plans.find(item => item.id === this.initialPlanId);
       if (plan) {
         this.openedInitial = true;
-        if (this.isFileProgram(plan)) { this.view = 'files'; return; }
+        if (this.isFileProgram(plan)) {
+          // From the home card: the file itself opens (« Retour » comes back to the week).
+          const file = this.filePrograms.find(item => item.plan.id === plan.id);
+          if (file) this.openFile(file); else this.view = 'files';
+          return;
+        }
         const first = plan.workoutDays?.[0];
         const focus = planDate(plan.startDate) || (first ? this.scheduledDate(plan, first) : null);
         if (focus) { this.month = new Date(focus.getFullYear(), focus.getMonth(), 1); this.showWeekOf(focus); }
@@ -636,16 +679,23 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     }
     const previous = item.day.status;
     item.day.status = status;
-    this.subscriptions.add(this.workoutDayService.updateWorkoutDay({
-      id: item.day.id, status, ...(item.day.dayNumber != null ? { dayNumber: item.day.dayNumber } : {}),
-    }, item.plan.id).subscribe({
-      next: () => this.showToast(status === 'MISSED' ? this.t('Workout marked as missed', 'Entraînement marqué comme manqué')
-        : this.t('Workout reset to pending', 'Entraînement remis en attente'), status === 'MISSED' ? 'error' : 'success'),
-      error: (error) => {
-        item.day.status = previous;
-        this.showToast(this.serverMessage(error) ?? this.t('Failed to update', 'Échec de la mise à jour'), 'error');
+    const dayKey = workoutDayKey(item.day);
+    // The client's choice replaces what this device kept (it must not come back as « in progress »).
+    clearLocalDraft(this.storage, item.plan.id, dayKey);
+    // In the same queue as the drafts (M15): after them, never before.
+    this.enqueue({
+      kind: 'final', planId: item.plan.id, dayKey,
+      payload: { id: item.day.id, status, ...(item.day.dayNumber != null ? { dayNumber: item.day.dayNumber } : {}) },
+      ok: () => {
+        if (this.destroyed) return;
+        this.showToast(status === 'MISSED' ? this.t('Workout marked as missed', 'Entraînement marqué comme manqué')
+          : this.t('Workout reset to pending', 'Entraînement remis en attente'), status === 'MISSED' ? 'error' : 'success');
       },
-    }));
+      failed: (error) => {
+        item.day.status = previous;
+        if (!this.destroyed) this.showToast(this.serverMessage(error), 'error');
+      },
+    });
   }
 
   get statusOptions(): { value: 'COMPLETED' | 'MISSED' | 'PENDING'; icon: string; color: string; label: string; hint: string }[] {
@@ -664,15 +714,13 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   // Program files (mobile _buildFilesEntry / _openFilesPage)
   // -------------------------------------------------------------------------
   isFileProgram(plan: any): boolean {
-    const mode = String(plan?.workoutPlanMode || '').toUpperCase();
-    const type = String(plan?.resourceType || '').toUpperCase();
-    return mode === 'FILE' || ['PDF', 'EXCEL', 'XLS', 'XLSX'].includes(type);
+    return isFilePlan(plan);
   }
 
   get filePrograms(): FileProgram[] {
     if (!this.workoutFilesEnabled) return [];
     const files = this.plans.filter(plan => this.isFileProgram(plan)).map(plan => ({
-      plan, type: this.fileType(plan), isCurrent: this.isCurrentFile(plan),
+      plan, type: this.fileType(plan), isCurrent: this.isCurrentFile(plan), upcoming: this.isUpcomingFile(plan),
     }) as FileProgram);
     return files.sort((a, b) => {
       if (a.isCurrent !== b.isCurrent) return a.isCurrent ? -1 : 1;
@@ -682,7 +730,8 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     });
   }
   get currentFiles(): FileProgram[] { return this.filePrograms.filter(file => file.isCurrent); }
-  get historyFiles(): FileProgram[] { return this.filePrograms.filter(file => !file.isCurrent); }
+  get upcomingFiles(): FileProgram[] { return this.filePrograms.filter(file => file.upcoming); }
+  get historyFiles(): FileProgram[] { return this.filePrograms.filter(file => !file.isCurrent && !file.upcoming); }
 
   get filesSummary(): string {
     const n = this.filePrograms.length; const active = this.currentFiles.length; const s = n > 1 ? 's' : '';
@@ -690,15 +739,28 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
       : `${n} document${s} from your coach${active > 0 ? ` · ${active} active` : ''}`;
   }
 
+  /** Started and not ended (its real end when another program took its place). A future file is « À venir ». */
   private isCurrentFile(plan: any): boolean {
-    const end = planDate(plan?.endDate);
-    return !end || end.getTime() >= this.today.getTime();
+    const start = planDate(plan?.startDate);
+    const end = planDate(plan?.stoppedAt) || planDate(plan?.endDate);
+    const today = this.today.getTime();
+    return (!start || start.getTime() <= today) && (!end || end.getTime() >= today);
   }
 
+  private isUpcomingFile(plan: any): boolean {
+    const start = planDate(plan?.startDate);
+    return !!start && start.getTime() > this.today.getTime();
+  }
+
+  /** The stored type first, then the extension: « Programme Excel.pdf » is a PDF (audit PDF/Excel 2026-11-23). */
   private fileType(plan: any): 'PDF' | 'EXCEL' {
-    const combined = [plan?.resourceType, plan?.originalFileName, plan?.fileName, plan?.fileUrl, plan?.fileContentType]
-      .map(value => String(value || '').toLowerCase()).join(' ');
-    return /xlsx|xls|excel|spreadsheet/.test(combined) ? 'EXCEL' : 'PDF';
+    const type = String(plan?.resourceType || '').toUpperCase();
+    if (['XLS', 'XLSX', 'EXCEL'].includes(type)) return 'EXCEL';
+    if (type === 'PDF') return 'PDF';
+    const name = String(plan?.originalFileName || plan?.fileName || '').toLowerCase().trim();
+    if (/\.xlsx?$/.test(name)) return 'EXCEL';
+    if (name.endsWith('.pdf')) return 'PDF';
+    return /spreadsheet|excel/.test(String(plan?.fileContentType || '').toLowerCase()) ? 'EXCEL' : 'PDF';
   }
 
   fileMeta(file: FileProgram): string {
@@ -723,100 +785,75 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     return `${start ? format(start) : ''}${end ? ` → ${format(end)}` : ''}`;
   }
 
+  /** A client with only PDF / Excel programs lands on « Fichiers ». */
+  private pickStartTab(): void {
+    if (this.startTabPicked || this.view !== 'list') return;
+    this.startTabPicked = true;
+    if (!this.filePrograms.length) return;
+    // No program built in the app running or to come, but a file is: the files open first (2026-11-24).
+    const builderLive = this.builderPlans.some(plan => this.isCurrentFile(plan) || this.isUpcomingFile(plan));
+    const fileLive = this.currentFiles.length > 0 || this.upcomingFiles.length > 0;
+    if (this.startTab === 'files' || !this.builderPlans.length || (!builderLive && fileLive)) this.view = 'files';
+  }
+
+  /** The programs built in the app (not a PDF / Excel). */
+  get builderPlans(): any[] { return this.plans.filter(plan => !this.isFileProgram(plan)); }
+
+  /** « Programme » | « Fichiers » only when the client has both; one kind alone is shown without tabs (2026-11-24). */
+  get showPlanTabs(): boolean { return this.filePrograms.length > 0 && this.builderPlans.length > 0; }
+
+  /** « Votre coach vous a envoyé 2 fichiers. » under an empty week. */
+  get filesSentLine(): string {
+    const n = this.filePrograms.length;
+    return n > 1 ? this.t(`Your coach sent you ${n} files.`, `Votre coach vous a envoyé ${n} fichiers.`)
+      : this.t('Your coach sent you a file.', 'Votre coach vous a envoyé un fichier.');
+  }
+
   openFiles(): void { this.view = 'files'; }
 
+  /** The file opens in the shared viewer (audit PDF/Excel 2026-11-23, lot 2): sharp PDF, Excel read here. */
+  /** Opened from the files list or from a day card: « Retour » goes back there. */
   openFile(file: FileProgram): void {
+    this.fileReturnView = this.view === 'list' ? 'list' : 'files';
     this.openedFile = file;
     this.view = 'file';
-    this.loadFile();
+  }
+  closeFile(): void { this.openedFile = null; this.view = this.fileReturnView; }
+
+  /** Week N of M of a file program today. */
+  fileWeek(file: FileProgram): { week: number; weeks: number } | null {
+    return fileProgramWeek(file.plan, isoDate(new Date()));
   }
 
-  closeFile(): void { this.revokeFile(); this.openedFile = null; this.view = 'files'; }
-
-  private revokeFile(): void {
-    if (this.fileBlobUrl) URL.revokeObjectURL(this.fileBlobUrl);
-    this.fileBlobUrl = null;
-    this.pdfDocument = null;
-    this.workbook = null;
+  fileDoneCount(file: FileProgram): number {
+    return new Set<string>((file.plan.fileDoneDates || []).map((d: string) => String(d).slice(0, 10))).size;
   }
 
-  private loadFile(): void {
-    const file = this.openedFile;
-    if (!file) return;
-    this.revokeFile();
-    this.fileLoading = true;
-    this.fileError = '';
-    this.subscriptions.add(this.workoutService.getWorkoutFileBlob(file.plan).subscribe({
-      next: async blob => {
-        try {
-          if (file.type === 'EXCEL') {
-            this.workbook = XLSX.read(await blob.arrayBuffer(), { type: 'array' });
-            this.excelSheets = this.workbook.SheetNames || [];
-            this.excelSheet = this.excelSheets[0] || '';
-            this.showExcelSheet(this.excelSheet);
-            if (!this.excelRows.length) this.fileError = this.t('This Excel file is empty or unreadable.', 'Ce fichier Excel est vide ou illisible.');
-          } else {
-            const pdf = blob.type === 'application/pdf' ? blob : new Blob([blob], { type: 'application/pdf' });
-            this.fileBlobUrl = URL.createObjectURL(pdf);
-            const pdfjs: any = await import('pdfjs-dist');
-            pdfjs.GlobalWorkerOptions.workerSrc = 'assets/pdf.worker.min.mjs';
-            this.pdfDocument = await pdfjs.getDocument({ data: await pdf.arrayBuffer() }).promise;
-            this.pdfTotalPages = this.pdfDocument.numPages || 0;
-            this.pdfCurrentPage = 1;
-            setTimeout(() => this.renderPdfPage(), 0);
-          }
-        } catch {
-          this.fileError = file.type === 'EXCEL'
-            ? this.t('Unable to display a preview of this Excel file.', 'Impossible d’afficher un aperçu de ce fichier Excel.')
-            : this.t('Unable to load this workout file.', 'Impossible de charger ce fichier d’entraînement.');
-        }
-        this.fileLoading = false;
+  isFileDoneToday(file: FileProgram): boolean {
+    const today = isoDate(new Date());
+    return (file.plan.fileDoneDates || []).some((d: string) => String(d).slice(0, 10) === today);
+  }
+
+  /** « J'ai fait » on a file program (audit PDF/Excel 2026-11-23, lot 3): shown at once, undone if the server refuses. */
+  toggleFileDone(file: FileProgram): void {
+    if (this.fileDoneBusy || !file.plan?.id) return;
+    const today = isoDate(new Date());
+    const before: string[] = [...(file.plan.fileDoneDates || [])];
+    const done = !this.isFileDoneToday(file);
+    file.plan.fileDoneDates = done ? [...before, today] : before.filter(d => String(d).slice(0, 10) !== today);
+    this.fileDoneBusy = file.plan.id;
+    this.subscriptions.add(this.workoutService.markWorkoutFileDay(file.plan.id, today, done).subscribe({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      next: (plan: any) => {
+        this.fileDoneBusy = null;
+        if (plan?.fileDoneDates) file.plan.fileDoneDates = plan.fileDoneDates;
       },
       error: () => {
-        this.fileLoading = false;
-        this.fileError = this.t('Unable to load this workout file.', 'Impossible de charger ce fichier d’entraînement.');
+        this.fileDoneBusy = null;
+        file.plan.fileDoneDates = before;
+        this.showToast(this.t('Could not save. Please try again.', 'Enregistrement impossible. Réessayez.'), 'error');
       },
     }));
-  }
-
-  showExcelSheet(name: string): void {
-    this.excelSheet = name;
-    const sheet = this.workbook?.Sheets[name];
-    if (!sheet) { this.excelHeaders = []; this.excelRows = []; return; }
-    const rows = (XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' }) as any[][])
-      .filter(row => row.some(cell => String(cell || '').trim() !== '')).slice(0, 200);
-    const columns = Math.min(26, Math.max(1, ...rows.map(row => row.length)));
-    this.excelHeaders = Array.from({ length: columns }, (_, index) => String.fromCharCode(65 + index));
-    this.excelRows = rows.map(row => Array.from({ length: columns }, (_, index) => row[index] ?? ''));
-  }
-
-  async renderPdfPage(): Promise<void> {
-    const canvas = this.pdfCanvas?.nativeElement;
-    if (!this.pdfDocument || !canvas) return;
-    try { this.pdfRenderTask?.cancel(); } catch { /* finished already */ }
-    const context = canvas.getContext('2d');
-    if (!context) return;
-    const page = await this.pdfDocument.getPage(this.pdfCurrentPage);
-    const available = Math.max(280, (canvas.parentElement?.clientWidth || 800) - 16);
-    const base = page.getViewport({ scale: 1 });
-    const viewport = page.getViewport({ scale: (available / base.width) * (this.pdfZoom / 100) });
-    canvas.width = Math.floor(viewport.width);
-    canvas.height = Math.floor(viewport.height);
-    this.pdfRenderTask = page.render({ canvasContext: context, viewport });
-    try { await this.pdfRenderTask.promise; } catch { /* cancelled by a newer render */ }
-    this.pdfRenderTask = null;
-  }
-
-  pdfPage(delta: number): void {
-    const next = this.pdfCurrentPage + delta;
-    if (next < 1 || (this.pdfTotalPages && next > this.pdfTotalPages)) return;
-    this.pdfCurrentPage = next;
-    this.renderPdfPage();
-  }
-
-  pdfZoomBy(delta: number): void {
-    this.pdfZoom = Math.min(200, Math.max(50, this.pdfZoom + delta));
-    this.renderPdfPage();
   }
 
   downloadFile(file: FileProgram): void {
@@ -832,7 +869,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
         setTimeout(() => URL.revokeObjectURL(url), 60_000);
         this.showToast(this.t(`Downloaded: ${link.download}`, `Téléchargé : ${link.download}`), 'success');
       },
-      error: () => this.showToast(this.t('Unable to load this workout file.', 'Impossible de charger ce fichier d’entraînement.'), 'error'),
+      error: (error: any) => this.showToast(this.translate.instant(programFileOpenErrorKey(error, true)), 'error'),
     }));
   }
 
@@ -1059,6 +1096,9 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   }
 
   get dayHeaderTitle(): string { return this.item ? workoutDayTitle(this.item.day, this.fr) : ''; }
+
+  /** The description the coach wrote for this day (rest notes too). */
+  get dayCoachText(): string | null { return this.clean((this.item?.day as any)?.description); }
   get dayHeaderSubtitle(): string {
     if (!this.item) return '';
     const date = new Intl.DateTimeFormat(this.locale, { weekday: 'short', month: 'short', day: 'numeric' }).format(this.item.date);
@@ -1479,6 +1519,7 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   // Saving (mobile _saveProgress / _scheduleDraftSave / _updateStatus)
   private payload(status: string, alreadyCompleted: boolean): any {
     const day = this.item!.day;
+    this.tick(); // the time at this very moment (M14)
     return {
       id: day.id,
       status,
@@ -1520,14 +1561,117 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     if (this.draftTimer) clearTimeout(this.draftTimer);
     const payload = this.payload('IN_PROGRESS', false);
     this.applyToDay(payload);
-    // Not tied to the page: a save sent while leaving it must still reach the server. A refusal is said (a network
-    // hiccup is not: the next change sends everything again).
-    this.workoutDayService.updateWorkoutDay(payload, this.item.plan.id).subscribe({
-      error: (error) => {
-        const reason = error?.status >= 400 && error?.status < 500 ? this.serverMessage(error) : null;
-        if (reason) this.showToast(reason, 'error');
+    this.sendDraft(this.item.plan.id, workoutDayKey(this.item.day), payload);
+  }
+
+  /**
+   * A draft: kept on this device first (M16), then sent in the queue (M15). Not tied to the page: a save sent while
+   * leaving it must still reach the server. A refusal is said; no network: the copy waits (note « Enregistré sur cet
+   * appareil »), sent again when the network is back or when the page opens again.
+   */
+  private sendDraft(planId: string, dayKey: string, payload: any): void {
+    const draft: LocalWorkoutDraft = { planId, dayKey, savedAt: Date.now(), payload };
+    writeLocalDraft(this.storage, draft);
+    this.enqueue({
+      kind: 'draft', planId, dayKey, payload,
+      ok: () => {
+        clearLocalDraft(this.storage, planId, dayKey, draft.savedAt);
+        if (!this.destroyed) this.offlineSaved = false;
+      },
+      failed: (error) => {
+        if (isNetworkError(error) || error?.status >= 500) {
+          if (!this.destroyed) this.offlineSaved = isNetworkError(error);
+          return;
+        }
+        // Refused for good (7 days over, day not reached…): the copy would be refused again.
+        clearLocalDraft(this.storage, planId, dayKey, draft.savedAt);
+        if (!this.destroyed && error?.status >= 400 && error?.status < 500) this.showToast(this.serverMessage(error), 'error');
       },
     });
+  }
+
+  private enqueue(job: Omit<DaySave, 'seq'>): void {
+    const seq = ++this.saveSeq;
+    (job.kind === 'draft' ? this.latestDraft : this.latestFinal).set(job.dayKey, seq);
+    this.saveQueue.next({ ...job, seq });
+  }
+
+  private send(job: DaySave): Observable<unknown> {
+    // A newer draft, or the end of this workout, follows in the queue: this one is old already (not sent).
+    if (job.kind === 'draft'
+      && ((this.latestDraft.get(job.dayKey) ?? 0) > job.seq || (this.latestFinal.get(job.dayKey) ?? 0) > job.seq)) {
+      job.skipped?.();
+      return EMPTY;
+    }
+    return this.workoutDayService.updateWorkoutDay(job.payload, job.planId).pipe(
+      tap({ next: response => job.ok?.(response), error: error => job.failed?.(error) }),
+      catchError(() => EMPTY),
+    );
+  }
+
+  /** localStorage, or null when the browser refuses it (every read and write is in a try/catch). */
+  private get storage(): Storage | null {
+    try {
+      return typeof localStorage === 'undefined' ? null : localStorage;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * M16: the drafts this device kept that the server does not have: shown at once in the days, then sent again. A
+   * day finished on the server (or done further on another device) keeps the server's version: the copy is dropped.
+   */
+  private resendLocalDrafts(): void {
+    if (this.previewMode) return;
+    const store = this.storage;
+    if (!store) return;
+    for (const plan of this.plans) {
+      if (!plan?.id) continue;
+      for (const day of plan.workoutDays || []) {
+        const dayKey = workoutDayKey(day);
+        const kept = readLocalDraft(store, plan.id, dayKey);
+        if (!kept) continue;
+        const id = `${plan.id}.${dayKey}`;
+        if (!localDraftNeeded(kept, day)) {
+          if (!this.resending.has(id)) clearLocalDraft(store, plan.id, dayKey, kept.savedAt);
+          continue;
+        }
+        const sent = kept.payload;
+        Object.assign(day, {
+          status: sent.status, workoutElapsedSeconds: sent.workoutElapsedSeconds,
+          clientCompletionMode: sent.clientCompletionMode, overallWorkoutNote: sent.overallWorkoutNote,
+          clientExerciseLogs: sent.clientExerciseLogs,
+        });
+        if (this.resending.has(id)) continue;
+        this.resending.add(id);
+        this.enqueue({
+          kind: 'draft', planId: plan.id, dayKey, payload: sent,
+          ok: () => {
+            this.resending.delete(id);
+            clearLocalDraft(store, plan.id, dayKey, kept.savedAt);
+            if (!this.destroyed) this.offlineSaved = false;
+          },
+          failed: (error) => {
+            this.resending.delete(id);
+            if (isNetworkError(error) || error?.status >= 500) {
+              if (!this.destroyed && isNetworkError(error)) this.offlineSaved = true;
+              return;
+            }
+            clearLocalDraft(store, plan.id, dayKey, kept.savedAt);
+          },
+          skipped: () => this.resending.delete(id),
+        });
+      }
+    }
+  }
+
+  /** Back online: what waits on this device goes now. */
+  @HostListener('window:online')
+  onBackOnline(): void {
+    if (this.destroyed) return;
+    if (this.item && this.hasPendingDraft && this.canEditWorkout) this.saveProgress();
+    this.resendLocalDrafts();
   }
 
   scheduleDraftSave(): void {
@@ -1545,10 +1689,27 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     if (this.draftTimer) clearTimeout(this.draftTimer);
     this.hasPendingDraft = false;
     this.saving = true;
+    const item = this.item;
+    const planId = item.plan.id;
+    const dayKey = workoutDayKey(item.day);
+    const live = this.runStatus === 'IN_PROGRESS' || this.runStatus === 'PAUSED';
     const payload = this.payload(status, alreadyCompleted);
-    this.subscriptions.add(this.workoutDayService.updateWorkoutDay(payload, this.item.plan.id).subscribe({
-      next: () => {
+    if (status === 'PENDING') {
+      // « Annuler l'entraînement »: what this device kept is dropped too.
+      clearLocalDraft(this.storage, planId, dayKey);
+    } else if (live) {
+      // A live workout ended without network: its sets stay on this device (as a draft) until the end is sent.
+      writeLocalDraft(this.storage, { planId, dayKey, savedAt: Date.now(), payload: { ...payload, status: 'IN_PROGRESS' } });
+    }
+    // In the queue (M15): after the drafts already asked, never before; one end only (`saving`).
+    this.enqueue({
+      kind: 'final', planId, dayKey, payload,
+      ok: () => {
+        clearLocalDraft(this.storage, planId, dayKey);
+        if (this.destroyed) return;
         this.saving = false;
+        this.offlineSaved = false;
+        if (this.item !== item) return;
         this.applyToDay(payload);
         this.runStatus = status === 'COMPLETED' ? (alreadyCompleted ? 'ALREADY_COMPLETED' : 'COMPLETED')
           : status === 'PENDING' ? 'NOT_STARTED' : status;
@@ -1558,13 +1719,19 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
           : status === 'MISSED' ? this.t('Workout saved as missed', 'Entraînement enregistré comme manqué')
           : this.t('Workout saved', 'Entraînement enregistré'), 'success');
       },
-      error: (error) => {
+      failed: (error) => {
+        if (this.destroyed) return;
         this.saving = false;
-        // A refusal of the server says why (e.g. the 7 days to correct a workout are over).
-        const reason = error?.status >= 400 && error?.status < 500 ? this.serverMessage(error) : null;
-        this.showToast(reason ?? this.t('Unable to save workout. Please try again.', 'Impossible d’enregistrer l’entraînement. Veuillez réessayer.'), 'error');
+        if (isNetworkError(error)) {
+          this.offlineSaved = live;
+          this.showToast(this.t('No connection: the workout is not saved yet. Try again when you are back online.',
+            'Pas de connexion : la séance n’est pas encore enregistrée. Réessayez dès le retour du réseau.'), 'error');
+          return;
+        }
+        // A refusal of the server says why (e.g. the 7 days to correct a workout are over), in the client's language.
+        this.showToast(this.serverMessage(error), 'error');
       },
-    }));
+    });
   }
 
   // -------------------------------------------------------------------------
@@ -1592,11 +1759,37 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     this.backToList();
   }
 
+  /** M14: counts from the real clock, like the guided player: right after a locked screen or a tab in the background. */
   private startTimer(): void {
     this.stopTimer();
-    this.timer = setInterval(() => { if (this.runStatus === 'IN_PROGRESS') this.elapsedSeconds += 1; }, 1000);
+    this.runningSince = Date.now();
+    this.runningFrom = this.elapsedSeconds;
+    this.timer = setInterval(() => this.tick(), 1000);
   }
-  private stopTimer(): void { if (this.timer) clearInterval(this.timer); this.timer = null; }
+
+  /** The time now; a pause that came without stopping the timer is not counted. */
+  private tick(): void {
+    if (this.runningSince === null) return;
+    if (this.runStatus !== 'IN_PROGRESS') {
+      this.runningFrom = this.elapsedSeconds;
+      this.runningSince = Date.now();
+      return;
+    }
+    this.elapsedSeconds = elapsedSince(this.runningFrom, this.runningSince, Date.now());
+  }
+
+  private stopTimer(): void {
+    this.tick();
+    if (this.timer) clearInterval(this.timer);
+    this.timer = null;
+    this.runningSince = null;
+  }
+
+  /** Back to the tab: the timer shows the right time at once (the interval slept). */
+  @HostListener('document:visibilitychange')
+  onVisible(): void {
+    if (typeof document !== 'undefined' && document.visibilityState === 'visible') this.tick();
+  }
 
   // -------------------------------------------------------------------------
   // Exercise page (mobile ExerciseDetailScreen)
@@ -1725,14 +1918,20 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
   // -------------------------------------------------------------------------
   // PDF of the program (web print preview, mobile "Export PDF")
   // -------------------------------------------------------------------------
-  get pdfDays(): { date: Date; day: any }[] {
-    if (!this.item) return [];
-    return (this.item.plan.workoutDays || []).map((day: any) => ({ date: this.scheduledDate(this.item!.plan, day), day }))
-      .sort((a: { date: Date }, b: { date: Date }) => a.date.getTime() - b.date.getTime());
-  }
+  /** The days of the PDF, worked out when the preview opens (audit PDF/Excel 2026-11-23, lot 4). */
+  pdfPlanDays: PdfDay[] = [];
 
-  pdfExercises(day: any): any[] { return allExercises(day); }
-  pdfLabels(day: any): string[] { return this.exerciseLabels({ plan: this.item?.plan, day, date: new Date() }); }
+  openPdfPreview(): void {
+    if (!this.item) return;
+    const plan = this.item.plan;
+    this.pdfPlanDays = workoutPdfDays(plan, {
+      fr: this.fr,
+      dateOf: day => this.scheduledDate(plan, day),
+      weight: kg => this.displayWeight(kg),
+      showWeight: this.showExerciseWeight,
+    });
+    this.showPdfPreview = true;
+  }
   formatLongDate(date: Date | null): string {
     return date ? new Intl.DateTimeFormat(this.locale, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' }).format(date) : '—';
   }
@@ -1751,28 +1950,56 @@ export class ClientWorkoutsComponent implements OnInit, OnDestroy {
     const preview = document.querySelector('.cw-pdf-document');
     if (!preview) return;
     const win = window.open('', '_blank', 'width=960,height=800');
-    if (!win) return;
+    if (!win) { this.showToast(this.translate.instant('PROGRAM_FILES.POPUP_BLOCKED')); return; }
     const title = (this.item?.plan?.name || 'workout-program').replace(/[<>&"']/g, '');
     win.document.write(`<!doctype html><html><head><title>${title}</title><style>${PDF_PRINT_STYLES}</style></head><body>${preview.outerHTML}</body></html>`);
     win.document.close();
     win.focus();
-    setTimeout(() => win.print(), 250);
+    // Printed once the page is drawn (it was printed after 250 ms, sometimes before).
+    let printed = false;
+    const print = () => { if (!printed) { printed = true; win.print(); } };
+    win.addEventListener('load', () => setTimeout(print, 50));
+    setTimeout(print, 1500);
   }
 
   // -------------------------------------------------------------------------
   private get somethingWentWrong(): string { return this.t('Something went wrong', 'Une erreur est survenue'); }
 
-  /** The reason the server gave (Spring error body or a plain message), if any. */
-  private serverMessage(error: any): string | null {
+  /**
+   * M19: why the server refused, in the client's language. Known codes (ProgramScheduleException) and known texts are
+   * translated; anything else gives a general message, never the server's raw English (« Forbidden »…).
+   */
+  private serverMessage(error: any): string {
     const body = error?.error;
-    const text = typeof body === 'string' ? body : body?.message || body?.detail || body?.error;
-    const value = String(text ?? '').trim();
-    if (!value) return null;
-    if (/7 days|7 jours|no longer|plus être/i.test(value)) {
+    let parsed = body;
+    if (typeof body === 'string') {
+      try { parsed = JSON.parse(body); } catch { parsed = null; }
+    }
+    switch (String(parsed?.code || '')) {
+      case 'DAY_DONE':
+        return this.t('This workout is already done: it can no longer change.', 'Cette séance est déjà faite : elle ne peut plus changer.');
+      case 'DAY_PAST':
+        return this.t('This day is past: it can no longer change.', 'Ce jour est passé : il ne peut plus changer.');
+      case 'PLAN_CHANGED':
+        return this.t('Your program changed in the meantime. Open the workout again to see the latest version.',
+          'Votre programme a changé entre-temps. Rouvrez la séance pour voir la dernière version.');
+      case 'PROGRAM_LOCKED':
+        return this.t('This program is finished or was replaced: it can no longer change.',
+          'Ce programme est terminé ou a été remplacé : il ne peut plus changer.');
+      case 'DAY_OUTSIDE_PROGRAM':
+        return this.t('This day is outside your program.', 'Ce jour est en dehors de votre programme.');
+    }
+    const text = String((typeof body === 'string' ? body : body?.message || body?.detail || body?.error) ?? '').trim();
+    if (/7 days|7 jours|no longer be changed|corrections are possible|plus être/i.test(text)) {
       return this.t('This workout can no longer be corrected (7 days after its date).', 'Cette séance ne peut plus être corrigée (7 jours après sa date).');
     }
-    if (/not started yet/i.test(value)) return this.t('This workout is planned for a later day.', 'Cette séance est prévue pour un autre jour.');
-    return value;
+    if (/not started yet/i.test(text)) return this.t('This workout is planned for a later day.', 'Cette séance est prévue pour un autre jour.');
+    if (/no exercise/i.test(text)) return this.t('This workout has no exercise: there is nothing to save.', 'Cette séance n’a pas d’exercice : il n’y a rien à enregistrer.');
+    if (error?.status === 404) return this.t('This workout no longer exists. Reload the page.', 'Cette séance n’existe plus. Rechargez la page.');
+    if (error?.status === 401 || error?.status === 403) {
+      return this.t('You cannot change this workout.', 'Vous ne pouvez pas modifier cette séance.');
+    }
+    return this.t('Unable to save workout. Please try again.', 'Impossible d’enregistrer l’entraînement. Veuillez réessayer.');
   }
 
   showToast(message: string, tone: 'success' | 'error' | 'info' = 'info'): void {
@@ -1797,5 +2024,12 @@ const PDF_PRINT_STYLES = `
   .cw-pdf-day h2{margin:0;padding:9px 12px;background:#0c86c8;color:#fff;font-size:12px}.cw-pdf-day.rest h2{background:#f4f6f9;color:#0f1b2d}
   .cw-pdf-rest{padding:14px;text-align:center;color:#7d889b;font-size:11px;font-style:italic}
   table{width:100%;border-collapse:collapse;font-size:10px}th,td{padding:6px 10px;border-top:1px solid #eef1f4;text-align:left}th{color:#7d889b;font-size:9px;text-transform:uppercase}
+  .cw-pdf-note{margin:0;padding:8px 12px 0;color:#546175;font-size:10.5px;line-height:1.45;white-space:pre-line}
+  .cw-pdf-block{padding-bottom:6px}.cw-pdf-block--group{margin:8px 10px;border-left:3px solid #0c86c8;border-radius:4px;background:#f7fbfe}
+  .cw-pdf-block--warmup{margin:8px 10px;border-left:3px solid #d97706;border-radius:4px;background:#fffbeb}
+  .cw-pdf-block__title{margin:0;padding:7px 12px 0;color:#0c86c8;font-size:9.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+  .cw-pdf-block--warmup .cw-pdf-block__title{color:#b45309}
+  .cw-pdf-ex-note{margin:2px 12px 0;color:#546175;font-size:10px;font-style:italic}
+  tr.cw-pdf-warm td{color:#b45309}
   .cw-pdf-ex{padding:8px 12px 0;font-size:11px;font-weight:700}.cw-pdf-ex b{display:inline-block;min-width:20px;margin-right:6px;padding:1px 5px;border-radius:4px;background:#e8f3fa;color:#0c86c8;font-size:9px;text-align:center}
 `;

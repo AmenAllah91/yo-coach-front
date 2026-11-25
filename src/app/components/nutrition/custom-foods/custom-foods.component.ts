@@ -1,5 +1,7 @@
 import { WriteActionDirective } from 'app/shared/subscription/write-action.directive';
-import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { Component, HostListener, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { ConfirmDialogService } from '@shared/components/confirm-dialog/confirm-dialog.service';
+import { LEAVE_UNSAVED } from '@config/guard/unsaved-changes.guard';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { FeatherModule } from 'angular-feather';
@@ -95,6 +97,7 @@ export class CustomFoodsComponent implements OnInit, OnDestroy {
     private nutritionService: NutritionService,
     private translate: TranslateService,
     private authService: AuthService,
+    private confirmDialog: ConfirmDialogService,
   ) {}
 
   downloadImportTemplate(): void {
@@ -366,12 +369,47 @@ export class CustomFoodsComponent implements OnInit, OnDestroy {
     if (this.isSaving) return;
     this.resetForm();
     this.showAddModal = true;
+    this.rememberAddForm();
   }
 
   closeAddModal() {
     if (this.isSaving) return;
     this.showAddModal = false;
     this.resetForm();
+  }
+
+  /** What the add/edit window held when it opened, to tell whether the coach typed something since. */
+  private addFormOpened = '';
+  private askingToLeave = false;
+
+  private addFormContent(): string {
+    return JSON.stringify({ draft: this.draft, image: this.foodImageUrl, main: this.mainServingId, extra: this.extraServings });
+  }
+
+  private rememberAddForm(): void {
+    this.addFormOpened = this.addFormContent();
+  }
+
+  get addFormChanged(): boolean {
+    const newServingTyped = this.servingFormOpen && this.editingServingIndex === null && !!this.servingForm && !this.servingForm.isBlank;
+    return newServingTyped || this.addFormContent() !== this.addFormOpened;
+  }
+
+  /** A click beside the window, Escape, « Annuler » or the cross: asks first when something would be lost. */
+  async requestCloseAddModal(): Promise<void> {
+    if (this.isSaving || this.askingToLeave || !this.showAddModal) return;
+    if (this.addFormChanged) {
+      this.askingToLeave = true;
+      const leave = await this.confirmDialog.ask(LEAVE_UNSAVED);
+      this.askingToLeave = false;
+      if (!leave) return;
+    }
+    this.closeAddModal();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.showAddModal) void this.requestCloseAddModal();
   }
 
   editFood(food: Food) {
@@ -387,6 +425,7 @@ export class CustomFoodsComponent implements OnInit, OnDestroy {
     this.hadExistingImage = Boolean(food.imageUrl);
     this.showAddModal = true;
     this.openDropdownId = null;
+    this.rememberAddForm();
   }
 
   async saveFood() {

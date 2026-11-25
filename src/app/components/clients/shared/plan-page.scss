@@ -54,6 +54,106 @@
   }
 }
 
+// « Programme » | « Fichiers » (audit PDF/Excel 2026-11-23, lot 3): the PDF / Excel live in their own tab.
+.plan-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 0 0 14px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--yc-surface-variant, light-dark(#eef1f4, #23282d));
+
+  button {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 38px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--yc-text-secondary);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+
+    &.active {
+      background: var(--yc-surface);
+      color: var(--yc-text-primary);
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+    }
+  }
+
+  &__count {
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--yc-primary);
+    color: var(--yc-on-primary, #fff);
+    font-size: 11.5px;
+    font-weight: 700;
+    line-height: 20px;
+  }
+}
+
+// The current file: its week, « J'ai fait », the days done.
+.file-card__progress {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--yc-hairline);
+  cursor: default;
+}
+
+.file-card__week {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--yc-primary);
+}
+
+.file-card__count {
+  font-size: 12.5px;
+  color: var(--yc-text-secondary);
+}
+
+.file-card__done {
+  flex-basis: 100%;
+  height: 42px;
+}
+
+.file-card__done-ok {
+  flex-basis: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--yc-success);
+
+  i-feather {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.file-card__undo {
+  margin-left: auto;
+  padding: 4px 8px;
+  border: 0;
+  background: none;
+  color: var(--yc-text-secondary);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .month-nav {
   margin: 12px 0 10px;
 }
@@ -574,4 +674,9 @@
   p {
     margin: 0;
   }
+}
+
+/* Empty week while the coach shared PDF / Excel files: a way to them (2026-11-24). */
+.list-empty__files {
+  margin-top: 14px;
 }

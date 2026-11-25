@@ -37,16 +37,16 @@ describe('NutritionClientTabComponent (client profile tab loading)', () => {
     expect(tab.loaded).toBeFalse();
   });
 
-  it('switches to app plans and reloads the list when files are turned off', () => {
+  it('keeps the files already given to the client when files are turned off (audit PDF/Excel, G1)', () => {
     const tab = open();
+    tab.setActiveTab('FILES');
     const reload = spyOn(tab, 'getMealPlanByCoachAndClient').and.callThrough();
-
-    settings.configChanges$.next({});
-    expect(reload).not.toHaveBeenCalled();
 
     fileOption = false;
     settings.configChanges$.next({});
-    expect(tab.activeTab).toBe('APP');
+    // The option only stops new imports: the tab keeps its files and is read again (the option changed).
+    expect(tab.activeTab).toBe('FILES');
+    expect(tab.nutritionFileEnabled).toBeFalse();
     expect(reload).toHaveBeenCalledTimes(1);
     expect(tab.loaded).toBeTrue();
   });

@@ -10,6 +10,8 @@ export class Notification {
   clientId?: string;
   source?: string;
   authorId?: string;
+  authorName?: string;
+  authorPhoto?: string;
 
   constructor(data: any) {
     this.id = data.id;
@@ -22,6 +24,8 @@ export class Notification {
     this.clientId = data.clientId;
     this.source = data.source;
     this.authorId = data.authorId;
+    this.authorName = data.authorName;
+    this.authorPhoto = data.authorPhoto;
 
     if (data.createdAt) {
       if (typeof data.createdAt === 'number') {

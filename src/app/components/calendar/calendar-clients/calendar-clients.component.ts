@@ -29,14 +29,14 @@ import { CopyDaysModalComponent } from '@shared/program-copy/copy-days-modal.com
 import { DayCopy } from '@shared/program-copy/program-day-copy';
 import { RemoveProgramConfirmComponent } from '@shared/components/remove-program-confirm/remove-program-confirm.component';
 import { ToastService } from 'app/service/toast.service';
-import { ClientSchedulePreview, OverviewItem, changeSentence, isPlanLocked, todayIso } from '@shared/models/program-schedule';
+import { ClientSchedulePreview, OverviewItem, changeSentence, isHasActivityError, isPlanLocked, todayIso } from '@shared/models/program-schedule';
 import { mealDayActive, workoutDayActive } from '@shared/models/client-day-activity';
 import { CalendarFile, FileBand, arrangeFiles, weekBands } from '@shared/models/calendar-files';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ClientService } from 'app/service/client.service';
 import { ChatService } from 'app/service/chat.service';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { CoachSettingsService } from 'app/service/coach-settings.service';
 import { WorkoutPlan } from '@shared/models/workout.models';
 import { MealDay, MealPlan } from '@shared/models/MealPlan';
@@ -144,6 +144,10 @@ interface CalendarWeek {
   rate?: number | null;
 }
 
+/** « Détail | Résumé », kept on this browser: one choice for the week, one for the month. */
+const WEEK_DETAIL_KEY = 'yo-coach.calendar-detail';
+const MONTH_DETAIL_KEY = 'yo-coach.calendar-detail-month';
+
 /** Where the calendar was before opening an editor, to come back to the same month (sessionStorage). */
 const CALENDAR_PLACE_KEY = 'yo-coach.calendar-place';
 
@@ -152,6 +156,9 @@ interface Client {
   name?: string;
   firstName?: string;
   lastName?: string;
+  email?: string;
+  image?: string;
+  avatarUrl?: string;
 }
 
 interface NutritionMeal {
@@ -290,13 +297,17 @@ interface DayDetail {
   focus: DaySubject | null;
 }
 
-type CalendarViewMode = 'month' | 'week' | 'day';
+/** « Fichiers »: the PDF / Excel programs, in their own tab (audit PDF/Excel 2026-11-23, lot 3). */
+type CalendarViewMode = 'month' | 'week' | 'day' | 'files';
 type CalendarType = 'workout' | 'nutrition';
 
+import { ProgramFileViewerComponent } from '@shared/components/program-file-viewer/program-file-viewer.component';
+import { ProgramFilesListComponent } from '@shared/components/program-files-list/program-files-list.component';
+import { isFilePlan } from '@shared/models/program-file-check';
 @Component({
   selector: 'app-calendar-clients',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule, SectionLoaderComponent, AssignScheduleComponent, AssignConfirmComponent,
+  imports: [CommonModule, FormsModule, RouterLink, TranslateModule, SectionLoaderComponent, ProgramFileViewerComponent, ProgramFilesListComponent, AssignScheduleComponent, AssignConfirmComponent,
     ProgramShiftModalComponent, CopyDaysModalComponent, RemoveProgramConfirmComponent],
   templateUrl: './calendar-clients.component.html',
   styleUrls: ['./calendar-clients.component.scss', '../../../shared/program-calendar/_calendar-cards.scss', './calendar-clients-cards.scss'],
@@ -316,6 +327,8 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
   }
 
   /** The coach's settings (K4): PDF / Excel programs are shown for a type only when files are used for it. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  viewerFile: { plan: any; kind: 'workout' | 'nutrition' } | null = null;
   workoutFileEnabled = true;
   nutritionFileEnabled = true;
   private settingsKnown = false;
@@ -495,6 +508,10 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
   /** Échap closes the side panel (not while one of its windows is open: Échap closes that window). */
   @HostListener('document:keydown.escape')
   onEscape(): void {
+    if (this.clientMenuOpen) {
+      this.closeClientMenu();
+      return;
+    }
     if (this.cardMenu || this.pick || this.copyWeekMenu) {
       this.cardMenu = null;
       this.pick = null;
@@ -515,6 +532,7 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
   closeCardMenu(): void {
     this.cardMenu = null;
     this.copyWeekMenu = false;
+    this.clientMenuOpen = false;
   }
 
   private outletKind(kind: CalendarType, item: WorkoutProgram | NutritionProgram): DayOutletKind {
@@ -806,7 +824,11 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
       .subscribe({
         next: (res) => {
           // Active clients only (backlog-programmes.md A1): the calendar creates programs for the one selected.
-          this.clients = (res || []).filter((client: any) => (client?.clientStatus ?? 'ACTIVE') === 'ACTIVE');
+          this.clients = (res || [])
+            .filter((client: any) => (client?.clientStatus ?? 'ACTIVE') === 'ACTIVE')
+            // A → Z: the cards of the empty page, the menu and ‹ › follow this order.
+            .sort((a: Client, b: Client) => this.clientName(a).localeCompare(this.clientName(b), undefined, { sensitivity: 'base' }));
+          this.clientsLoaded = true;
           // The client kept from last time is gone (archived, another coach): back to « Choisir un client ».
           if (!this.embeddedClientId && this.selectedClient && !this.clients.some((client) => client.id === this.selectedClient)) {
             this.onClientChange('');
@@ -816,8 +838,93 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
         },
         error: (err) => {
           console.error('Error loading clients', err);
+          this.clientsLoaded = true;
         },
       });
+  }
+
+  /* ---- Choosing the client (the calendar of the menu): cards on the empty page, a menu with search and photos, ‹ ›. ---- */
+
+  /** The list of clients arrived (the empty page says « Chargement… » before). */
+  clientsLoaded = false;
+  clientMenuOpen = false;
+  /** The search typed in the menu or above the cards. */
+  clientQuery = '';
+
+  /** The clients whose name or email holds the search (all of them without one). */
+  get filteredClients(): Client[] {
+    const query = this.normalize(this.clientQuery);
+    if (!query) return this.clients;
+    return this.clients.filter((client) => this.normalize(`${this.clientName(client)} ${client.email || ''}`).includes(query));
+  }
+
+  /** « Sami » finds « Sâmi »: no case, no accents. */
+  private normalize(text: string): string {
+    return (text || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
+  }
+
+  clientName(client: Client): string {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return `${client?.firstName || ''} ${client?.lastName || ''}`.trim() || (client as any)?.name || client?.email || '';
+  }
+
+  /** A client's photo, '' when none or broken (the initials show instead). */
+  clientPhotoOf(client: Client): string {
+    const url = String(client?.avatarUrl || client?.image || '').trim();
+    return url && url.toLowerCase() !== 'not found' && !this.failedPhotos.has(url) ? url : '';
+  }
+
+  clientInitialsOf(client: Client): string {
+    return this.clientName(client)
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0].toUpperCase())
+      .join('') || '?';
+  }
+
+  get selectedClientRecord(): Client | undefined {
+    return this.clients.find((client) => client.id === this.selectedClient);
+  }
+
+  toggleClientMenu(event: Event): void {
+    event.stopPropagation();
+    this.cardMenu = null;
+    this.copyWeekMenu = false;
+    this.clientMenuOpen = !this.clientMenuOpen;
+    this.clientQuery = '';
+    // The search field takes the keyboard at once: the coach types the first letters.
+    if (this.clientMenuOpen) setTimeout(() => (document.querySelector('.client-picker__search') as HTMLInputElement | null)?.focus());
+  }
+
+  closeClientMenu(): void {
+    this.clientMenuOpen = false;
+    this.clientQuery = '';
+  }
+
+  chooseClient(client: Client): void {
+    this.closeClientMenu();
+    if (!client?.id || client.id === this.selectedClient) return;
+    this.onClientChange(client.id);
+  }
+
+  /** Enter in a search field: the first client found. */
+  chooseFirstFound(): void {
+    const first = this.filteredClients[0];
+    if (first) this.chooseClient(first);
+  }
+
+  /** ‹ › next to the client: the one before / after in the list (from the last one back to the first). */
+  stepClient(step: -1 | 1): void {
+    const count = this.clients.length;
+    if (count < 2) return;
+    const index = this.clients.findIndex((client) => client.id === this.selectedClient);
+    const next = this.clients[(index + step + count) % count];
+    if (next) this.chooseClient(next);
+  }
+
+  trackClient(_: number, client: Client): string | undefined {
+    return client.id;
   }
 
   /* ---- Reading by month (backlog-programmes.md, calendar lot B): the months on the screen, then the month before and
@@ -844,6 +951,9 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
   private freshPlans: { workout: Map<string, any>; meal: Map<string, any> } | null = null;
   /** A month on the screen is being read (after the first one): a thin bar says it, the grid stays. */
   periodLoading = false;
+  /** The error messages shown now (one of each at most). */
+  private tasksErrorToast: string | null = null;
+  private calendarErrorToast: string | null = null;
 
   /** Everything again from the server, screen emptied first: another client (or the first load). */
   loadCalendar(): void {
@@ -921,7 +1031,8 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
     const from = `${month}-01`;
     const to = this.formatDateToYYYYMMDD(new Date(year, monthNumber, 0));
     // The tasks and habits come by the tasks' own read, side by side: their row fills in when they arrive.
-    this.tasksApi.calendar(this.selectedClient, from, to, true).subscribe({
+    // Its own message only (with « Réessayer »), once for the month shown: the months around are read silently.
+    this.tasksApi.calendar(this.selectedClient, from, to, true, true).subscribe({
       next: (tasks) => {
         if (generation !== this.readGeneration) return;
         this.tasksByMonth.set(month, tasks?.items || []);
@@ -931,7 +1042,9 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
         console.error('Error loading the client tasks', err);
         // An empty Tasks row would read « no tasks »: say it could not be read, with « Réessayer ».
         if (neighbour || generation !== this.readGeneration) return;
-        this.toast.show({
+        // One message at a time: a week over two months (or a « Réessayer » that fails again) must not pile them up.
+        if (this.tasksErrorToast) this.toast.remove(this.tasksErrorToast);
+        this.tasksErrorToast = this.toast.show({
           type: 'error',
           title: this.translate.instant('CALENDAR_TASKS_LOAD_ERROR'),
           actions: [{ label: this.translate.instant('RETRY'), run: () => this.refreshCalendar() }],
@@ -960,7 +1073,8 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
         this.monthsFailed.add(month);
         console.error('Error loading the client calendar', err);
         if (!neighbour) {
-          this.toast.show({
+          if (this.calendarErrorToast) this.toast.remove(this.calendarErrorToast);
+          this.calendarErrorToast = this.toast.show({
             type: 'error',
             title: this.translate.instant('CALENDAR_LOAD_ERROR'),
             actions: [{ label: this.translate.instant('RETRY'), run: () => this.refreshCalendar() }],
@@ -1077,27 +1191,7 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private isBackendFileWorkoutPlan(plan: any): boolean {
-    const mode = String(plan?.workoutPlanMode || '').toUpperCase();
-    const type = String(plan?.resourceType || '').toUpperCase();
-    const hasInteractiveDays =
-      Array.isArray(plan?.workoutDays) && plan.workoutDays.length > 0;
-
-    // Interactive programs can carry stale file metadata after being copied or
-    // assigned. Their workout days are the authoritative signal.
-    if (mode === 'NORMAL' || hasInteractiveDays) {
-      return false;
-    }
-
-    return (
-      mode === 'FILE' ||
-      type === 'PDF' ||
-      type === 'EXCEL' ||
-      type === 'XLS' ||
-      type === 'XLSX' ||
-      !!plan?.fileName ||
-      !!plan?.originalFileName ||
-      !!plan?.fileUrl
-    );
+    return isFilePlan(plan);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1324,18 +1418,7 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private isFileNutritionPlan(plan: any): boolean {
-    const mode = String(plan?.nutritionPlanMode || '').toUpperCase();
-    const type = String(plan?.resourceType || '').toUpperCase();
-    return (
-      mode === 'FILE' ||
-      type === 'PDF' ||
-      type === 'EXCEL' ||
-      type === 'XLS' ||
-      type === 'XLSX' ||
-      !!plan?.fileName ||
-      !!plan?.originalFileName ||
-      !!plan?.fileUrl
-    );
+    return isFilePlan(plan);
   }
 
   mapBackendToNutritionPrograms(plans: any[]): NutritionProgram[] {
@@ -1808,9 +1891,10 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
 
   /** The files of one type, when the coach's settings use them for it (K4). */
   private visibleFilesOf(type: CalendarType): CalendarFile[] {
-    if (!this.settingsKnown || !this.selectedClient) return [];
-    if (type === 'workout') return this.workoutFileEnabled ? this.workoutFiles : [];
-    return this.nutritionFileEnabled ? this.nutritionFiles : [];
+    // The PDF / Excel programs have their own tab « Fichiers » (audit PDF/Excel 2026-11-23, lot 3, the coach's choice):
+    // they are no longer drawn in the cells, the week list or the day panel, among the programs built in the app.
+    void type;
+    return [];
   }
 
   /** « Ce jour-là » (lot C, L2-L3): every program day, file, task and check-in of that date, with what the client did. */
@@ -1863,13 +1947,21 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
   /* ---- The detail of the days (as a coach's program sheet) and the quick changes (lot C, C4). ---- */
 
   /** The week shows each day's exercises and meals; off, one line per day (the coach's choice, kept on this browser). */
-  weekDetailed = this.readDetailChoice();
+  weekDetailed = this.readDetailChoice(WEEK_DETAIL_KEY, true);
+  /** The month: its own choice, the summary by default (the detail made a month two screens high). */
+  monthDetailed = this.readDetailChoice(MONTH_DETAIL_KEY, false);
 
-  private readDetailChoice(): boolean {
+  /** « Détail | Résumé » of the view shown (the week and the month each keep theirs). */
+  get cardsDetailed(): boolean {
+    return this.currentView === 'month' ? this.monthDetailed : this.weekDetailed;
+  }
+
+  private readDetailChoice(key: string, fallback: boolean): boolean {
     try {
-      return localStorage.getItem('yo-coach.calendar-detail') !== 'off';
+      const saved = localStorage.getItem(key);
+      return saved === 'on' ? true : saved === 'off' ? false : fallback;
     } catch {
-      return true;
+      return fallback;
     }
   }
 
@@ -1894,18 +1986,65 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
     return this.serverToday || todayIso();
   }
 
-  /** « Cartes : Détail | Résumé » (the same control as the editors' calendar). */
-  setWeekDetail(on: boolean): void {
-    if (on !== this.weekDetailed) this.toggleWeekDetail();
-  }
-
-  toggleWeekDetail(): void {
-    this.weekDetailed = !this.weekDetailed;
+  /** « Cartes : Détail | Résumé » (the same control as the editors' calendar), for the view shown. */
+  setCardsDetail(on: boolean): void {
+    const month = this.currentView === 'month';
+    if (month) this.monthDetailed = on;
+    else this.weekDetailed = on;
     try {
-      localStorage.setItem('yo-coach.calendar-detail', this.weekDetailed ? 'on' : 'off');
+      localStorage.setItem(month ? MONTH_DETAIL_KEY : WEEK_DETAIL_KEY, on ? 'on' : 'off');
     } catch {
       // No storage: the choice lasts until the page closes.
     }
+  }
+
+  /* ---- « Relancer »: a missed day or a week at 0 % of the last 7 days, the chat opens with a message to edit. ---- */
+
+  /** A missed workout or nutrition day of the last 7 days (an older one is no longer worth a message). */
+  canNudge(cell: { status?: { tone?: string } }, date: string): boolean {
+    return cell?.status?.tone === 'missed' && this.isRecentDay(date);
+  }
+
+  /** A week at 0 % in the month that holds one of the last 7 days. */
+  canNudgeWeek(week: { rate?: number | null; days: (CalendarDay | null)[] }): boolean {
+    return week?.rate === 0 && week.days.some((day) => !!day && this.isRecentDay(day.dateString));
+  }
+
+  nudgeDay(kind: CalendarType, date: string, cell: { title?: string }): void {
+    const key = kind === 'workout' ? 'CALENDAR_NUDGE_WORKOUT' : 'CALENDAR_NUDGE_NUTRITION';
+    this.openNudge(this.translate.instant(key, { name: this.clientFirstName, title: cell?.title || '', day: this.weekdayText(date) }));
+  }
+
+  nudgeWeek(): void {
+    this.openNudge(this.translate.instant('CALENDAR_NUDGE_WEEK', { name: this.clientFirstName }));
+  }
+
+  private openNudge(text: string): void {
+    if (!this.selectedClient) return;
+    this.cardMenu = null;
+    this.chatService.openPanelWithClient(String(this.selectedClient), text);
+  }
+
+  /** From 7 days ago to today (the server's day). */
+  private isRecentDay(date: string): boolean {
+    const today = this.ruleToday;
+    if (!date || date > today) return false;
+    const from = new Date(`${today}T12:00:00`);
+    from.setDate(from.getDate() - 7);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return date >= `${from.getFullYear()}-${pad(from.getMonth() + 1)}-${pad(from.getDate())}`;
+  }
+
+  /** « mercredi 19 » / « Wednesday 19 ». */
+  private weekdayText(date: string): string {
+    const day = new Date(`${date}T12:00:00`);
+    if (isNaN(day.getTime())) return date;
+    return day.toLocaleDateString(this.translate.currentLang === 'en' ? 'en-GB' : 'fr-FR', { weekday: 'long', day: 'numeric' });
+  }
+
+  /** « Salut Sami »: the client's first name. */
+  private get clientFirstName(): string {
+    return (this.selectedClientRecord?.firstName || this.getSelectedClientName().split(/\s+/)[0] || '').trim();
   }
 
   /** « 3 × 10 · 60 kg · repos 2 min », « 20 min ». */
@@ -2204,8 +2343,14 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
         // The calendar reads its months again, the client's tabs too.
         this.programSchedule.changed$.next();
       },
-      error: () => {
+      error: (error) => {
         this.removing = false;
+        // The client already trained in it: the server keeps it (its history), and says so.
+        if (target.kind === 'workout' && isHasActivityError(error)) {
+          this.removeTarget = null;
+          this.toast.show({ type: 'warning', title: this.translate.instant('CLIENT_PROGRAMS.REMOVE_HAS_ACTIVITY'), duration: 10000 });
+          return;
+        }
         this.toast.show({ type: 'error', title: this.translate.instant('CLIENT_PROGRAMS.REMOVE_FAILED') });
       },
     });
@@ -2229,6 +2374,18 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
   }
 
   /** « Envoyer un message »: the client's Discussion tab. */
+  /** « Fiche » next to the client: their profile (the calendar remembers its place for the way back). */
+  openClientProfile(): void {
+    if (!this.selectedClient) return;
+    this.rememberPlace();
+    void this.router.navigate(['/clients/profil-client', this.selectedClient]);
+  }
+
+  /** « Message » next to the client: the chat opens over the calendar, which stays as it is. */
+  messageClient(): void {
+    if (this.selectedClient) this.chatService.openPanelWithClient(String(this.selectedClient));
+  }
+
   sendMessage(): void {
     if (this.profileAction.observed) {
       this.profileAction.emit({ type: 'chat' });
@@ -2579,21 +2736,8 @@ export class CalendarClientsComponent implements OnInit, OnChanges {
       this.openFile.emit({ type: kind, programId: file.programId, plan: file.plan });
       return;
     }
-    const popup = window.open('', '_blank');
-    const blob$: Observable<Blob> = kind === 'workout'
-      ? this.workoutService.getWorkoutFileBlob(file.plan)
-      : this.nutritionService.downloadNutritionFile(file.plan);
-    blob$.subscribe({
-      next: (blob) => {
-        const url = window.URL.createObjectURL(blob);
-        if (popup) popup.location.href = url;
-        else window.open(url, '_blank');
-      },
-      error: () => {
-        popup?.close();
-        this.toast.error(this.translate.instant('COULD_NOT_PREVIEW_FILE'));
-      },
-    });
+    // The calendar alone shows the file in the shared viewer (audit PDF/Excel 2026-11-23, lot 2).
+    this.viewerFile = { plan: file.plan, kind: kind === 'workout' ? 'workout' : 'nutrition' };
   }
 
   hasSelectedClient(): boolean {

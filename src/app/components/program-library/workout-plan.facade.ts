@@ -14,6 +14,8 @@ import {
 import { Exercise, ExerciseSet, WorkoutSetType } from '@shared/models/exercice.models';
 import { daysInCalendarOrder } from '@shared/models/program-days';
 import { workoutDayActive } from '@shared/models/client-day-activity';
+import { clampProgramWeeks, renumberDayTitle } from '@shared/models/workout-day-title';
+import { MAX_PROGRAM_WEEKS } from 'app/service/workout-ai.service';
 import {
   GroupType,
   Measure,
@@ -132,46 +134,24 @@ export class WorkoutPlanFacade {
     return null;
   }
 
-  /** Texte du champ poids : vide sans poids, « 62.5 » sinon. */
+  /**
+   * Texte du champ poids, dans l'unité du coach : vide sans poids, « 62.5 » sinon.
+   * Le programme garde toujours des kg (comme le serveur et l'écran du client) : avant, un coach en lbs tapait 100,
+   * c'était rangé comme 100 kg et son client voyait 220 lbs (audit workouts 2026-11-23, G5).
+   */
   weightText(weight: number | null | undefined): string {
-    return weight != null && Number(weight) > 0 ? String(weight) : '';
+    if (weight == null || !(Number(weight) > 0)) return '';
+    const shown = this.coachSettingsService.convertWeightFromKg(Number(weight)) ?? 0;
+    return String(Math.round(shown * 10) / 10);
   }
 
-  /** « 62,5 » ou « 62.5 » tapé par le coach ; vide = pas de poids. */
+  /** « 62,5 » ou « 62.5 » tapé par le coach dans son unité ; rangé en kg ; vide = pas de poids. */
   private parseWeight(raw: unknown): number | null {
     if (raw === '' || raw == null) return null;
     const n = Number(String(raw).replace(',', '.').trim());
-    return Number.isFinite(n) && n > 0 ? n : null;
-  }
-
-  private stripWeightsWhenDisabled(days: WorkoutDay[]): WorkoutDay[] {
-    if (this.shouldShowWeightField()) return days;
-
-    return (days || []).map((day) => ({
-      ...day,
-      workoutSessions: (day.workoutSessions || []).map((session) => ({
-        ...session,
-        exercises: (session.exercises || []).map((exercise) => ({
-          ...exercise,
-          sets: (exercise.sets || []).map((set) => ({
-            ...set,
-            weight: null,
-          })),
-        })),
-      })),
-      session: day.session
-        ? {
-            ...day.session,
-            exercises: (day.session.exercises || []).map((exercise) => ({
-              ...exercise,
-              sets: (exercise.sets || []).map((set) => ({
-                ...set,
-                weight: null,
-              })),
-            })),
-          }
-        : day.session,
-    }));
+    if (!Number.isFinite(n) || n <= 0) return null;
+    const kg = this.coachSettingsService.convertWeightToKg(n) ?? n;
+    return Math.round(kg * 1000) / 1000;
   }
 
   /**
@@ -232,7 +212,7 @@ export class WorkoutPlanFacade {
   syncPlanDays() {
     this.setPlan({
       ...this.plan,
-      workoutDays: this.stripWeightsWhenDisabled(this.days),
+      workoutDays: this.days,
       isWorkoutPlanTemplate: Boolean(this.plan.isWorkoutPlanTemplate),
     });
   }
@@ -258,7 +238,9 @@ export class WorkoutPlanFacade {
   }
 
   setDurationWeeks(weeks: number) {
-    const safeWeeks = Math.max(1, Math.min(Number(weeks) || 1, 12));
+    // Same cap as the editor (MAX_PROGRAM_WEEKS); a program already longer keeps its weeks: only a shorter duration the
+    // coach confirmed removes days (create-workout asks first).
+    const safeWeeks = clampProgramWeeks(weeks, this.days.length, MAX_PROGRAM_WEEKS);
     const totalDays = safeWeeks * 7;
     const currentDays = [...this.days];
 
@@ -267,8 +249,8 @@ export class WorkoutPlanFacade {
 
       if (existing) {
         existing.dayNumber = index + 1;
-        existing.title = `Day ${(index % 7) + 1}`;
-        existing.name = existing.title;
+        // A title the coach wrote (« Push ») stays; only « Day N » follows the place of the day.
+        renumberDayTitle(existing, index);
         return existing;
       }
 
@@ -299,7 +281,7 @@ export class WorkoutPlanFacade {
   private buildSavePayload(): WorkoutPlan {
     const payload: WorkoutPlan = {
       ...this.plan,
-      workoutDays: this.stripWeightsWhenDisabled(this.days),
+      workoutDays: this.days,
       coach: this.plan.coach ?? { id: this.userid },
       client: this.plan.client ?? null,
       typeWorkoutPlan:
@@ -1603,7 +1585,7 @@ export class WorkoutPlanFacade {
               ...st,
               reps: st.reps != null ? String(st.reps) : measureOf(e) === 'TIME' ? '' : '8',
               // 0 = pas de poids (comme côté client) : le champ reste vide.
-              weight: this.shouldShowWeightField() && Number(st.weight) > 0 ? st.weight : null,
+              weight: Number(st.weight) > 0 ? st.weight : null,
               restMin: st.restMin ?? 0,
               restSec: st.restSec ?? 0,
               setNumber: st.setNumber ?? si + 1,

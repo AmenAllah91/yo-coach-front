@@ -8,6 +8,17 @@ export type ClientStatus = 'ACTIVE' | 'ARCHIVED';
 /** Order of the coach's client list (CE: name A→Z by default, name Z→A, newest first). */
 export type ClientListSort = 'name' | 'name_desc' | 'recent';
 
+/**
+ * 2026-11-23: the message of a refused status change (archive / reactivate). Null for a full plan: the interceptor
+ * already opens the plan notice (« Limite atteinte… archivez un client ou changez de plan »).
+ */
+export function clientStatusErrorKey(error: any): string | null {
+  const code = error?.error?.code;
+  if (code === 'CLIENT_LIMIT_REACHED') return null;
+  if (code === 'CLIENT_LEFT_COACH') return 'CLIENT_LEFT_COACH_ERROR';
+  return 'CLIENT_STATUS_CHANGE_FAILED';
+}
+
 export interface ClientStatusCounts {
   active: number;
   archived: number;
@@ -18,6 +29,10 @@ export interface Client {
   id?: string;
   /** The example client of the demo workspace (shown with an "Example" badge). */
   demo?: boolean;
+  /** 2026-11-23: no longer coached by you (left, or removed by another coach): cannot be reactivated, only removed. */
+  formerClient?: boolean;
+  /** 2026-11-23, with formerClient: the client now works with another coach. */
+  leftForAnotherCoach?: boolean;
   firstName: string;
   lastName: string;
   email: string;
@@ -121,8 +136,12 @@ export class ClientService {
     return this.http.put<Client>(`${this.apiUrl}/${id}`, client);
   }
 
+  /**
+   * The callers show their own message on a failure (2026-11-23); a full plan (CLIENT_LIMIT_REACHED) still opens the
+   * plan notice of the interceptor.
+   */
   updateClientStatus(id: string, status: ClientStatus): Observable<Client> {
-    return this.http.patch<Client>(`${this.apiUrl}/${id}/status`, { status });
+    return this.http.patch<Client>(`${this.apiUrl}/${id}/status`, { status }, { headers: { 'X-Skip-Toast': 'true' } });
   }
 
   deleteClient(id: string): Observable<void> {

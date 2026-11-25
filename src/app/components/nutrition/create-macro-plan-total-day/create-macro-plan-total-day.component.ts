@@ -1,10 +1,11 @@
+import { MacroChartComponent } from '@shared/components/macro-chart/macro-chart.component';
 import { CopyDaysModalComponent } from '@shared/program-copy/copy-days-modal.component';
 import { ClientProgramDatesComponent } from '@shared/components/client-program-dates/client-program-dates.component';
 import { CopiedDayBannerComponent } from '@shared/program-copy/copied-day-banner.component';
 import { ProgramDayClipboardService } from '@shared/program-copy/program-day-clipboard.service';
 import { nutritionCopyController } from '../nutrition-day-copy';
 import { NutritionDraftState } from '../nutrition-draft-state';
-import { AfterViewChecked, Component, DoCheck, ElementRef, HostListener, OnInit, ViewChild, inject } from '@angular/core';
+import { AfterViewChecked, Component, DoCheck, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { ActiveDayRail } from '@shared/program-calendar/active-day-rail';
 import { ProgramStructureRailComponent } from '@shared/program-structure-rail/program-structure-rail.component';
 import { nutritionRailWeeks } from '../nutrition-rail';
@@ -28,11 +29,13 @@ import { NutritionCalendar } from '../nutrition-calendar';
 import { ProgramCalendarComponent } from '@shared/program-calendar/program-calendar.component';
 import { DayWindowFootComponent, DayWindowHeadComponent, ViewSwitchComponent } from '@shared/program-calendar/day-window-bars.component';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { ScaleCaloriesDialogComponent } from '../scale-calories/scale-calories-dialog.component';
 
 @Component({
   selector: 'app-create-macro-plan-total-day',
   standalone: true,
-  imports: [ProgramStructureRailComponent, ProgramCalendarComponent, DayWindowHeadComponent, DayWindowFootComponent, ViewSwitchComponent, 
+  imports: [MacroChartComponent, ProgramStructureRailComponent, ProgramCalendarComponent, DayWindowHeadComponent, DayWindowFootComponent, ViewSwitchComponent,
+    ScaleCaloriesDialogComponent,
     FeatherModule,
     NgForOf,
     NgIf,
@@ -45,7 +48,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
   templateUrl: './create-macro-plan-total-day.component.html',
   styleUrls: ['./create-macro-plan-total-day.component.scss', '../_nutrition-builder-template.scss', '../../program-library/_workout-builder-layout.scss', '../../program-library/_plan-edit-dialog.scss', '../_nutrition-rail-parity.scss', '../_nutrition-day-parity.scss', '../../program-library/_builder-rail-readable.scss', '../../../shared/program-calendar/_program-calendar-editor.scss', '../../program-library/_builder-rail-active.scss'],
 })
-export class CreateMacroPlanTotalDayComponent implements OnInit, DoCheck, AfterViewChecked, LeavesUnsavedChanges {
+export class CreateMacroPlanTotalDayComponent implements OnInit, OnDestroy, DoCheck, AfterViewChecked, LeavesUnsavedChanges {
   /** Phones: the week/day structure opens over the page (same as the workout builder). */
   mobileStructureOpen = false;
   /** Used by the toolbar "Save" (through the empty-days check of the draft state) and to retry after it. */
@@ -102,6 +105,11 @@ export class CreateMacroPlanTotalDayComponent implements OnInit, DoCheck, AfterV
     this.cal.calendar = calendar;
   }
 
+  /** « Continuer » created the plan: left with nothing but its name, it is deleted again (nutrition-draft-state.ts). */
+  ngOnDestroy(): void {
+    this.draft.discardIfEmptyNew(this.clientMode.active);
+  }
+
   ngDoCheck(): void {
     this.cal.check();
   }
@@ -149,8 +157,6 @@ export class CreateMacroPlanTotalDayComponent implements OnInit, DoCheck, AfterV
 
   get canCreateTemplate(): boolean {
     const roles = this.getCurrentRoles();
-
-    console.log('[ADMIN CHECK CURRENT ROLES]', roles);
 
     return roles.some((role) =>
       role === 'ROLE_ADMIN' ||
@@ -399,6 +405,15 @@ export class CreateMacroPlanTotalDayComponent implements OnInit, DoCheck, AfterV
     const f = day.dayTargets.fatG || 0;
 
     day.dayTargets.calories = p * 4 + c * 4 + f * 9;
+  }
+
+  /** « Adapter les calories » window (nutrition-scale.ts). */
+  scaleOpen = false;
+
+  /** P/C/F scaled to the gram: the kcal of each day follow, as when the coach types them. */
+  afterScale(days: MealDay[]): void {
+    days.forEach((day) => this.updateCaloriesForDay(day));
+    this.scaleOpen = false;
   }
 
   /* ----------------------------------------------

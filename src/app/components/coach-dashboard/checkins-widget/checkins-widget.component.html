@@ -2,7 +2,7 @@
   <header class="widget-header">
     <div class="widget-heading">
       <h2 id="checkins-widget-title">{{ 'CHECK_INS' | translate }}</h2>
-      <p *ngIf="counts">{{ 'CDASH.KPI.CHECK_INS_DETAIL' | translate: { review: counts.toReview, late: counts.overdue } }}</p>
+      <p *ngIf="counts">{{ 'CDASH.KPI.CHECK_INS_DETAIL_MISSED' | translate: { review: counts.toReview, late: counts.overdue, missed: counts.missed ?? 0 } }}</p>
     </div>
   </header>
 
@@ -15,13 +15,17 @@
             (click)="select('overdue')">
       {{ 'CDASH.OVERDUE' | translate }}<span class="tab-count" *ngIf="counts">{{ counts.overdue }}</span>
     </button>
+    <button type="button" role="tab" class="tab" [class.tab--active]="tab === 'missed'" [attr.aria-selected]="tab === 'missed'"
+            *ngIf="counts?.missed !== undefined" (click)="select('missed')">
+      {{ 'CDASH.MISSED' | translate }}<span class="tab-count">{{ counts?.missed }}</span>
+    </button>
   </div>
 
   <app-widget-state
     [status]="status"
     [rows]="3"
     [empty]="items.length === 0"
-    [emptyText]="tab === 'toReview' ? 'CDASH.NO_CHECK_IN_TO_REVIEW' : 'CDASH.NO_CHECK_IN_OVERDUE'"
+    [emptyText]="tab === 'toReview' ? 'CDASH.NO_CHECK_IN_TO_REVIEW' : tab === 'missed' ? 'CDASH.NO_CHECK_IN_MISSED' : 'CDASH.NO_CHECK_IN_OVERDUE'"
     emptyIcon="check-circle"
     (retry)="load()"
   ></app-widget-state>
@@ -36,7 +40,7 @@
         [lang]="lang"
         [tone]="tab === 'toReview' ? 'warning' : 'danger'"
         [title]="item.clientName"
-        [subtitle]="(item.formName || ('CHECK_IN' | translate)) + ' · ' + when(item)"
+        [subtitle]="item.formName || ('CHECK_IN' | translate)"
         [status]="tab === 'toReview' ? ('CDASH.TO_REVIEW' | translate) : ('CDASH.LATE_DAYS' | translate: { count: item.days })"
       ></app-checkin-card>
     </a>

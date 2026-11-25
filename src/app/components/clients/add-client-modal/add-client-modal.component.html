@@ -110,10 +110,11 @@
         </p>
 
         <ng-container *ngIf="joinLink">
-          <div class="acm-invite-box" [class.acm-invite-box--off]="!joinLink.active">
+          <!-- 2026-11-23: plan without the sign-up link: the link does not work (CE refuses it), so no address to copy -->
+          <div class="acm-invite-box" [class.acm-invite-box--off]="!joinLink.active || joinLinkLocked" *ngIf="!joinLinkLocked">
             <i-feather name="link" class="acm-copy-ico"></i-feather>
             <span class="acm-invite-url">{{ joinLink.active ? joinLinkUrl : ('JOIN.LINK_OFF' | translate) }}</span>
-            <button type="button" class="acm-copy-btn" *ngIf="joinLink.active" (click)="copyJoinLink()">
+            <button type="button" class="acm-copy-btn" *ngIf="joinLink.active && !joinLinkLocked" (click)="copyJoinLink()">
               <i-feather [name]="joinLinkCopied ? 'check' : 'copy'" class="acm-copy-ico"></i-feather>
               {{ (joinLinkCopied ? 'COPIED' : 'COPY_LINK') | translate }}
             </button>
@@ -125,19 +126,20 @@
             <li><i-feather name="check-circle"></i-feather>{{ 'JOIN.STEP_APPROVE' | translate }}</li>
           </ul>
 
-          <button class="acm-submit-btn" type="button" *ngIf="joinLink.active" (click)="shareJoinLink()">
+          <button class="acm-submit-btn" type="button" *ngIf="joinLink.active && !joinLinkLocked" (click)="shareJoinLink()">
             {{ 'JOIN.SHARE_LINK' | translate }}
           </button>
-          <button class="acm-submit-btn" type="button" *ngIf="!joinLink.active" (click)="toggleJoinLink()" [disabled]="joinLinkBusy || joinLinkLocked">
+          <button class="acm-submit-btn" type="button" *ngIf="!joinLink.active && !joinLinkLocked" (click)="toggleJoinLink()" [disabled]="joinLinkBusy">
             {{ 'JOIN.TURN_ON' | translate }}
           </button>
 
           <div class="acm-link-actions">
-            <button type="button" class="acm-resend-btn" (click)="regenerateJoinLink()" [disabled]="joinLinkBusy || joinLinkLocked">
+            <button type="button" class="acm-resend-btn" *ngIf="!joinLinkLocked" (click)="regenerateJoinLink()" [disabled]="joinLinkBusy">
               {{ 'JOIN.REGENERATE' | translate }}
             </button>
+            <!-- Turning the link off is always allowed, also when the plan no longer includes it. -->
             <button type="button" class="acm-resend-btn acm-resend-btn--muted" *ngIf="joinLink.active"
-                    (click)="toggleJoinLink()" [disabled]="joinLinkBusy || joinLinkLocked">
+                    (click)="toggleJoinLink()" [disabled]="joinLinkBusy">
               {{ 'JOIN.TURN_OFF' | translate }}
             </button>
           </div>

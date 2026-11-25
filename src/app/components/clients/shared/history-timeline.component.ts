@@ -79,6 +79,11 @@ export class HistoryTimelineComponent implements OnChanges, AfterViewInit, OnDes
   /** Mark of each day, by dateKey ("2026-11-16"). */
   @Input() marks: Record<string, WeekMark> = {};
   @Input() fr = false;
+  /**
+   * Only these days are listed (dateKey), today always: for a sparse history (check-ins, once a week or so),
+   * where a row for every empty day only makes the list long. Null = every day, like Workouts and Nutrition.
+   */
+  @Input() onlyDays: string[] | null = null;
   /** What a day holds: `let-date`, `let-key="key"`. Nothing rendered = only the date shows. */
   @Input() dayTemplate!: TemplateRef<{ $implicit: Date; key: string }>;
 
@@ -94,6 +99,9 @@ export class HistoryTimelineComponent implements OnChanges, AfterViewInit, OnDes
   shown = PAGE_DAYS;
   shownDays: HistoryDay[] = [];
   stickyTop = 0;
+
+  private lastFirstKey = '';
+  private lastSignature = '';
 
   /** True while the list moves to a day picked in the strip: the strip keeps that day, whatever passes on top. */
   private jumping = false;
@@ -114,11 +122,18 @@ export class HistoryTimelineComponent implements OnChanges, AfterViewInit, OnDes
     const oldest = addDays(this.today, -(MAX_DAYS - 1));
     const first = startOfDay(this.firstDay);
     this.first = first > this.today ? this.today : first < oldest ? oldest : first;
-    if (this.days.length && this.days[0].key === dateKey(this.today) && this.days[this.days.length - 1].key === dateKey(this.first)
-      && this.days[0].label === this.labelOf(this.today)) return;
+    const only = this.onlyDays ? new Set(this.onlyDays) : null;
+    const signature = only ? [...only].sort().join(',') : '';
+    if (this.days.length && this.days[0].key === dateKey(this.today) && this.lastFirstKey === dateKey(this.first)
+      && this.days[0].label === this.labelOf(this.today) && this.lastSignature === signature) return;
+    this.lastFirstKey = dateKey(this.first);
+    this.lastSignature = signature;
     this.days = [];
     for (let day = this.today; day >= this.first; day = addDays(day, -1)) {
-      this.days.push({ date: day, key: dateKey(day), label: this.labelOf(day), today: day.getTime() === this.today.getTime() });
+      const key = dateKey(day);
+      const today = day.getTime() === this.today.getTime();
+      if (only && !today && !only.has(key)) continue;
+      this.days.push({ date: day, key, label: this.labelOf(day), today });
     }
     this.shownDays = this.days.slice(0, this.shown);
   }
@@ -173,13 +188,18 @@ export class HistoryTimelineComponent implements OnChanges, AfterViewInit, OnDes
     const day = startOfDay(date);
     const target = day > this.today ? this.today : day < this.first ? this.first : day;
     this.selected = target;
+    // Only some days listed: a day without a row goes to the closest listed day before it.
+    let index = this.days.findIndex(d => d.date.getTime() <= target.getTime());
+    if (index < 0) index = this.days.length - 1;
+    const rowDay = this.days[index];
+    if (!rowDay) return;
     // A day not drawn yet (picked in the strip): the list is first drawn down to it, a few days further.
-    const needed = this.days.findIndex(d => d.key === dateKey(target)) + 1 + 7;
+    const needed = index + 1 + 7;
     if (needed > this.shown) {
       this.show(Math.ceil(needed / PAGE_DAYS) * PAGE_DAYS);
       this.changes.detectChanges();
     }
-    const row = this.list?.nativeElement.querySelector<HTMLElement>(`[data-day="${dateKey(target)}"]`);
+    const row = this.list?.nativeElement.querySelector<HTMLElement>(`[data-day="${rowDay.key}"]`);
     if (!row) return;
     this.jumping = true;
     if (this.jumpTimer) clearTimeout(this.jumpTimer);

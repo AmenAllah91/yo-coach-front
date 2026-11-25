@@ -26,6 +26,8 @@ import { amountOf, editableUnit, portionsOf } from '../food-servings/food-servin
 import { ServingUnitPipe } from '../food-servings/serving-unit.pipe';
 import { ToastService } from 'app/service/toast.service';
 import { DeleteConfirmModalComponent } from '../delete-confirm-modal/delete-confirm-modal.component';
+import { ConfirmDialogService } from '@shared/components/confirm-dialog/confirm-dialog.service';
+import { LEAVE_UNSAVED } from '@config/guard/unsaved-changes.guard';
 
 
 type ViewMode = 'LIST' | 'EDITOR';
@@ -98,6 +100,7 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
     private hostElement: ElementRef<HTMLElement>,
     private translate: TranslateService,
     private toast?: ToastService,
+    private confirmDialog?: ConfirmDialogService,
   ) {}
 
   ngOnInit(): void {
@@ -331,6 +334,7 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
     this.submitted = false;
     this.nameTouched = false;
     this.view = 'EDITOR';
+    this.rememberEditor();
     setTimeout(() => this.hideLayoutBackButton());
   }
 
@@ -345,7 +349,41 @@ export class FoodReplacementGroupsComponent implements OnInit, OnDestroy {
     this.submitted = false;
     this.nameTouched = false;
     this.view = 'EDITOR';
+    this.rememberEditor();
     setTimeout(() => this.hideLayoutBackButton());
+  }
+
+  /** What the editor held when it opened, to tell whether the coach changed something since. */
+  private editorOpened = '';
+  private askingToLeave = false;
+
+  private editorContent(): string {
+    return JSON.stringify({
+      name: this.groupName.trim(),
+      description: this.groupDescription.trim(),
+      clientNote: this.clientNote.trim(),
+      foods: this.groupFoods.map((food) => [food.foodRefId, food.servingId ?? null, Number(food.quantity), String(food.unit ?? '').trim()]),
+    });
+  }
+
+  private rememberEditor(): void {
+    this.editorOpened = this.editorContent();
+  }
+
+  get editorChanged(): boolean {
+    return this.view === 'EDITOR' && this.editorContent() !== this.editorOpened;
+  }
+
+  /** « Annuler » and the back arrow: asks first when the group would lose a change. */
+  async requestCloseEditor(): Promise<void> {
+    if (this.saving || this.askingToLeave) return;
+    if (this.editorChanged && this.confirmDialog) {
+      this.askingToLeave = true;
+      const leave = await this.confirmDialog.ask(LEAVE_UNSAVED);
+      this.askingToLeave = false;
+      if (!leave) return;
+    }
+    this.closeEditor();
   }
 
   closeEditor(): void {

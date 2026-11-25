@@ -136,7 +136,7 @@
 
 <div class="rge" *ngIf="view === 'EDITOR'">
   <header class="rge__header">
-    <button class="rge__back" type="button" [attr.aria-label]="'BACK' | translate" (click)="closeEditor()">
+    <button class="rge__back" type="button" [attr.aria-label]="'BACK' | translate" (click)="requestCloseEditor()">
       <i-feather name="arrow-left"></i-feather>
     </button>
     <div class="rge__title">
@@ -144,7 +144,7 @@
       <p>{{ 'RGE_SUBTITLE' | translate }}</p>
     </div>
     <div class="rge__actions">
-      <button class="rge-btn rge-btn--ghost" type="button" (click)="closeEditor()">{{ 'CANCEL' | translate }}</button>
+      <button class="rge-btn rge-btn--ghost" type="button" (click)="requestCloseEditor()">{{ 'CANCEL' | translate }}</button>
       <button class="rge-btn rge-btn--save" type="button" [disabled]="saving" [attr.aria-busy]="saving" (click)="saveGroup()">
         <span class="rge-btn__spinner" *ngIf="saving"></span>
         <i-feather name="save" *ngIf="!saving"></i-feather>

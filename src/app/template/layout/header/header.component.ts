@@ -18,6 +18,7 @@ import {ChatMessage} from "../../../components/chat/models/chat-message";
 import {Notification} from "../../../models/notification";
 import {ChatPanelComponent} from "../../../components/chat/chat-panel/chat-panel.component";
 import {WebsocketService} from "../../../service/websocket.service";
+import {CheckinInboxService} from "../../../service/checkin-inbox.service";
 import {ChatWebsocketService} from "../../../service/chat-websocket.service";
 import {NotificationService} from "../../../service/notification.service";
 import {CoachSettingsService} from "../../../service/coach-settings.service";
@@ -158,6 +159,10 @@ this.translate.use(lang);}
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => this.getMessagesNotifs());
     this.webSocketService.notification$.pipe(takeUntil(this.destroy$)).subscribe((data) => {
+      // A check-in sent: the menu badge and the dashboard follow at once (even with this notification type hidden).
+      if (data?.notificationType === 'CHECK_IN_SUBMITTED' && this.isCoach) {
+        this.injector.get(CheckinInboxService).checkInSubmitted();
+      }
       if (!data || !this.notificationTypeEnabled(data.notificationType)) return;
 
       setTimeout(() => {
@@ -374,9 +379,6 @@ this.translate.use(lang);}
     return this.notifications.filter(item => !item.seen);
   }
 
-  get olderNotifications(): Notification[] {
-    return this.notifications.filter(item => item.seen);
-  }
 
   get unreadNotificationCount(): number {
     return this.unreadNotifications.length;
@@ -416,21 +418,47 @@ this.translate.use(lang);}
     return source ? labels[source] || '' : '';
   }
 
-  notificationInitials(item: Notification): string {
-    const message = (item.message || '').trim();
-    const sender = message
-      .split(/\s+(?:vous\s+)?a\s+/i)[0]
-      .replace(/[^A-Za-zÀ-ÖØ-öø-ÿ\s'-]/g, '')
-      .trim();
-    const words = sender.split(/\s+/).filter(Boolean);
+  /** Notifications grouped by day (today / yesterday / earlier), newest first. */
+  get notificationGroups(): { key: string; items: Notification[] }[] {
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const startOfYesterday = new Date(startOfToday);
+    startOfYesterday.setDate(startOfYesterday.getDate() - 1);
 
-    if (words.length >= 2) {
-      return `${words[0][0]}${words[1][0]}`.toUpperCase();
-    }
-    if (words.length === 1) {
-      return words[0].slice(0, 2).toUpperCase();
-    }
-    return 'YO';
+    const groups = [
+      { key: 'NOTIF_GROUP_TODAY', items: [] as Notification[] },
+      { key: 'NOTIF_GROUP_YESTERDAY', items: [] as Notification[] },
+      { key: 'NOTIF_GROUP_EARLIER', items: [] as Notification[] }
+    ];
+    [...this.notifications]
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .forEach(item => {
+        const time = item.createdAt.getTime();
+        const index = time >= startOfToday.getTime() ? 0 : time >= startOfYesterday.getTime() ? 1 : 2;
+        groups[index].items.push(item);
+      });
+    return groups.filter(group => group.items.length);
+  }
+
+  /** Colour family of a notification, the same as the dashboard's "À traiter" cards. */
+  notificationTone(type: string): 'danger' | 'warning' | 'success' | 'info' {
+    if (!type) return 'info';
+    if (type === 'WORKOUT_MISSED' || type.endsWith('_OVERDUE')) return 'danger';
+    if (type === 'PROGRAM_ENDING_SOON' || type === 'CHECK_IN_DUE' || type === 'WORKOUT_DUE_TODAY'
+      || type === 'JOIN_SLOT_AVAILABLE' || type.endsWith('_REMINDER')) return 'warning';
+    if (type.endsWith('_COMPLETED') || type === 'PROGRESS_ADDED' || type === 'BODY_MEASUREMENTS_UPDATED'
+      || type === 'JOIN_REQUEST_ACCEPTED') return 'success';
+    return 'info';
+  }
+
+  /** The person behind a notification (photo, else initials). Null when unknown or when it is the coach himself. */
+  notificationPerson(item: Notification): { photo?: string; initials?: string } | null {
+    if (!item.authorId || item.authorId === this.userId) return null;
+    if (item.authorPhoto) return { photo: item.authorPhoto };
+    const words = (item.authorName || '').trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return null;
+    const initials = words.length >= 2 ? `${words[0][0]}${words[1][0]}` : words[0].slice(0, 2);
+    return { initials: initials.toUpperCase() };
   }
 
   markAllNotificationsRead(event: Event): void {

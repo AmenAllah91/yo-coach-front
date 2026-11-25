@@ -99,13 +99,13 @@ export class SubscriptionCheckoutComponent implements OnInit, OnDestroy {
   }
 
   /** The quote of the selected plan, when it is the one shown (it can arrive after a plan change). */
-  /** SUB-61: currency of the payment (from the quote of YoSales: USD by Stripe abroad, TND by Flouci). */
+  /** SUB-61: currency of the payment (from the quote of YoSales: USD by Stripe abroad, TND by Flouci or ClicToPay). */
   get currency(): string {
     // Payment audit D11: before any quote, the currency of the next payment (not the one stored at the trial).
     return (this.selectedQuote?.currency ?? this.state?.checkoutCurrency ?? this.state?.currency ?? 'TND').toUpperCase();
   }
 
-  /** The method of the next payment, decided by YoSales (Flouci, Stripe...). */
+  /** The method of the next payment, decided by YoSales (Flouci, ClicToPay, Stripe...). */
   get paymentMethod(): string {
     // The method of the selected plan first (review 2026-10-26: a plan without dollar price is paid by Flouci in TND).
     return (this.selectedQuote?.gateway ?? this.state?.checkoutPaymentGateway ?? this.state?.paymentGateway ?? 'FLOUCI').toUpperCase();
@@ -301,7 +301,7 @@ export class SubscriptionCheckoutComponent implements OnInit, OnDestroy {
     void this.router.navigate(['/coach-dashboard']);
   }
 
-  /** Leaves the app for the Flouci payment page. */
+  /** Leaves the app for the payment page (Flouci, ClicToPay, Stripe). */
   protected redirectTo(url: string): void {
     window.location.assign(url);
   }

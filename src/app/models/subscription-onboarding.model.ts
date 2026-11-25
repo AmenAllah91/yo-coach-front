@@ -121,9 +121,9 @@ export interface CheckoutQuote {
   amount: number;
   couponsApplied: string[];
   couponsNotApplied: string[];
-  /** SUB-61: currency of the amounts (TND by Flouci, USD by Stripe). */
+  /** SUB-61: currency of the amounts (TND by Flouci or ClicToPay, USD by Stripe). */
   currency?: string | null;
-  /** Payment method of this plan for this coach (FLOUCI, STRIPE), decided by YoSales. */
+  /** Payment method of this plan for this coach (FLOUCI, CLICTOPAY, STRIPE), decided by YoSales. */
   gateway?: string | null;
 }
 

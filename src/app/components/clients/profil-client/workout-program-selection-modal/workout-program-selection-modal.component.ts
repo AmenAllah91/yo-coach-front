@@ -22,6 +22,7 @@ import { ClientSchedulePreview, changeSentence, programLengthDays } from '@share
  * Client profile: choose a library workout program for this client (backlog-programmes.md A2-A7). One start date,
  * what changes on the client's calendar under it, a confirmation only when something changes, « Annuler » after.
  */
+import { isFilePlan } from '@shared/models/program-file-check';
 @Component({
   selector: 'app-workout-program-selection-modal',
   standalone: true,
@@ -128,9 +129,7 @@ export class WorkoutProgramSelectionModalComponent implements OnChanges {
   }
 
   isFileProgram(program: any): boolean {
-    const mode = String(program?.workoutPlanMode || '').toUpperCase();
-    const type = String(program?.resourceType || '').toUpperCase();
-    return mode === 'FILE' || !!program?.fileName || !!program?.fileUrl || ['PDF', 'XLS', 'XLSX', 'EXCEL'].includes(type);
+    return isFilePlan(program);
   }
 
   getProgramTypeLabel(program: any): string {

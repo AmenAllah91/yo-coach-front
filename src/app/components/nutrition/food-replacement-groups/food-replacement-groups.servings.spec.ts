@@ -80,4 +80,26 @@ describe('Replacement groups with servings', () => {
     modal.confirmReplace();
     expect(emitted).toEqual([{ replacementFoodRefId: 'chicken', quantity: 200, unit: 'g', servingId: 'initial' }]);
   });
+
+  it('leaves an unchanged group at once, asks before losing a change', async () => {
+    const confirmDialog = jasmine.createSpyObj('ConfirmDialogService', ['ask']);
+    confirmDialog.ask.and.resolveTo(false);
+    component = new FoodReplacementGroupsComponent(groups, nutrition, { nativeElement: document.createElement('div') } as any, translate,
+      undefined, confirmDialog);
+    component.openEditGroup({ id: 'g1', name: 'Féculents', foods: [] } as any);
+    await component.requestCloseEditor();
+    expect(confirmDialog.ask).not.toHaveBeenCalled();
+    expect(component.view).toBe('LIST');
+
+    component.openEditGroup({ id: 'g1', name: 'Féculents', foods: [] } as any);
+    component.groupName = 'Féculents du soir';
+    await component.requestCloseEditor();
+    expect(confirmDialog.ask).toHaveBeenCalledTimes(1);
+    expect(component.view).toBe('EDITOR');
+    expect(component.groupName).toBe('Féculents du soir');
+
+    confirmDialog.ask.and.resolveTo(true);
+    await component.requestCloseEditor();
+    expect(component.view).toBe('LIST');
+  });
 });

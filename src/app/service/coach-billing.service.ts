@@ -59,7 +59,7 @@ export class CoachBillingService {
   }
 
   /**
-   * Pays the invoice with the method of the subscription: YoSales decides it (Flouci in Tunisia, Stripe abroad...),
+   * Pays the invoice with the method of the subscription: YoSales decides it (Flouci or ClicToPay in Tunisia, Stripe abroad...),
    * so no method is sent unless one is really chosen (payment audit CE-M3).
    */
   initiateInvoicePayment(
@@ -157,7 +157,7 @@ export class CoachBillingService {
     return new HttpHeaders({ 'X-Skip-Toast': 'true', 'X-Skip-Loader': 'true' });
   }
 
-  /** SUB-23: status of an invoice payment, polled after the return from Flouci. */
+  /** SUB-23: status of an invoice payment, polled after the return from the payment page (Flouci, ClicToPay, Stripe). */
   getInvoicePaymentStatus(invoiceId: number): Observable<InvoicePaymentStatus> {
     const headers = new HttpHeaders({
       'X-Skip-Toast': 'true',

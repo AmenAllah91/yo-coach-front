@@ -10,7 +10,8 @@ import { FormDetails, FormsApiService, PageResponse } from '../services/forms-ap
 import { AssignmentsApiService, FormAssignment } from '../services/assignments-api.service';
 import { SubmissionsApiService } from '../services/submissions-api.service';
 import { ClientThemeService } from 'app/core/service/client-theme.service';
-import { capitalizeFirst, capitalizeSentences, dateKey, initials, planDate } from 'app/components/clients/shared/client-plan-utils';
+import { UsersService } from 'app/service/users.service';
+import { capitalizeFirst, capitalizeSentences, dateKey, initials, instantDay, planDate } from 'app/components/clients/shared/client-plan-utils';
 import { WeekMark, WeekStripComponent, addDays, mondayOf } from 'app/components/clients/shared/week-strip.component';
 import { HistoryTimelineComponent } from 'app/components/clients/shared/history-timeline.component';
 import { CompletionCelebrationComponent } from 'app/components/clients/shared/completion-celebration.component';
@@ -21,6 +22,18 @@ import { PagePart, orderedQuestions, pageOf, pagesOf, visibleQuestionIds } from 
 interface DraftAnswer {
   questionId: string; type: string; text: string | null; selectedOptionId: string | null;
   rating: number | null; yes: boolean | null; date: string | null;
+}
+
+/** The history page: the days with a check-in (after the filter), and the counts of its summary. */
+interface HistoryView {
+  byDay: Record<string, FormAssignment[]>;
+  days: string[];
+  marks: Record<string, WeekMark>;
+  first: Date;
+  total: number;
+  sent: number;
+  todo: number;
+  rate: number;
 }
 
 const SUBMITTED = ['SUBMITTED', 'REVIEWED'];
@@ -110,6 +123,7 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
   private observer?: IntersectionObserver;
   private readonly destroy$ = new Subject<void>();
   private readonly formCache = new Map<string, Observable<FormDetails>>();
+  private readonly formNameCache = new Map<string, Observable<string | null>>();
   private requestedAssignmentId = '';
 
   constructor(
@@ -120,6 +134,7 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
     private route: ActivatedRoute,
     private router: Router,
     private theme: ClientThemeService,
+    private users: UsersService,
   ) {}
 
   get fr(): boolean { return this.translate.currentLang?.startsWith('fr') ?? false; }
@@ -216,10 +231,31 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
     return cached;
   }
 
+  /**
+   * Only for rows without a name (older backend). Silent: a missing form must not show an error toast.
+   * A check-in whose form was deleted (old data, deletion is refused now) cannot be opened: it is left out.
+   */
   private attachFormNames(list: FormAssignment[]): Observable<FormAssignment[]> {
     if (!list.length) return of([]);
-    return forkJoin(list.map(item => (item.formName?.trim() || !item.formId) ? of(item)
-      : this.form$(item.formId).pipe(map(form => ({ ...item, formName: form?.title || item.formName })), catchError(() => of(item)))));
+    return forkJoin(list.map(item => (item.formName?.trim() || !item.formId) ? of(item as FormAssignment | null)
+      : this.formName$(item.formId).pipe(
+          map(title => title === null ? null : { ...item, formName: title || item.formName }),
+        )))
+      .pipe(map(rows => rows.filter((row): row is FormAssignment => !!row)));
+  }
+
+  /** Title of a form, '' when it could not be read for another reason, null when it no longer exists (404). */
+  private formName$(formId: string): Observable<string | null> {
+    let cached = this.formNameCache.get(formId);
+    if (!cached) {
+      cached = this.formsApi.getFormById(formId, true).pipe(
+        map(form => form?.title || ''),
+        catchError(err => of(err?.status === 404 ? null : '')),
+        shareReplay({ bufferSize: 1, refCount: false }),
+      );
+      this.formNameCache.set(formId, cached);
+    }
+    return cached;
   }
 
   setTab(index: number): void { this.tab = index; }
@@ -228,7 +264,7 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
   // Week view: check-ins on the day they are due (display only)
   // -------------------------------------------------------------------------
   /** Day a check-in belongs to: its due date, else the day it was sent. */
-  dayOf(item: FormAssignment): Date | null { return planDate(item.dueAt) ?? planDate(item.assignedAt); }
+  dayOf(item: FormAssignment): Date | null { return instantDay(item.dueAt) ?? instantDay(item.assignedAt); }
   isSubmitted(item: FormAssignment): boolean { return SUBMITTED.includes(item.status); }
 
   private get byDay(): Record<string, FormAssignment[]> {
@@ -260,6 +296,16 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
   get olderOverdue(): FormAssignment[] {
     const weekStart = this.weekStart.getTime();
     return this.overdue.filter(item => (this.dayOf(item)?.getTime() ?? weekStart) < weekStart);
+  }
+
+  /**
+   * Like Workouts: a late check-in stays on its own day (red mark in the strip), no list above the week.
+   * One line only says how many are late before this week and opens the most recent one's day.
+   */
+  goToLatestLate(late: FormAssignment[]): void {
+    const latest = late.map(item => this.dayOf(item)).filter((day): day is Date => !!day)
+      .sort((a, b) => b.getTime() - a.getTime())[0];
+    if (latest) this.showWeekOf(latest);
   }
 
   private marksOf(byDay: Record<string, FormAssignment[]>): Record<string, WeekMark> {
@@ -321,6 +367,43 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
 
   historyMarks(byDay: Record<string, FormAssignment[]>): Record<string, WeekMark> { return this.marksOf(byDay); }
 
+  /** History filter: everything, the sent ones, or the ones not sent. */
+  historyFilter: 'all' | 'sent' | 'todo' = 'all';
+  private historyCache: { key: string; value: HistoryView } | null = null;
+
+  /**
+   * What the history shows, computed once per change (not on every check): the days with a check-in only,
+   * their marks, and the counts of the summary and of the filters.
+   */
+  get history(): HistoryView {
+    const key = this.historyFilter + '|' + this.assignments.map(item => item.id + ':' + item.status).join(',');
+    if (this.historyCache?.key === key) return this.historyCache.value;
+    const all = this.historyByDay;
+    const items = Object.values(all).flat();
+    const sent = items.filter(item => this.isSubmitted(item)).length;
+    const keep = (item: FormAssignment) => this.historyFilter === 'all'
+      || (this.historyFilter === 'sent') === this.isSubmitted(item);
+    const byDay: Record<string, FormAssignment[]> = {};
+    for (const [day, list] of Object.entries(all)) {
+      const shown = list.filter(keep);
+      if (shown.length) byDay[day] = shown;
+    }
+    const value: HistoryView = {
+      byDay,
+      days: Object.keys(byDay),
+      marks: this.marksOf(all),
+      first: this.historyFirstDay(all),
+      total: items.length,
+      sent,
+      todo: items.length - sent,
+      rate: items.length ? Math.round((sent / items.length) * 100) : 0,
+    };
+    this.historyCache = { key, value };
+    return value;
+  }
+
+  setHistoryFilter(filter: 'all' | 'sent' | 'todo'): void { this.historyFilter = filter; }
+
   openFromHistory(item: FormAssignment): void {
     this.historyDay = this.dayOf(item);
     this.openedFrom = 'history';
@@ -355,7 +438,7 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
   get newFeedbackCount(): number { return this.submitted.filter(item => this.hasNewFeedback(item)).length; }
 
   private daysUntil(value: string | undefined | null): number | null {
-    const due = planDate(value);
+    const due = instantDay(value);
     if (!due) return null;
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -363,7 +446,7 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   private byDue = (a: FormAssignment, b: FormAssignment) => {
-    const ad = planDate(a.dueAt)?.getTime(); const bd = planDate(b.dueAt)?.getTime();
+    const ad = instantDay(a.dueAt)?.getTime(); const bd = instantDay(b.dueAt)?.getTime();
     if (ad == null && bd == null) return 0;
     if (ad == null) return 1;
     if (bd == null) return -1;
@@ -429,6 +512,8 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   open(item: FormAssignment): void {
+    this.loadCoach(item.ownerId);
+    this.draftState = 'idle';
     const submitted = SUBMITTED.includes(item.status);
     // Preview: only the answers already sent can be read; an open check-in is the client's to fill.
     if (this.previewMode && !submitted) return;
@@ -688,9 +773,19 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
     const answers = this.answers.filter((a, i) => this.answered(this.questions[i], i));
     if (!answers.length) return;
     this.resumePageId = pageId;
+    this.draftState = 'saving';
     this.assignmentsApi.saveDraft(this.selected.id, answers, pageId === '__single' ? null : pageId)
-      .subscribe({ error: () => { /* kept on the page; saved again with the next answer */ } });
+      .subscribe({
+        next: () => { this.draftState = 'saved'; },
+        error: () => { this.draftState = 'idle'; /* kept on the page; saved again with the next answer */ },
+      });
   }
+
+  /** Small « Enregistré » in the header once the answers reached the server (they are kept as the client goes). */
+  draftState: 'idle' | 'saving' | 'saved' = 'idle';
+
+  /** The progress bar keeps its segments while the client types: a new segment each letter replayed its shine. */
+  trackSegment = (index: number) => index;
 
   get formSubtitle(): string {
     if (!this.form) return '';
@@ -699,13 +794,65 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
       return date && !Number.isNaN(date.getTime())
         ? `${this.t('Submitted', 'Soumis')}: ${new Intl.DateTimeFormat(this.locale, { year: 'numeric', month: 'short', day: 'numeric' }).format(date)}` : '';
     }
-    return this.fr ? `${this.answeredCount} sur ${this.shownQuestions.length} répondues` : `${this.answeredCount} of ${this.shownQuestions.length} answered`;
+    const total = this.shownQuestions.length;
+    return this.fr
+      ? `${this.answeredCount} sur ${total} répondue${this.answeredCount > 1 ? 's' : ''}`
+      : `${this.answeredCount} of ${total} answered`;
   }
 
   get description(): string { return capitalizeSentences(this.form?.description); }
   get minutes(): number { return Math.min(Math.max(Math.ceil(this.questions.length * 0.5), 1), 60); }
-  get ownerName(): string { return String((this.selected as any)?.ownerName || (this.selected as any)?.coachName || 'Coach'); }
+  get ownerName(): string {
+    const name = String((this.selected as any)?.ownerName || (this.selected as any)?.coachName || this.coachDisplayName || '').trim();
+    return name ? titleWords(name) : 'Coach';
+  }
   get ownerInitials(): string { return initials(this.ownerName); }
+
+  // -------------------------------------------------------------------------
+  // The coach on the intro screen: the sender of the check-in (its ownerId), name and photo of its profile
+  // (a client may read its coach's public profile). Silent: the initials stay if it cannot be read.
+  // -------------------------------------------------------------------------
+  coachDisplayName = '';
+  coachPhotoUrl = '';
+  coachPhotoFailed = false;
+  private coachLoadedFor = '';
+
+  private loadCoach(coachId: string | null | undefined): void {
+    const id = (coachId || '').trim();
+    if (!id || this.previewMode || id === this.coachLoadedFor) return;
+    this.coachLoadedFor = id;
+    this.users.getUserById(id, true, true).pipe(takeUntil(this.destroy$), catchError(() => of(null))).subscribe(user => {
+      if (this.coachLoadedFor !== id) return;
+      this.coachDisplayName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim();
+      const photo = String(user?.avatarUrl || '').trim();
+      this.coachPhotoUrl = photo.toLowerCase() === 'not found' ? '' : photo;
+      this.coachPhotoFailed = false;
+    });
+  }
+
+  /** « 1 question » / « 5 questions », « 1 partie » / « 3 parties ». */
+  questionsLabel(count: number): string {
+    return this.fr ? `${count} question${count > 1 ? 's' : ''}` : `${count} question${count > 1 ? 's' : ''}`;
+  }
+  partsLabel(count: number): string {
+    return this.fr ? `${count} partie${count > 1 ? 's' : ''}` : `${count} part${count > 1 ? 's' : ''}`;
+  }
+
+  /** Number of a question in the whole check-in (« Question 2 sur 5 »). */
+  questionNumber(question: any): number { return this.shownQuestions.indexOf(question) + 1; }
+
+  /** Without parts: the first questions, so the client knows what is asked before starting. */
+  readonly previewLimit = 4;
+  get previewQuestions(): any[] { return this.shownQuestions.slice(0, this.previewLimit); }
+
+  /** Shown when the coach wrote no description. */
+  get introText(): string {
+    if (this.description) return this.description;
+    const coach = this.coachDisplayName ? titleWords(this.coachDisplayName) : '';
+    return coach
+      ? this.t(`Your answers help ${coach} adjust your coaching.`, `Vos réponses aident ${coach} à adapter votre suivi.`)
+      : this.t('Your answers help your coach adjust your coaching.', 'Vos réponses aident votre coach à adapter votre suivi.');
+  }
   get coachName(): string {
     const name = String(this.selected?.coachName || (this.selected as any)?.ownerName || '').trim();
     return name || this.t('Your coach', 'Votre coach');
@@ -838,3 +985,8 @@ export class MyAssignmentsComponent implements OnInit, AfterViewInit, OnDestroy 
 }
 
 function startOfDay(date: Date): Date { return new Date(date.getFullYear(), date.getMonth(), date.getDate()); }
+
+/** « sami ben ali » → « Sami Ben Ali ». */
+function titleWords(value: string): string {
+  return value.split(/\s+/).filter(Boolean).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+}

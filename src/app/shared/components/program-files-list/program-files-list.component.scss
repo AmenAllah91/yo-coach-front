@@ -1,0 +1,307 @@
+// « Fichiers » (audit PDF/Excel 2026-11-23, lot 3): the client's PDF / Excel, apart from the programs built in the app.
+:host {
+  display: block;
+  color: light-dark(#0f172a, #e8ecf6);
+}
+
+.pfl {
+  display: grid;
+  gap: 14px;
+}
+
+.pfl-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px;
+
+  > div {
+    flex: 1;
+    min-width: 200px;
+  }
+}
+
+.pfl-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.pfl-sub {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: light-dark(#64748b, #a5abb4);
+}
+
+.pfl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid light-dark(#e2e8f0, #33383e);
+  border-radius: 10px;
+  background: light-dark(#fff, #23282d);
+  color: inherit;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &--brand {
+    border-color: var(--primary-color, #2563eb);
+    background: var(--primary-color, #2563eb);
+    color: #fff;
+  }
+
+  i-feather {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.pfl-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid light-dark(#e2e8f0, #33383e);
+  border-radius: 10px;
+  background: light-dark(#fff, #23282d);
+  color: inherit;
+  cursor: pointer;
+
+  i-feather {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.pfl-state {
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+  font-size: 14px;
+  color: light-dark(#64748b, #a5abb4);
+
+  &--error {
+    color: light-dark(#b91c1c, #ff8a7d);
+  }
+}
+
+.pfl-spinner {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid light-dark(#e2e8f0, #33383e);
+  border-top-color: light-dark(#0f172a, #e8ecf6);
+  animation: pfl-spin 0.8s linear infinite;
+}
+
+@keyframes pfl-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pfl-empty {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 28px 16px;
+  border: 1px dashed light-dark(#cbd5e1, #3a4047);
+  border-radius: 14px;
+  text-align: center;
+  color: light-dark(#64748b, #a5abb4);
+
+  p {
+    margin: 0;
+    font-size: 14px;
+  }
+
+  &__icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: light-dark(#f1f5f9, #23282d);
+
+    i-feather {
+      width: 20px;
+      height: 20px;
+    }
+  }
+}
+
+.pfl-section {
+  display: grid;
+  gap: 8px;
+}
+
+.pfl-label {
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: light-dark(#64748b, #a5abb4);
+
+  b {
+    margin-left: 4px;
+    font-weight: 700;
+    color: light-dark(#0f172a, #e8ecf6);
+  }
+}
+
+.pfl-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid light-dark(#e2e8f0, #33383e);
+  border-radius: 14px;
+  background: light-dark(#fff, #1d2125);
+
+  &--current {
+    border-color: light-dark(#bfdbfe, #2c4a73);
+    box-shadow: 0 1px 0 light-dark(#dbeafe, #20344f) inset;
+  }
+}
+
+.pfl-badge {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  background: light-dark(#fee2e2, #4c2426);
+  color: light-dark(#b91c1c, #ff8a7d);
+
+  &--excel {
+    background: light-dark(#dcfce7, #1e3325);
+    color: light-dark(#15803d, #88d29a);
+  }
+}
+
+.pfl-main {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.pfl-name {
+  font-size: 14.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pfl-meta {
+  font-size: 12.5px;
+  color: light-dark(#64748b, #a5abb4);
+}
+
+.pfl-progress {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin-top: 6px;
+  font-size: 12.5px;
+}
+
+.pfl-week {
+  font-weight: 700;
+  color: var(--primary-color, #2563eb);
+}
+
+.pfl-done {
+  color: light-dark(#475569, #bfc5ce);
+}
+
+.pfl-bar {
+  flex-basis: 100%;
+  height: 5px;
+  border-radius: 999px;
+  background: light-dark(#eef2f6, #2a3036);
+  overflow: hidden;
+
+  span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: light-dark(#16a34a, #4ade80);
+  }
+}
+
+.pfl-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pfl-menu-wrap {
+  position: relative;
+}
+
+.pfl-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  min-width: 220px;
+  display: grid;
+  padding: 6px;
+  border: 1px solid light-dark(#e2e8f0, #33383e);
+  border-radius: 12px;
+  background: light-dark(#fff, #1d2125);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      background: light-dark(#f1f5f9, #262b30);
+    }
+
+    &.is-danger {
+      color: light-dark(#b91c1c, #ff8a7d);
+    }
+
+    i-feather {
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .pfl-row {
+    flex-wrap: wrap;
+  }
+
+  .pfl-actions {
+    flex-basis: 100%;
+    justify-content: flex-end;
+  }
+}

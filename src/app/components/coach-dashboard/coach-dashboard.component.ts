@@ -9,6 +9,7 @@ import { WriteActionDirective } from 'app/shared/subscription/write-action.direc
 import { CoachDashboardService } from '../../service/coach-dashboard.service';
 import { CoachSettingsService } from '../../service/coach-settings.service';
 import { ChatUnreadService } from '../../service/chat-unread.service';
+import { CheckinInboxService } from '../../service/checkin-inbox.service';
 import {
   ALERT_PAGES,
   DASHBOARD_WIDGETS,
@@ -94,6 +95,7 @@ export class CoachDashboardComponent implements OnInit {
     private translate: TranslateService,
     private router: Router,
     private cdr: ChangeDetectorRef,
+    private checkinInbox: CheckinInboxService,
   ) {}
 
   ngOnInit(): void {
@@ -133,6 +135,13 @@ export class CoachDashboardComponent implements OnInit {
     });
     this.chatUnread.synced$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((synced) => {
       this.unreadKnown = synced === true;
+      this.cdr.markForCheck();
+    });
+
+    // A client sent a check-in: the counts and the check-ins widget follow at once.
+    this.checkinInbox.submitted$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.loadSummary();
+      this.refreshKey++;
       this.cdr.markForCheck();
     });
 

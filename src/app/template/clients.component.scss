@@ -1230,7 +1230,7 @@
   .helper-line { align-items: flex-start; line-height: 1.45; margin: 0 2px 14px; }
   .clients-table { background: transparent; border: 0; box-shadow: none; overflow: visible; }
   .clients-table .table-header { display: none !important; }
-  .clients-table .table-body { display: grid; gap: 9px; }
+  .clients-table .table-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 9px; }
   .clients-table .table-body .client-row {
     display: flex !important; min-height: 82px; flex-direction: row; align-items: center; padding: 13px 12px !important;
     border: 1px solid light-dark(#e3e9f1, #34383f); border-radius: 12px; background: light-dark(#fff, #1d2125);
@@ -1791,7 +1791,9 @@
   column-gap: 12px;
 }
 
-.client-stats { min-height: 28px; font-size: 13px; }
+/* The row cell is a flex box: without a full width the grid shrinks to its content
+   and the last activity ends up under the adherence title. */
+.client-stats { width: 100%; min-height: 28px; font-size: 13px; }
 
 .stat-adherence {
   justify-self: start;
@@ -1827,4 +1829,12 @@
   font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
+}
+
+/* 2026-11-23: under the status of a former client (joined another coach, or no longer coached). */
+.former-client-note {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: light-dark(#64748b, #a5abb4);
 }

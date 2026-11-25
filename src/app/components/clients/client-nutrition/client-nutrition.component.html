@@ -13,16 +13,9 @@
         </button>
       </header>
 
-      <button *ngIf="filePrograms.length" type="button" class="yc-card files-entry" (click)="view = 'files'">
-        <span class="yc-icon-tile" style="--tile-size: 38px"><i-feather name="file-text"></i-feather></span>
-        <span class="files-entry__copy">
-          <strong>{{ t('Nutrition files', 'Fichiers nutrition') }}</strong>
-          <span>{{ filesSummary }}</span>
-        </span>
-        <i-feather class="chevron" name="chevron-right"></i-feather>
-      </button>
+      <ng-container *ngTemplateOutlet="planTabs"></ng-container>
 
-      <app-week-strip [weekStart]="weekStart" [selected]="selectedDate" [marks]="weekMarks" [fr]="fr"
+      <app-week-strip *ngIf="loading || error || plans.length" [weekStart]="weekStart" [selected]="selectedDate" [marks]="weekMarks" [fr]="fr"
                       (shift)="shiftWeek($event)" (pick)="selectDate($event)" (today)="goToday()"></app-week-strip>
 
       <div *ngIf="loading" class="yc-loading"><span class="yc-spinner"></span></div>
@@ -32,8 +25,20 @@
         <ng-container *ngIf="weekRows as rows">
           <div *ngIf="weekIsEmpty(rows) && !preparingNextWeek" class="list-empty">
             <span class="yc-icon-tile" style="--tile-color: #1E9E63; --tile-size: 64px"><i-feather name="utensils"></i-feather></span>
-            <h3>{{ t('No nutrition plans found', 'Aucun plan nutrition trouvé') }}</h3>
-            <p class="yc-subtitle">{{ t('No nutrition day this week', 'Aucun jour nutrition cette semaine') }}</p>
+            <ng-container *ngIf="plans.length; else nothingShared">
+              <h3>{{ t('Nothing planned this week', 'Rien de prévu cette semaine') }}</h3>
+              <p class="yc-subtitle">{{ t('No nutrition day this week', 'Aucun jour nutrition cette semaine') }}</p>
+              <ng-container *ngIf="filePrograms.length">
+                <p class="yc-subtitle">{{ filesSentLine }}</p>
+                <button type="button" class="yc-btn yc-btn--brand list-empty__files" (click)="openFiles()">
+                  <i-feather name="file-text"></i-feather>{{ t('See the files', 'Voir les fichiers') }}
+                </button>
+              </ng-container>
+            </ng-container>
+            <ng-template #nothingShared>
+              <h3>{{ t('Your coach has not shared anything yet', 'Votre coach n’a encore rien partagé') }}</h3>
+              <p class="yc-subtitle">{{ t('Your meal plan will show here once your coach has prepared it.', 'Votre plan alimentaire apparaîtra ici dès que votre coach l’aura préparé.') }}</p>
+            </ng-template>
           </div>
 
           <ng-container *ngIf="!weekIsEmpty(rows)">
@@ -157,15 +162,15 @@
 
     <!-- ===================== FILES ===================== -->
     <ng-container *ngIf="view === 'files'">
-      <header class="yc-page-header">
-        <button type="button" class="yc-back" [attr.aria-label]="t('Back', 'Retour')" (click)="view = 'list'"><i-feather name="arrow-left"></i-feather></button>
-        <div class="yc-page-header__copy">
-          <h1 class="yc-page-header__title">{{ t('Nutrition files', 'Fichiers nutrition') }}</h1>
-          <p class="yc-page-header__subtitle">{{ t('PDF and Excel shared by your coach', 'PDF et Excel partagés par votre coach') }}</p>
+      <header class="yc-root-header">
+        <div class="yc-root-header__copy">
+          <h1 class="yc-display">Nutrition</h1>
+          <p class="yc-root-subtitle">{{ t('PDF and Excel shared by your coach', 'PDF et Excel partagés par votre coach') }}</p>
         </div>
       </header>
+      <ng-container *ngTemplateOutlet="planTabs"></ng-container>
 
-      <ng-container *ngFor="let section of [{ title: t('Current Program', 'Programme actuel'), files: currentFiles }, { title: t('History', 'Historique'), files: historyFiles }]">
+      <ng-container *ngFor="let section of [{ title: t('Current Program', 'Programme actuel'), files: currentFiles }, { title: t('Upcoming', 'À venir'), files: upcomingFiles }, { title: t('History', 'Historique'), files: historyFiles }]">
         <ng-container *ngIf="section.files.length">
           <div class="yc-section-label yc-overline files-section">{{ section.title }} <b>{{ section.files.length }}</b></div>
           <article *ngFor="let file of section.files" class="yc-card file-card" (click)="openFile(file)">
@@ -177,7 +182,7 @@
                 <strong>{{ file.plan.name ? capitalize(file.plan.name) : t('Nutrition file', 'Fichier nutrition') }}</strong>
                 <div class="file-card__chips">
                   <span class="yc-chip" [style.--chip-color]="file.type === 'EXCEL' ? '#16A34A' : '#EF4444'">{{ file.type === 'EXCEL' ? 'Excel' : 'PDF' }}</span>
-                  <span class="yc-chip" [style.--chip-color]="file.isCurrent ? 'var(--yc-primary)' : 'var(--yc-text-hint)'">{{ file.isCurrent ? t('Active', 'Actif') : t('History', 'Historique') }}</span>
+                  <span class="yc-chip" [style.--chip-color]="file.isCurrent ? 'var(--yc-primary)' : 'var(--yc-text-hint)'">{{ file.isCurrent ? t('Active', 'Actif') : file.upcoming ? t('Upcoming', 'À venir') : t('History', 'Historique') }}</span>
                 </div>
               </div>
             </div>
@@ -186,6 +191,16 @@
               <span><i-feather name="calendar"></i-feather>{{ fileDateRange(file) }}</span>
               <span><i-feather name="file"></i-feather>{{ fileSize(file) }}</span>
             </p>
+            <div *ngIf="file.isCurrent && fileWeek(file) as week" class="file-card__progress" (click)="$event.stopPropagation()">
+              <span class="file-card__week">{{ t('Week', 'Semaine') }} {{ week.week }} {{ t('of', 'sur') }} {{ week.weeks }}</span>
+              <span class="file-card__count">{{ fileDoneCount(file) }} {{ fileDoneCount(file) > 1 ? t('days done', 'jours faits') : t('day done', 'jour fait') }}</span>
+              <button *ngIf="!isFileDoneToday(file)" type="button" class="yc-btn yc-btn--brand file-card__done" [disabled]="fileDoneBusy === file.plan.id"
+                      (click)="toggleFileDone(file)"><i-feather name="check"></i-feather>{{ t('I followed my plan today', 'J’ai suivi mon plan aujourd’hui') }}</button>
+              <span *ngIf="isFileDoneToday(file)" class="file-card__done-ok">
+                <i-feather name="check-circle"></i-feather>{{ t('Done today', 'Fait aujourd’hui') }}
+                <button type="button" class="file-card__undo" [disabled]="fileDoneBusy === file.plan.id" (click)="toggleFileDone(file)">{{ t('Undo', 'Annuler') }}</button>
+              </span>
+            </div>
             <div class="file-card__actions">
               <button type="button" class="yc-btn yc-btn--secondary" (click)="$event.stopPropagation(); openFile(file)"><i-feather name="eye"></i-feather>{{ t('Open', 'Ouvrir') }}</button>
               <button type="button" class="yc-btn yc-btn--brand" (click)="$event.stopPropagation(); downloadFile(file)"><i-feather name="download"></i-feather>{{ t('Download', 'Télécharger') }}</button>
@@ -205,31 +220,7 @@
         </div>
         <button type="button" class="yc-icon-btn" [attr.aria-label]="t('Download', 'Télécharger')" (click)="downloadFile(file)"><i-feather name="download"></i-feather></button>
       </header>
-      <div *ngIf="fileLoading" class="yc-loading"><span class="yc-spinner"></span></div>
-      <p *ngIf="!fileLoading && fileError" class="yc-subtitle center-text">{{ fileError }}</p>
-      <section *ngIf="!fileLoading && !fileError && file.type === 'PDF'" class="yc-card yc-card--flush viewer">
-        <div class="viewer__canvas"><canvas #pdfCanvas></canvas></div>
-        <div class="viewer__bar">
-          <button type="button" class="yc-icon-btn" [disabled]="pdfCurrentPage <= 1" (click)="pdfPage(-1)"><i-feather name="chevron-left"></i-feather></button>
-          <span class="yc-caption">{{ pdfCurrentPage }} / {{ pdfTotalPages || '—' }}</span>
-          <button type="button" class="yc-icon-btn" [disabled]="pdfTotalPages > 0 && pdfCurrentPage >= pdfTotalPages" (click)="pdfPage(1)"><i-feather name="chevron-right"></i-feather></button>
-          <span class="viewer__spacer"></span>
-          <button type="button" class="yc-icon-btn" (click)="pdfZoomBy(-10)"><i-feather name="zoom-out"></i-feather></button>
-          <span class="yc-caption">{{ pdfZoom }}%</span>
-          <button type="button" class="yc-icon-btn" (click)="pdfZoomBy(10)"><i-feather name="zoom-in"></i-feather></button>
-        </div>
-      </section>
-      <section *ngIf="!fileLoading && !fileError && file.type === 'EXCEL'" class="yc-card yc-card--flush viewer">
-        <div *ngIf="excelSheets.length > 1" class="sheet-tabs">
-          <button *ngFor="let sheet of excelSheets" type="button" [class.active]="sheet === excelSheet" (click)="showExcelSheet(sheet)">{{ sheet }}</button>
-        </div>
-        <div class="excel-wrap">
-          <table class="excel-table">
-            <thead><tr><th></th><th *ngFor="let header of excelHeaders">{{ header }}</th></tr></thead>
-            <tbody><tr *ngFor="let row of excelRows; let r = index"><th>{{ r + 1 }}</th><td *ngFor="let cell of row">{{ cell }}</td></tr></tbody>
-          </table>
-        </div>
-      </section>
+      <app-program-file-viewer mode="embedded" [plan]="file.plan" kind="nutrition" [client]="true"></app-program-file-viewer>
     </ng-container>
 
     <!-- ===================== DAY (mobile NutritionDetailScreen) ===================== -->
@@ -248,42 +239,49 @@
 
       <div *ngIf="status === 'COMPLETED'" class="banner" style="--banner-color: light-dark(#1E8E4E, #5fc582); --banner-tint: #E9F6EE">
         <i-feather name="check-circle"></i-feather>
-        {{ t('Day completed. ' + reported + ' of ' + visibleMeals.length + ' meals reported.', 'Journée terminée. ' + reported + ' repas sur ' + visibleMeals.length + ' rapportés.') }}
+        <ng-container *ngIf="!isMacroTotalDay; else totalDayDone">{{ t('Day completed. ' + reported + ' of ' + visibleMeals.length + ' meals reported.', 'Journée terminée. ' + reported + ' repas sur ' + visibleMeals.length + ' rapportés.') }}</ng-container>
+        <ng-template #totalDayDone>{{ t('Day completed', 'Journée terminée') }}</ng-template>
       </div>
       <div *ngIf="status === 'OFF_PLAN'" class="banner" style="--banner-color: light-dark(#7455D9, #ac9eff); --banner-tint: #EFEBFB">
         <i-feather name="slash"></i-feather>{{ t('Day marked as off-plan.', 'Journée marquée hors plan.') }}
       </div>
 
-      <section class="yc-card summary">
-        <div class="ring">
-          <svg viewBox="0 0 104 104" aria-hidden="true">
-            <circle cx="52" cy="52" r="47" class="ring__track"></circle>
-            <circle cx="52" cy="52" r="47" class="ring__value" [attr.stroke-dashoffset]="ringOffset(consumed.calories, dayTarget.calories)"></circle>
-          </svg>
-          <span class="ring__label">
-            <strong>{{ formatNumber(consumed.calories) }}</strong>
-            <small>{{ t('of ' + formatNumber(dayTarget.calories), 'sur ' + formatNumber(dayTarget.calories)) }}</small>
-          </span>
-        </div>
-        <div class="macro-bars">
-          <div *ngFor="let macro of [
-              { label: t('Protein', 'Protéines'), value: consumed.protein, goal: dayTarget.protein, color: 'var(--yc-primary)' },
-              { label: t('Carbs', 'Glucides'), value: consumed.carbs, goal: dayTarget.carbs, color: '#D97706' },
-              { label: t('Fat', 'Lipides'), value: consumed.fat, goal: dayTarget.fat, color: '#7455D9' }]" class="macro-bar">
-            <div class="macro-bar__row"><span class="yc-label">{{ macro.label }}</span><strong>{{ macro.value }} / {{ macro.goal }}g</strong></div>
-            <div class="yc-progress"><span [style.width.%]="ratio(macro.value, macro.goal) * 100" [style.background]="macro.color"></span></div>
-          </div>
-        </div>
+      <!-- A day with only macros: nothing is counted, only its target is shown (as a donut). -->
+      <section *ngIf="!isMacroTotalDay" class="yc-card summary">
+        <!-- Eaten against the goal, like MyFitnessPal: big calories ring + one ring per macro. -->
+        <app-macro-chart class="summary__chart" mode="progress"
+                         [calories]="consumed.calories" [protein]="consumed.protein" [carbs]="consumed.carbs" [fat]="consumed.fat"
+                         [goalCalories]="dayTarget.calories" [goalProtein]="dayTarget.protein"
+                         [goalCarbs]="dayTarget.carbs" [goalFat]="dayTarget.fat"></app-macro-chart>
       </section>
 
       <section *ngIf="isMacroTotalDay" class="yc-card total-day">
-        <span class="yc-overline">{{ t('DAY TOTAL', 'TOTAL DU JOUR') }}</span>
-        <strong class="yc-display">{{ consumed.calories }} cal</strong>
-        <div class="total-day__badges">
-          <span>{{ consumed.protein }}g  {{ t('Protein', 'Protéines') }}</span>
-          <span>{{ consumed.carbs }}g  {{ t('Carbs', 'Glucides') }}</span>
-          <span>{{ consumed.fat }}g  {{ t('Fat', 'Lipides') }}</span>
+        <span class="yc-overline">{{ t('DAILY TARGET', 'OBJECTIF DU JOUR') }}</span>
+        <strong class="yc-display">{{ t('Target', 'Objectif') }} : {{ formatNumber(dayTarget.calories) }} kcal</strong>
+        <app-macro-chart class="total-day__chart" [calories]="dayTarget.calories" [protein]="dayTarget.protein"
+                         [carbs]="dayTarget.carbs" [fat]="dayTarget.fat"></app-macro-chart>
+        <!-- One free photo of the day (no meal to attach it to): the coach sees it in his activity feed. -->
+        <div *ngIf="hasPhoto(dayPhoto)" class="meal-photo">
+          <button type="button" class="meal-photo__thumb" [disabled]="!mealPhotoUrls.get(dayPhoto.id)" (click)="viewedPhoto = mealPhotoUrls.get(dayPhoto.id) || null">
+            <img *ngIf="mealPhotoUrls.get(dayPhoto.id) as url; else dayPhotoPlaceholder" [src]="url" alt="" />
+            <ng-template #dayPhotoPlaceholder><i-feather name="image"></i-feather></ng-template>
+          </button>
+          <div>
+            <span class="yc-label">{{ t('Photo of the day', 'Photo du jour') }}</span>
+            <div class="meal-photo__actions">
+              <button type="button" [disabled]="!mealPhotoUrls.get(dayPhoto.id)" (click)="viewedPhoto = mealPhotoUrls.get(dayPhoto.id) || null"><i-feather name="eye"></i-feather>{{ t('View', 'Voir') }}</button>
+              <label *ngIf="canReport" [class.disabled]="uploadingMealId === dayPhoto.id">
+                <i-feather name="image"></i-feather>{{ uploadingMealId === dayPhoto.id ? t('Saving…', 'Enregistrement…') : t('Replace photo', 'Remplacer la photo') }}
+                <input type="file" accept="image/*" hidden [disabled]="uploadingMealId === dayPhoto.id" (change)="uploadMealPhoto($event, dayPhoto)" />
+              </label>
+            </div>
+          </div>
         </div>
+        <label *ngIf="canReport && !hasPhoto(dayPhoto)" class="yc-btn yc-btn--secondary" [class.disabled]="uploadingMealId === dayPhoto.id">
+          <span *ngIf="uploadingMealId === dayPhoto.id" class="yc-spinner"></span>
+          <i-feather *ngIf="uploadingMealId !== dayPhoto.id" name="camera"></i-feather>{{ t('Add a photo', 'Ajouter une photo') }}
+          <input type="file" accept="image/*" hidden [disabled]="uploadingMealId === dayPhoto.id" (change)="uploadMealPhoto($event, dayPhoto)" />
+        </label>
       </section>
 
       <ng-container *ngIf="isMacroEachMeal || isFullMealPlan">
@@ -312,10 +310,8 @@
 
           <ng-container *ngIf="expandedMeal === i">
             <div class="meal-macros">
-              <span><strong>{{ macros(meal).calories }}</strong><small>kcal</small></span>
-              <span><strong>{{ macros(meal).protein }}g</strong><small>{{ t('Protein', 'Protéines') }}</small></span>
-              <span><strong>{{ macros(meal).carbs }}g</strong><small>{{ t('Carbs', 'Glucides') }}</small></span>
-              <span><strong>{{ macros(meal).fat }}g</strong><small>{{ t('Fat', 'Lipides') }}</small></span>
+              <app-macro-chart [calories]="macros(meal).calories" [protein]="macros(meal).protein"
+                               [carbs]="macros(meal).carbs" [fat]="macros(meal).fat"></app-macro-chart>
             </div>
 
             <div *ngIf="isRecipe(meal) || coverUrl(meal)" class="recipe-head">
@@ -480,6 +476,13 @@
           <span class="report-option__icon" [style.background]="reportStatus === option.value ? option.color : null"><i-feather [name]="option.icon"></i-feather></span>
           <span><strong>{{ option.title }}</strong><small>{{ option.subtitle }}</small></span>
         </button>
+        <ng-container *ngIf="reportStatus === 'MODIFIED'">
+          <label class="yc-label report__label">{{ t('You ate about…', 'Vous en avez mangé environ…') }}</label>
+          <div class="report-portions">
+            <button *ngFor="let part of portionOptions" type="button" class="report-portion" [class.selected]="reportPortion === part.value"
+                    (click)="reportPortion = part.value">{{ part.label || t('All', 'Tout') }}</button>
+          </div>
+        </ng-container>
         <label class="yc-label report__label">{{ t('Note', 'Note') }} <small>({{ t('optional', 'facultatif') }})</small></label>
         <textarea class="yc-input report__note" rows="3" [(ngModel)]="reportNote"
                   [placeholder]="t('Anything your coach should know about this meal...', 'Ce que votre coach devrait savoir sur ce repas...')"></textarea>
@@ -555,14 +558,16 @@
         <article class="cn-pdf-document">
           <div class="cn-pdf-brand">{{ t('Nutrition plan', 'Plan nutrition') }}</div>
           <h1>{{ capitalize(item.plan?.name) }}</h1>
-          <p *ngIf="item.plan?.description">{{ item.plan.description }}</p>
+          <p *ngIf="item.plan?.details || item.plan?.description" class="cn-pdf-intro">{{ item.plan.details || item.plan.description }}</p>
           <section *ngFor="let entry of pdfDays" class="cn-pdf-day">
             <h2>{{ formatLongDate(entry.date) }}{{ entry.day?.name ? ' · ' + capitalize(entry.day.name) : '' }}</h2>
-            <div class="cn-pdf-totals">{{ formatNumber(pdfTarget(entry.day).calories) }} kcal · P {{ pdfTarget(entry.day).protein }}g · C {{ pdfTarget(entry.day).carbs }}g · F {{ pdfTarget(entry.day).fat }}g</div>
+            <!-- Proteins, carbs, fats: « P · G · L » in French, « P · C · F » in English (audit PDF/Excel 2026-11-23, lot 4). -->
+            <div class="cn-pdf-totals">{{ formatNumber(pdfTarget(entry.day).calories) }} kcal · {{ t('P', 'P') }} {{ pdfTarget(entry.day).protein }} g · {{ t('C', 'G') }} {{ pdfTarget(entry.day).carbs }} g · {{ t('F', 'L') }} {{ pdfTarget(entry.day).fat }} g</div>
+            <p *ngIf="!pdfMeals(entry.day).length" class="cn-pdf-empty">{{ t('No meal planned this day', 'Aucun repas prévu ce jour-là') }}</p>
             <ng-container *ngFor="let meal of pdfMeals(entry.day)">
               <div class="cn-pdf-meal">{{ capitalize(meal.name) }}{{ mealTimeLabel(meal) ? ' · ' + mealTimeLabel(meal) : '' }} — {{ macros(meal).calories }} kcal</div>
               <table *ngIf="meal.foods?.length">
-                <thead><tr><th>{{ t('Food', 'Aliment') }}</th><th>{{ t('Quantity', 'Quantité') }}</th><th>kcal</th><th>P</th><th>C</th><th>F</th></tr></thead>
+                <thead><tr><th>{{ t('Food', 'Aliment') }}</th><th>{{ t('Quantity', 'Quantité') }}</th><th>kcal</th><th>{{ t('P', 'P') }}</th><th>{{ t('C', 'G') }}</th><th>{{ t('F', 'L') }}</th></tr></thead>
                 <tbody><tr *ngFor="let food of meal.foods">
                   <td>{{ capitalize(food.name || food.foodRef?.name) }}</td><td>{{ quantity(food.quantity) }} {{ foodUnit(food) }}</td>
                   <td>{{ number(foodMacros(food).calories) }}</td><td>{{ number(foodMacros(food).protein) }}</td><td>{{ number(foodMacros(food).carbs) }}</td><td>{{ number(foodMacros(food).fat) }}</td>
@@ -580,3 +585,16 @@
 
   <app-completion-celebration *ngIf="celebration" [view]="celebration" (done)="closeCelebration()"></app-completion-celebration>
 </div>
+
+<!-- « Programme » | « Fichiers » (audit PDF/Excel 2026-11-23, lot 3): the coach's PDF / Excel never sit among the days
+     built in the app. -->
+<ng-template #planTabs>
+  <div *ngIf="showPlanTabs" class="plan-tabs" role="tablist">
+    <button type="button" role="tab" [attr.aria-selected]="view === 'list'" [class.active]="view === 'list'" (click)="view = 'list'">
+      {{ t('Program', 'Programme') }}
+    </button>
+    <button type="button" role="tab" [attr.aria-selected]="view === 'files'" [class.active]="view === 'files'" (click)="openFiles()">
+      {{ t('Files', 'Fichiers') }}<span *ngIf="currentFiles.length" class="plan-tabs__count">{{ currentFiles.length }}</span>
+    </button>
+  </div>
+</ng-template>

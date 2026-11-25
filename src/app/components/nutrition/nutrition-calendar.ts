@@ -208,8 +208,8 @@ export class NutritionCalendar {
     const list = labels.join(', ');
     this.toast.show({
       type: 'info',
-      title: this.ht('Your client logged meals while you were editing', 'Votre client a suivi son plan pendant votre modification'),
-      message: this.ht(`${list}: kept as your client logged it.`, `${list} : gardé comme votre client l'a noté.`),
+      title: this.translate.instant('NUTRITION_CALENDAR.CLIENT_LOGGED_TITLE'),
+      message: this.translate.instant('NUTRITION_CALENDAR.CLIENT_LOGGED_TEXT', { list }),
       duration: 10000,
     });
     return true;
@@ -259,7 +259,7 @@ export class NutritionCalendar {
   /** « 2 100 kcal », else « Repas ». */
   private title(day: MealDay): string {
     const kcal = Number(day.dayTargets?.calories) || 0;
-    return kcal > 0 ? `${this.kcal(kcal)} kcal` : this.ht('Meals', 'Repas');
+    return kcal > 0 ? `${this.kcal(kcal)} kcal` : this.translate.instant('NUTRITION_CALENDAR.MEALS_TITLE');
   }
 
   /** « 4 repas · P 150 g · G 200 g · L 70 g » */
@@ -267,11 +267,11 @@ export class NutritionCalendar {
     const parts: string[] = [];
     // An empty meal is not counted: the client does not see it (backlog-programmes.md R3).
     const meals = plannedMeals(day).length;
-    if (meals) parts.push(this.ht(`${meals} meal${meals > 1 ? 's' : ''}`, `${meals} repas`));
+    if (meals) parts.push(this.translate.instant(meals > 1 ? 'NUTRITION_CALENDAR.MEALS' : 'NUTRITION_CALENDAR.MEALS_ONE', { count: meals }));
     const t = day.dayTargets;
     if (t && (t.proteinG || t.carbsG || t.fatG)) {
-      parts.push(this.ht(`P ${Math.round(t.proteinG || 0)} g · C ${Math.round(t.carbsG || 0)} g · F ${Math.round(t.fatG || 0)} g`,
-        `P ${Math.round(t.proteinG || 0)} g · G ${Math.round(t.carbsG || 0)} g · L ${Math.round(t.fatG || 0)} g`));
+      parts.push(this.translate.instant('NUTRITION_CALENDAR.MACROS',
+        { protein: Math.round(t.proteinG || 0), carbs: Math.round(t.carbsG || 0), fat: Math.round(t.fatG || 0) }));
     }
     return parts.join(' · ');
   }
@@ -335,17 +335,16 @@ export class NutritionCalendar {
     if (week?.cells.some((cell) => cell.locked)) {
       this.toast.show({
         type: 'warning',
-        title: this.ht('This week cannot be deleted', 'Cette semaine ne peut pas être supprimée'),
-        message: this.ht('It has past days or days the client already started.', 'Elle a des jours passés ou déjà commencés par le client.'),
+        title: this.translate.instant('NUTRITION_CALENDAR.WEEK_LOCKED_TITLE'),
+        message: this.translate.instant('NUTRITION_CALENDAR.WEEK_LOCKED_TEXT'),
       });
       return;
     }
     const filled = week?.filled ?? 0;
     const confirmed = await this.confirmDialog.ask({
-      title: this.ht(`Delete week ${weekNumber}?`, `Supprimer la semaine ${weekNumber} ?`),
-      text: filled
-        ? this.ht(`Its ${filled} filled day(s) will be removed. The next weeks move up.`, `Ses ${filled} jour(s) rempli(s) seront retirés. Les semaines suivantes remontent.`)
-        : this.ht('The next weeks move up.', 'Les semaines suivantes remontent.'),
+      title: 'NUTRITION_CALENDAR.DELETE_WEEK_TITLE',
+      text: filled ? 'NUTRITION_CALENDAR.DELETE_WEEK_TEXT_FILLED' : 'NUTRITION_CALENDAR.DELETE_WEEK_TEXT',
+      params: { week: weekNumber, count: filled },
       confirm: 'DELETE',
       icon: 'trash-2',
     });
@@ -361,8 +360,8 @@ export class NutritionCalendar {
     if (!this.swap(event.from, event.to)) return;
     this.toast.show({
       type: 'success',
-      title: this.ht('Days swapped', 'Jours échangés'),
-      message: this.ht('Not saved yet: click Save.', 'Pas encore enregistré : cliquez sur Enregistrer.'),
+      title: this.translate.instant('NUTRITION_CALENDAR.DAYS_SWAPPED'),
+      message: this.translate.instant('NUTRITION_CALENDAR.NOT_SAVED_YET'),
       duration: 8000,
       actions: [{ label: this.translate.instant('COPY_DAYS.UNDO'), run: () => this.swap(event.from, event.to), icon: 'fa-undo' }],
     });

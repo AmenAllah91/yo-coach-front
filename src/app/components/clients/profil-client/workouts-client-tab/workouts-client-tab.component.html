@@ -28,7 +28,7 @@
     </div>
 
     <label class="upload-zone">
-      <input type="file" accept=".pdf,.xls,.xlsx,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden (change)="onUploadFileSelected($event)" />
+      <input type="file" [accept]="programFileAccept" hidden (change)="onUploadFileSelected($event)" />
       <div class="upload-zone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
       <strong>{{ selectedUploadFile ? selectedUploadFile.name : ('DROP_OR_BROWSE_FILE' | translate) }}</strong>
       <span>{{ 'WORKOUT_FILE_REQUIREMENTS' | translate }}</span>
@@ -61,7 +61,8 @@
     <div class="upload-file-modal-actions">
       <button type="button" class="upload-cancel-btn" (click)="closeUploadFileModal()" [disabled]="uploadSaving">{{ 'CANCEL' | translate }}</button>
       <button type="button" class="upload-save-btn" (click)="createAndAssignUploadedFile()" [disabled]="!selectedUploadFile || !uploadProgramName.trim() || uploadSaving">
-        {{ (uploadSaving ? 'SAVING' : 'SAVE_AND_ASSIGN') | translate }}
+        <ng-container *ngIf="uploadSaving; else saveLabel">{{ 'PROGRAM_FILES.UPLOADING' | translate: { percent: uploadPercent } }}</ng-container>
+        <ng-template #saveLabel>{{ 'SAVE_AND_ASSIGN' | translate }}</ng-template>
       </button>
     </div>
   </div>
@@ -71,7 +72,7 @@
 <input
   id="profile-workout-replace-file-input"
   type="file"
-  accept=".pdf,.xls,.xlsx,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  [accept]="programFileAccept"
   hidden
   (change)="onReplaceFileSelected($event)"
 />
@@ -101,3 +102,5 @@
   (closed)="closeChangeDatesModal()"
   (saved)="onDatesSaved()"
 ></app-change-dates-modal>
+
+<app-program-file-viewer *ngIf="viewerPlan" [plan]="viewerPlan" kind="workout" (closed)="viewerPlan = null"></app-program-file-viewer>

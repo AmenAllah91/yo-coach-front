@@ -413,6 +413,8 @@
         </div>
         </fieldset>
         <p class="field-error" *ngIf="saveError" role="alert">{{ saveError | translate }}</p>
+        <!-- The programs already made hold a copy of this exercise: it does not change there. -->
+        <p class="exercise-copies-note" *ngIf="editingExercise" role="note">{{ 'LIBRARY_COPIES_EXERCISE' | translate }}</p>
       </div>
 
       <div class="modal-footer">

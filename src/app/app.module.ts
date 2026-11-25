@@ -27,6 +27,7 @@ import { provideToastr, ToastrModule } from 'ngx-toastr';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { AccountUnavailableComponent } from './components/account-unavailable/account-unavailable.component';
+import { CoachingUnavailableComponent } from './components/clients/coaching-unavailable.component';
 import { CallHostComponent } from './components/chat/video-call/call-host.component';
 import { createTranslateLoader } from './app.config';
 import { APP_ROUTE } from './app.routes';
@@ -117,6 +118,7 @@ function initializeKeycloakAndSync(
   ],
   imports: [
     AccountUnavailableComponent,
+    CoachingUnavailableComponent,
     CallHostComponent,
     BrowserAnimationsModule,
     CommonModule,

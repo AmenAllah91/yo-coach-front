@@ -584,3 +584,107 @@ svg {
   text-align: center;
   color: light-dark(#64748b, #a5abb4);
 }
+
+/* « Fréquents »: the coach's most used foods, one click each (search empty). */
+.afm__frequent {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.afm__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid light-dark(#e6e9ee, #34383e);
+  border-radius: 999px;
+  color: light-dark(#0f172a, #e8ecf6);
+  background: light-dark(#f8fafc, #15181d);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.afm__chip:hover:not(:disabled) {
+  border-color: #44b4df;
+}
+
+.afm__chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.afm__chip-name {
+  overflow: hidden;
+  max-width: 220px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.afm__chip-ok {
+  color: light-dark(#0f766e, #5eead4);
+}
+
+/* « + Créer « riz maison » » under the results. */
+.afm__create-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px dashed light-dark(#cbd5e1, #3f444b);
+  border-radius: 12px;
+  color: light-dark(#0f172a, #e8ecf6);
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.afm__create-row:hover {
+  border-color: #44b4df;
+  background: light-dark(#f1f9fd, #18242b);
+}
+
+.afm__create-row span {
+  display: grid;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #44b4df;
+  font-size: 17px;
+  line-height: 1;
+}
+
+/* The short form of a new food. */
+.afm__quick {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+}
+
+.afm__grid--four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.afm__btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .afm__grid--four {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

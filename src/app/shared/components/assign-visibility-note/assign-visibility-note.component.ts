@@ -8,6 +8,7 @@ import { ProgramSummary, nutritionSummary, workoutSummary } from '@shared/models
  * assigned at any time, even incomplete; the client sees the filled days, the next ones as soon as they are filled.
  * Nothing is shown for a file program, or when the list did not bring the program's days.
  */
+import { isFilePlan } from '@shared/models/program-file-check';
 @Component({
   selector: 'app-assign-visibility-note',
   standalone: true,
@@ -42,7 +43,6 @@ export class AssignVisibilityNoteComponent {
   }
 
   private isFile(program: any): boolean {
-    const mode = String(program?.workoutPlanMode || program?.nutritionPlanMode || '').toUpperCase();
-    return mode === 'FILE' || !!program?.isFile || !!program?.fileName || !!program?.fileUrl;
+    return !!program?.isFile || isFilePlan(program);
   }
 }

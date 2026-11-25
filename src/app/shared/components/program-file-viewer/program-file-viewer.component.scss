@@ -1,0 +1,346 @@
+// The one program file viewer (audit PDF/Excel 2026-11-23, lot 2). Own colors (light / dark): it is shown on coach
+// pages and client pages, which do not share their variables.
+:host {
+  display: block;
+  color: light-dark(#0f172a, #e8ecf6);
+}
+
+.pfv-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.pfv--overlay {
+  width: min(1100px, 100%);
+  height: min(92vh, 100%);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 16px;
+  background: light-dark(#fff, #1d2125);
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.3);
+}
+
+.pfv-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid light-dark(#e2e8f0, #33383e);
+
+  &__copy {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.pfv-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pfv-sub {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: light-dark(#64748b, #a5abb4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pfv-badge {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: light-dark(#fee2e2, #4c2426);
+  color: light-dark(#b91c1c, #ff8a7d);
+
+  &--excel {
+    background: light-dark(#dcfce7, #1e3325);
+    color: light-dark(#15803d, #88d29a);
+  }
+}
+
+.pfv-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid light-dark(#e2e8f0, #33383e);
+  border-radius: 10px;
+  background: light-dark(#fff, #23282d);
+  color: inherit;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  i-feather,
+  ::ng-deep svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.pfv-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+
+  &--embedded {
+    border: 1px solid light-dark(#e2e8f0, #33383e);
+    border-radius: 14px;
+    overflow: hidden;
+    background: light-dark(#fff, #1d2125);
+  }
+}
+
+.pfv-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px 16px;
+  font-size: 14px;
+  color: light-dark(#64748b, #a5abb4);
+  text-align: center;
+
+  &--error {
+    color: light-dark(#b91c1c, #ff8a7d);
+  }
+
+  i-feather {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+}
+
+.pfv-spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid light-dark(#e2e8f0, #33383e);
+  border-top-color: light-dark(#0f172a, #e8ecf6);
+  animation: pfv-spin 0.8s linear infinite;
+}
+
+@keyframes pfv-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pfv-notice {
+  margin: 0;
+  padding: 8px 14px;
+  font-size: 13px;
+  background: light-dark(#fffbeb, #3a3120);
+  color: light-dark(#92400e, #f5c876);
+  border-bottom: 1px solid light-dark(#fde68a, #5a4a26);
+}
+
+.pfv-link {
+  margin-left: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.pfv-pdf {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+
+  &[hidden] {
+    display: none;
+  }
+
+  &__frame {
+    flex: 1;
+    min-height: 240px;
+    overflow: auto;
+    padding: 8px;
+    background: light-dark(#f1f3f7, #14181c);
+
+    canvas {
+      display: block;
+      margin: 0 auto;
+      max-width: none;
+      background: #fff;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.12);
+    }
+  }
+}
+
+.pfv-body--embedded .pfv-pdf__frame {
+  max-height: 75vh;
+}
+
+.pfv-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid light-dark(#e2e8f0, #33383e);
+}
+
+.pfv-caption {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: light-dark(#475569, #bfc5ce);
+
+  &--zoom {
+    min-width: 48px;
+    text-align: center;
+  }
+}
+
+.pfv-spacer {
+  flex: 1;
+}
+
+.pfv-excel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.pfv-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 10px 12px;
+  overflow-x: auto;
+  border-bottom: 1px solid light-dark(#e2e8f0, #33383e);
+
+  button {
+    flex: none;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid light-dark(#e2e8f0, #33383e);
+    background: light-dark(#fff, #23282d);
+    color: inherit;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+
+    &.active {
+      background: light-dark(#0f172a, #e8ecf6);
+      border-color: light-dark(#0f172a, #e8ecf6);
+      color: light-dark(#fff, #0f172a);
+    }
+  }
+}
+
+.pfv-grid {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+
+  table {
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+  }
+
+  // The global table rules of styles.scss stack cells at phone width: a sheet keeps its grid.
+  thead {
+    display: table-header-group;
+  }
+
+  tr {
+    display: table-row;
+  }
+
+  td::before {
+    display: none;
+  }
+
+  th,
+  td {
+    display: table-cell;
+    padding: 6px 10px;
+    border-right: 1px solid light-dark(#eef1f4, #32373c);
+    border-bottom: 1px solid light-dark(#eef1f4, #32373c);
+    text-align: left;
+    vertical-align: top;
+    max-width: 320px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    background: light-dark(#fff, #1d2125);
+  }
+
+  td {
+    min-width: 64px;
+  }
+
+  // First row and first column stay in view while scrolling.
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: light-dark(#f4f6f9, #15191d);
+    font-size: 11.5px;
+    font-weight: 600;
+    color: light-dark(#64748b, #a5abb4);
+    white-space: nowrap;
+    text-align: center;
+  }
+
+  tbody th {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: light-dark(#f4f6f9, #15191d);
+    font-size: 11.5px;
+    font-weight: 600;
+    color: light-dark(#64748b, #a5abb4);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .pfv-corner {
+    left: 0;
+    z-index: 3;
+  }
+
+  .pfv-merged {
+    background: light-dark(#f8fafc, #20252a);
+    font-weight: 600;
+  }
+}
+
+@media (max-width: 600px) {
+  .pfv-backdrop {
+    padding: 0;
+  }
+
+  .pfv--overlay {
+    height: 100%;
+    border-radius: 0;
+  }
+}

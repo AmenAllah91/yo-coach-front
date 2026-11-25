@@ -11,8 +11,14 @@
   <div class="client-workspace__main">
 <section *ngIf="!profileLoading" class="main-content" [class.progress-summary-collapsed]="!showClientStats">
   <aside *ngIf="clientArchived" role="status" class="archived-client-notice">
-    {{ 'ARCHIVED_CLIENT_NOTICE' | translate }}
-    <button type="button" (click)="reactivateClient()">{{ 'REACTIVATE_CLIENT' | translate }}</button>
+    <!-- 2026-11-23: a former client (joined another coach...) cannot be reactivated, only removed from the list -->
+    <ng-container *ngIf="!clientFormer; else formerClientNotice">
+      {{ 'ARCHIVED_CLIENT_NOTICE' | translate }}
+      <button type="button" (click)="reactivateClient()">{{ 'REACTIVATE_CLIENT' | translate }}</button>
+    </ng-container>
+    <ng-template #formerClientNotice>
+      {{ (client.leftForAnotherCoach ? 'CLIENT_LEFT_FOR_ANOTHER_COACH' : 'CLIENT_LEFT_YOUR_COACHING') | translate }}
+    </ng-template>
   </aside>
   <!-- Who the client is and where they are (status, current program, this week); the rest of their profile is in
        the « Profil du client » panel (avatar, name or « Profil »). -->
@@ -610,6 +616,7 @@
         (assignNew)="openAssignProgramModal('WORKOUT', $event)"
         (openCalendar)="openCalendarAt('workout', $event)"
         (message)="openChatPanel($event)"
+        (previewAsClient)="openClientPreview('workouts', true)"
       />
     </div>
 
@@ -621,6 +628,8 @@
         (assignNew)="openAssignProgramModal('NUTRITION', $event)"
         (openCalendar)="openCalendarAt('nutrition', $event)"
         (message)="openChatPanel($event)"
+        (previewAsClient)="openClientPreview('nutrition', true)"
+        (importFile)="openImportNutritionFileFromProfile()"
       />
     </div>
     </ng-container>
@@ -1053,8 +1062,8 @@
             </div>
           </div>
           <div class="client-preview-real-content" (click)="$event.stopPropagation()">
-            <app-client-workouts *ngIf="clientPreviewSection === 'workouts'" [previewClientId]="clientId" [previewMode]="true"></app-client-workouts>
-            <app-client-nutrition *ngIf="clientPreviewSection === 'nutrition'" [previewClientId]="clientId" [previewMode]="true"></app-client-nutrition>
+            <app-client-workouts *ngIf="clientPreviewSection === 'workouts'" [previewClientId]="clientId" [previewMode]="true" [startTab]="clientPreviewFiles ? 'files' : 'program'"></app-client-workouts>
+            <app-client-nutrition *ngIf="clientPreviewSection === 'nutrition'" [previewClientId]="clientId" [previewMode]="true" [startTab]="clientPreviewFiles ? 'files' : 'program'"></app-client-nutrition>
             <app-my-tasks *ngIf="clientPreviewSection === 'tasks'" [previewMode]="true" [previewClientId]="clientId"></app-my-tasks>
             <app-chat *ngIf="clientPreviewSection === 'chat'" [embeddedMode]="true" [clientPreview]="true" [embeddedClientId]="clientId" [embeddedCoachId]="userid || ''"></app-chat>
             <app-my-assignments *ngIf="clientPreviewSection === 'checkins'" [previewMode]="true" [previewClientId]="clientId"></app-my-assignments>
@@ -1635,7 +1644,7 @@
       <input
         id="profileWorkoutFileInput"
         type="file"
-        accept=".pdf,.xls,.xlsx,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        [accept]="programFileAccept"
         hidden
         (change)="onProfileWorkoutFileSelected($event)"
       />
@@ -1707,7 +1716,7 @@
         [disabled]="!canSaveProfileFileWorkout()"
       >
         <span *ngIf="!profileImportSaving">{{ 'SAVE_AND_ASSIGN' | translate }}</span>
-        <span *ngIf="profileImportSaving">{{ 'SAVING' | translate }}</span>
+        <span *ngIf="profileImportSaving">{{ 'PROGRAM_FILES.UPLOADING' | translate: { percent: uploadPercent } }}</span>
       </button>
     </div>
   </div>
@@ -1740,7 +1749,7 @@
       <input
         id="profileNutritionFileInput"
         type="file"
-        accept=".pdf,.xls,.xlsx,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        [accept]="programFileAccept"
         hidden
         (change)="onProfileNutritionFileSelected($event)"
       />
@@ -1812,7 +1821,7 @@
         [disabled]="!canSaveProfileFileNutrition()"
       >
         <span *ngIf="!profileImportNutritionSaving">{{ 'SAVE_AND_ASSIGN' | translate }}</span>
-        <span *ngIf="profileImportNutritionSaving">{{ 'SAVING' | translate }}</span>
+        <span *ngIf="profileImportNutritionSaving">{{ 'PROGRAM_FILES.UPLOADING' | translate: { percent: uploadPercent } }}</span>
       </button>
     </div>
   </div>
